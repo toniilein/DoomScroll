@@ -1,5 +1,7 @@
 import SwiftUI
+#if !targetEnvironment(simulator)
 import FamilyControls
+#endif
 
 struct AppSelectionView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
@@ -25,7 +27,13 @@ struct AppSelectionView: View {
                     selectionSummaryCard
 
                     Button {
+                        #if targetEnvironment(simulator)
+                        // Simulate selecting some apps
+                        screenTimeManager.mockSelectedAppCount = 5
+                        screenTimeManager.mockSelectedCategoryCount = 2
+                        #else
                         isPickerPresented = true
+                        #endif
                     } label: {
                         HStack {
                             Image(systemName: "plus.app")
@@ -45,6 +53,7 @@ struct AppSelectionView: View {
             }
             .navigationTitle("Apps")
             .toolbarColorScheme(.dark, for: .navigationBar)
+            #if !targetEnvironment(simulator)
             .familyActivityPicker(
                 isPresented: $isPickerPresented,
                 selection: $screenTimeManager.activitySelection
@@ -52,28 +61,25 @@ struct AppSelectionView: View {
             .onChange(of: screenTimeManager.activitySelection) { _, _ in
                 screenTimeManager.saveSelection()
             }
+            #endif
         }
     }
 
     private var selectionSummaryCard: some View {
         HStack {
-            summaryItem(
-                label: "Apps",
-                count: screenTimeManager.activitySelection.applicationTokens.count,
-                color: BrainRotTheme.neonGreen
-            )
+            #if targetEnvironment(simulator)
+            summaryItem(label: "Apps", count: screenTimeManager.mockSelectedAppCount, color: BrainRotTheme.neonGreen)
             Spacer()
-            summaryItem(
-                label: "Categories",
-                count: screenTimeManager.activitySelection.categoryTokens.count,
-                color: BrainRotTheme.neonBlue
-            )
+            summaryItem(label: "Categories", count: screenTimeManager.mockSelectedCategoryCount, color: BrainRotTheme.neonBlue)
             Spacer()
-            summaryItem(
-                label: "Websites",
-                count: screenTimeManager.activitySelection.webDomainTokens.count,
-                color: BrainRotTheme.neonPurple
-            )
+            summaryItem(label: "Websites", count: 0, color: BrainRotTheme.neonPurple)
+            #else
+            summaryItem(label: "Apps", count: screenTimeManager.activitySelection.applicationTokens.count, color: BrainRotTheme.neonGreen)
+            Spacer()
+            summaryItem(label: "Categories", count: screenTimeManager.activitySelection.categoryTokens.count, color: BrainRotTheme.neonBlue)
+            Spacer()
+            summaryItem(label: "Websites", count: screenTimeManager.activitySelection.webDomainTokens.count, color: BrainRotTheme.neonPurple)
+            #endif
         }
         .padding()
         .background(BrainRotTheme.cardBackground)

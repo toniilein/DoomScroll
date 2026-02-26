@@ -1,33 +1,53 @@
+import Combine
 import Foundation
+#if !targetEnvironment(simulator)
 import FamilyControls
 import DeviceActivity
 import ManagedSettings
+#endif
 
 @MainActor
 class ScreenTimeManager: ObservableObject {
     static let shared = ScreenTimeManager()
 
     @Published var authorizationStatus: AuthorizationStatus = .notDetermined
-    @Published var activitySelection = FamilyActivitySelection()
     @Published var isAuthorized = false
+
+    #if !targetEnvironment(simulator)
+    @Published var activitySelection = FamilyActivitySelection()
+    #endif
+
+    // Simulator mock state
+    @Published var mockSelectedAppCount = 0
+    @Published var mockSelectedCategoryCount = 0
 
     enum AuthorizationStatus {
         case notDetermined, approved, denied
     }
 
+    #if !targetEnvironment(simulator)
     private let encoder = PropertyListEncoder()
     private let decoder = PropertyListDecoder()
+    #endif
+
     private var userDefaults: UserDefaults? {
         UserDefaults(suiteName: AppGroupConstants.suiteName)
     }
 
     private init() {
+        #if !targetEnvironment(simulator)
         loadSelection()
+        #endif
     }
 
     // MARK: - Authorization
 
     func requestAuthorization() async {
+        #if targetEnvironment(simulator)
+        // Auto-approve on simulator for UI development
+        authorizationStatus = .approved
+        isAuthorized = true
+        #else
         do {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
             authorizationStatus = .approved
@@ -36,26 +56,32 @@ class ScreenTimeManager: ObservableObject {
             authorizationStatus = .denied
             isAuthorized = false
         }
+        #endif
     }
 
     // MARK: - Selection Persistence
 
     func saveSelection() {
+        #if !targetEnvironment(simulator)
         guard let defaults = userDefaults else { return }
         let data = try? encoder.encode(activitySelection)
         defaults.set(data, forKey: AppGroupConstants.selectionKey)
+        #endif
     }
 
     func loadSelection() {
+        #if !targetEnvironment(simulator)
         guard let defaults = userDefaults,
               let data = defaults.data(forKey: AppGroupConstants.selectionKey),
               let decoded = try? decoder.decode(FamilyActivitySelection.self, from: data)
         else { return }
         activitySelection = decoded
+        #endif
     }
 
     // MARK: - Filter
 
+    #if !targetEnvironment(simulator)
     var currentFilter: DeviceActivityFilter {
         DeviceActivityFilter(
             segment: .daily(
@@ -67,9 +93,14 @@ class ScreenTimeManager: ObservableObject {
             categories: activitySelection.categoryTokens
         )
     }
+    #endif
 
     var hasSelectedApps: Bool {
-        !activitySelection.applicationTokens.isEmpty ||
-        !activitySelection.categoryTokens.isEmpty
+        #if targetEnvironment(simulator)
+        return mockSelectedAppCount > 0 || mockSelectedCategoryCount > 0
+        #else
+        return !activitySelection.applicationTokens.isEmpty ||
+               !activitySelection.categoryTokens.isEmpty
+        #endif
     }
 }
