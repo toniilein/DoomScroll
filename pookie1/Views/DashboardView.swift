@@ -49,7 +49,7 @@ struct DashboardView: View {
                     .padding(.top)
                 }
             }
-            .navigationTitle("Dashboard")
+            .navigationTitle("Overview")
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
     }

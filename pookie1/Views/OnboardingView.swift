@@ -20,11 +20,11 @@ struct OnboardingView: View {
                     )
 
                 VStack(spacing: 12) {
-                    Text("pookie1")
+                    Text("DoomScroll")
                         .font(.system(size: 42, weight: .black, design: .rounded))
                         .foregroundStyle(BrainRotTheme.accentGradient)
 
-                    Text("track your brainrot")
+                    Text("know your brain health")
                         .font(.title3)
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
@@ -32,7 +32,7 @@ struct OnboardingView: View {
                 Spacer()
 
                 VStack(spacing: 16) {
-                    Text("We need Screen Time access to show you how cooked your screen time really is")
+                    Text("We need Screen Time access to track your doomscrolling and protect your brain health")
                         .font(.body)
                         .foregroundColor(BrainRotTheme.textSecondary)
                         .multilineTextAlignment(.center)

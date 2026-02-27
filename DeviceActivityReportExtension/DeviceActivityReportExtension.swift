@@ -7,5 +7,9 @@ struct DeviceActivityReportExtensionMain: DeviceActivityReportExtension {
         TotalActivityReport { activityReport in
             TotalActivityView(activityReport: activityReport)
         }
+
+        BrainHealthReport { healthData in
+            BrainHealthReportView(healthData: healthData)
+        }
     }
 }

@@ -12,5 +12,6 @@ enum AppGroupConstants {
 #if !targetEnvironment(simulator)
 extension DeviceActivityReport.Context {
     static let totalActivity = Self("Total Activity")
+    static let brainHealth = Self("Brain Health")
 }
 #endif

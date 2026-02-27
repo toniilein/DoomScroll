@@ -28,6 +28,7 @@ class ScreenTimeManager: ObservableObject {
     #if !targetEnvironment(simulator)
     private let encoder = PropertyListEncoder()
     private let decoder = PropertyListDecoder()
+    private let center = DeviceActivityCenter()
     #endif
 
     private var userDefaults: UserDefaults? {
@@ -37,6 +38,7 @@ class ScreenTimeManager: ObservableObject {
     private init() {
         #if !targetEnvironment(simulator)
         loadSelection()
+        checkExistingAuthorization()
         #endif
     }
 
@@ -44,7 +46,6 @@ class ScreenTimeManager: ObservableObject {
 
     func requestAuthorization() async {
         #if targetEnvironment(simulator)
-        // Auto-approve on simulator for UI development
         authorizationStatus = .approved
         isAuthorized = true
         #else
@@ -52,12 +53,54 @@ class ScreenTimeManager: ObservableObject {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
             authorizationStatus = .approved
             isAuthorized = true
+            startMonitoring()
         } catch {
             authorizationStatus = .denied
             isAuthorized = false
         }
         #endif
     }
+
+    #if !targetEnvironment(simulator)
+    private func checkExistingAuthorization() {
+        // Check if we already have authorization from a previous launch
+        switch AuthorizationCenter.shared.authorizationStatus {
+        case .approved:
+            authorizationStatus = .approved
+            isAuthorized = true
+            startMonitoring()
+        case .denied:
+            authorizationStatus = .denied
+            isAuthorized = false
+        case .notDetermined:
+            authorizationStatus = .notDetermined
+            isAuthorized = false
+        @unknown default:
+            break
+        }
+    }
+    #endif
+
+    // MARK: - Activity Monitoring
+
+    #if !targetEnvironment(simulator)
+    func startMonitoring() {
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+
+        do {
+            try center.startMonitoring(
+                .dailyActivity,
+                during: schedule
+            )
+        } catch {
+            print("Failed to start monitoring: \(error)")
+        }
+    }
+    #endif
 
     // MARK: - Selection Persistence
 
@@ -66,6 +109,7 @@ class ScreenTimeManager: ObservableObject {
         guard let defaults = userDefaults else { return }
         let data = try? encoder.encode(activitySelection)
         defaults.set(data, forKey: AppGroupConstants.selectionKey)
+        startMonitoring()
         #endif
     }
 
@@ -82,16 +126,20 @@ class ScreenTimeManager: ObservableObject {
     // MARK: - Filter
 
     #if !targetEnvironment(simulator)
-    var currentFilter: DeviceActivityFilter {
+    func filterForDate(_ date: Date) -> DeviceActivityFilter {
         DeviceActivityFilter(
             segment: .daily(
-                during: Calendar.current.dateInterval(of: .day, for: .now)!
+                during: Calendar.current.dateInterval(of: .day, for: date)!
             ),
             users: .all,
             devices: .init([.iPhone, .iPad]),
             applications: activitySelection.applicationTokens,
             categories: activitySelection.categoryTokens
         )
+    }
+
+    var currentFilter: DeviceActivityFilter {
+        filterForDate(.now)
     }
     #endif
 
@@ -104,3 +152,9 @@ class ScreenTimeManager: ObservableObject {
         #endif
     }
 }
+
+#if !targetEnvironment(simulator)
+extension DeviceActivityName {
+    static let dailyActivity = Self("dailyActivity")
+}
+#endif

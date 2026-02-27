@@ -18,8 +18,11 @@ struct ContentView: View {
 struct MainTabView: View {
     var body: some View {
         TabView {
-            Tab("Dashboard", systemImage: "brain.head.profile") {
+            Tab("Overview", systemImage: "chart.bar.fill") {
                 DashboardView()
+            }
+            Tab("Brain Health", systemImage: "brain.head.profile") {
+                BrainHealthView()
             }
             Tab("Apps", systemImage: "app.badge.checkmark") {
                 AppSelectionView()
