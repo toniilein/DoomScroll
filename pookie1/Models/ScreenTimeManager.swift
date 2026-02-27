@@ -102,6 +102,19 @@ class ScreenTimeManager: ObservableObject {
     }
     #endif
 
+    // MARK: - Firebase Score Sync
+
+    func pushScoreToFirebase(brainRotScore: Int, totalSeconds: TimeInterval) {
+        let formatted = BrainRotCalculator.formatDuration(totalSeconds)
+        Task {
+            await FirebaseManager.shared.updateScore(
+                brainRotScore: brainRotScore,
+                totalScreenTimeSeconds: totalSeconds,
+                formattedTime: formatted
+            )
+        }
+    }
+
     // MARK: - Selection Persistence
 
     func saveSelection() {

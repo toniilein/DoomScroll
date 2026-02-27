@@ -24,6 +24,9 @@ struct MainTabView: View {
             Tab("Brain Health", systemImage: "brain.head.profile") {
                 BrainHealthView()
             }
+            Tab("Social", systemImage: "person.2.fill") {
+                SocialView()
+            }
             Tab("Apps", systemImage: "app.badge.checkmark") {
                 AppSelectionView()
             }
