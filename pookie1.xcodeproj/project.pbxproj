@@ -6,7 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A977FB4D2F518B2F00C07F66 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A977FB172F518A7300C07F67 /* FirebaseAuth */; };
+		A977FB4E2F518B2F00C07F66 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A977FB182F518A7300C07F68 /* FirebaseFirestore */; };
+		A977FB4F2F518B2F00C07F66 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A977FB192F518A7300C07F69 /* FirebaseCore */; };
+		A977FB962F518E1600C07F66 /* DeviceActivityReportExtension.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = A977FB8A2F518E1600C07F66 /* DeviceActivityReportExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		A977FB942F518E1600C07F66 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A9F1A23C2F50443B00846207 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A977FB892F518E1500C07F66;
+			remoteInfo = DeviceActivityReportExtension;
+		};
 		A9F1A2542F50443C00846207 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A9F1A23C2F50443B00846207 /* Project object */;
@@ -23,13 +37,46 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A977FB972F518E1600C07F66 /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				A977FB962F518E1600C07F66 /* DeviceActivityReportExtension.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		A977FB8A2F518E1600C07F66 /* DeviceActivityReportExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = DeviceActivityReportExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9F1A2442F50443B00846207 /* pookie1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pookie1.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9F1A2532F50443C00846207 /* pookie1Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pookie1Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9F1A25D2F50443C00846207 /* pookie1UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pookie1UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A977FB9A2F518E1600C07F66 /* Exceptions for "DeviceActivityReportExtension" folder in "DeviceActivityReportExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A977FB892F518E1500C07F66 /* DeviceActivityReportExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A977FB8B2F518E1600C07F66 /* DeviceActivityReportExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A977FB9A2F518E1600C07F66 /* Exceptions for "DeviceActivityReportExtension" folder in "DeviceActivityReportExtension" target */,
+			);
+			path = DeviceActivityReportExtension;
+			sourceTree = "<group>";
+		};
 		A9F1A2462F50443B00846207 /* pookie1 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = pookie1;
@@ -48,10 +95,20 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A977FB872F518E1500C07F66 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A9F1A2412F50443B00846207 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A977FB4F2F518B2F00C07F66 /* FirebaseCore in Frameworks */,
+				A977FB4E2F518B2F00C07F66 /* FirebaseFirestore in Frameworks */,
+				A977FB4D2F518B2F00C07F66 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +135,7 @@
 				A9F1A2462F50443B00846207 /* pookie1 */,
 				A9F1A2562F50443C00846207 /* pookie1Tests */,
 				A9F1A2602F50443C00846207 /* pookie1UITests */,
+				A977FB8B2F518E1600C07F66 /* DeviceActivityReportExtension */,
 				A9F1A2452F50443B00846207 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +146,7 @@
 				A9F1A2442F50443B00846207 /* pookie1.app */,
 				A9F1A2532F50443C00846207 /* pookie1Tests.xctest */,
 				A9F1A25D2F50443C00846207 /* pookie1UITests.xctest */,
+				A977FB8A2F518E1600C07F66 /* DeviceActivityReportExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,6 +154,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A977FB892F518E1500C07F66 /* DeviceActivityReportExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A977FB9B2F518E1600C07F66 /* Build configuration list for PBXNativeTarget "DeviceActivityReportExtension" */;
+			buildPhases = (
+				A977FB862F518E1500C07F66 /* Sources */,
+				A977FB872F518E1500C07F66 /* Frameworks */,
+				A977FB882F518E1500C07F66 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A977FB8B2F518E1600C07F66 /* DeviceActivityReportExtension */,
+			);
+			name = DeviceActivityReportExtension;
+			packageProductDependencies = (
+			);
+			productName = DeviceActivityReportExtension;
+			productReference = A977FB8A2F518E1600C07F66 /* DeviceActivityReportExtension.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
 		A9F1A2432F50443B00846207 /* pookie1 */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A9F1A2672F50443C00846207 /* Build configuration list for PBXNativeTarget "pookie1" */;
@@ -102,16 +183,21 @@
 				A9F1A2402F50443B00846207 /* Sources */,
 				A9F1A2412F50443B00846207 /* Frameworks */,
 				A9F1A2422F50443B00846207 /* Resources */,
+				A977FB972F518E1600C07F66 /* Embed ExtensionKit Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A977FB952F518E1600C07F66 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A9F1A2462F50443B00846207 /* pookie1 */,
 			);
 			name = pookie1;
 			packageProductDependencies = (
+				A977FB172F518A7300C07F67 /* FirebaseAuth */,
+				A977FB182F518A7300C07F68 /* FirebaseFirestore */,
+				A977FB192F518A7300C07F69 /* FirebaseCore */,
 			);
 			productName = pookie1;
 			productReference = A9F1A2442F50443B00846207 /* pookie1.app */;
@@ -170,9 +256,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2620;
+				LastSwiftUpdateCheck = 2630;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					A977FB892F518E1500C07F66 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 					A9F1A2432F50443B00846207 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -195,6 +284,9 @@
 			);
 			mainGroup = A9F1A23B2F50443B00846207;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A977FB162F518A7300C07F66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A9F1A2452F50443B00846207 /* Products */;
 			projectDirPath = "";
@@ -203,11 +295,19 @@
 				A9F1A2432F50443B00846207 /* pookie1 */,
 				A9F1A2522F50443C00846207 /* pookie1Tests */,
 				A9F1A25C2F50443C00846207 /* pookie1UITests */,
+				A977FB892F518E1500C07F66 /* DeviceActivityReportExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A977FB882F518E1500C07F66 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A9F1A2422F50443B00846207 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -232,6 +332,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A977FB862F518E1500C07F66 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A9F1A2402F50443B00846207 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -256,6 +363,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		A977FB952F518E1600C07F66 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A977FB892F518E1500C07F66 /* DeviceActivityReportExtension */;
+			targetProxy = A977FB942F518E1600C07F66 /* PBXContainerItemProxy */;
+		};
 		A9F1A2552F50443C00846207 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A9F1A2432F50443B00846207 /* pookie1 */;
@@ -269,6 +381,64 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A977FB982F518E1600C07F66 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceActivityReportExtension/DeviceActivityReportExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZFYUAASFP4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceActivityReportExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceActivityReportExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pookie1.pookie1.DeviceActivityReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A977FB992F518E1600C07F66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceActivityReportExtension/DeviceActivityReportExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZFYUAASFP4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceActivityReportExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceActivityReportExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pookie1.pookie1.DeviceActivityReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		A9F1A2652F50443C00846207 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -328,6 +498,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -385,6 +556,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -395,12 +567,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = pookie1/pookie1.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZFYUAASFP4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = DoomScroll;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,12 +602,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = pookie1/pookie1.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZFYUAASFP4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = DoomScroll;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -543,6 +719,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A977FB9B2F518E1600C07F66 /* Build configuration list for PBXNativeTarget "DeviceActivityReportExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A977FB982F518E1600C07F66 /* Debug */,
+				A977FB992F518E1600C07F66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A9F1A23F2F50443B00846207 /* Build configuration list for PBXProject "pookie1" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -580,6 +765,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A977FB162F518A7300C07F66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A977FB172F518A7300C07F67 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A977FB162F518A7300C07F66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		A977FB182F518A7300C07F68 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A977FB162F518A7300C07F66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		A977FB192F518A7300C07F69 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A977FB162F518A7300C07F66 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A9F1A23C2F50443B00846207 /* Project object */;
 }

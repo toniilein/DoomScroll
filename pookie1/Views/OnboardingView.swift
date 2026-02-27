@@ -54,11 +54,23 @@ struct OnboardingView: View {
                     .padding(.horizontal, 32)
 
                     if screenTimeManager.authorizationStatus == .denied {
-                        Text("Authorization denied. Please enable Screen Time access in Settings.")
-                            .font(.caption)
-                            .foregroundColor(BrainRotTheme.neonPink)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
+                        VStack(spacing: 8) {
+                            Text("Authorization denied.")
+                                .font(.caption.bold())
+                                .foregroundColor(BrainRotTheme.neonPink)
+
+                            if let error = screenTimeManager.authError {
+                                Text(error)
+                                    .font(.caption2)
+                                    .foregroundColor(BrainRotTheme.textSecondary)
+                            }
+
+                            Text("Make sure Screen Time is enabled in Settings > Screen Time")
+                                .font(.caption)
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
                     }
                 }
 

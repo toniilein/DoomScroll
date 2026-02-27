@@ -16,11 +16,15 @@ class FirebaseManager: ObservableObject {
     @Published var groups: [SocialGroup] = []
     @Published var isLoading = false
     @Published var needsUsernameSetup = false
+    @Published var firebaseError: String?
 
     #if !targetEnvironment(simulator)
-    private let db = Firestore.firestore()
+    private lazy var db = Firestore.firestore()
     private var friendsListener: ListenerRegistration?
     private var requestsListener: ListenerRegistration?
+    private var firebaseConfigured: Bool {
+        Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil
+    }
     #endif
 
     private init() {
@@ -36,9 +40,14 @@ class FirebaseManager: ObservableObject {
         isSignedIn = true
         #else
         guard !isSignedIn else { return }
+        guard firebaseConfigured else {
+            firebaseError = "Firebase not configured. Add GoogleService-Info.plist to enable social features."
+            return
+        }
         isLoading = true
+        firebaseError = nil
         do {
-            let result = try await Auth.auth().signIn(anonymously: true)
+            let result = try await Auth.auth().signInAnonymously()
             let uid = result.user.uid
             isSignedIn = true
 
@@ -55,6 +64,7 @@ class FirebaseManager: ObservableObject {
             }
         } catch {
             print("Auth error: \(error)")
+            firebaseError = "Sign in failed: \(error.localizedDescription)"
         }
         isLoading = false
         #endif

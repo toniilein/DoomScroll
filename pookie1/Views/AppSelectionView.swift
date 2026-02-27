@@ -12,43 +12,54 @@ struct AppSelectionView: View {
             ZStack {
                 BrainRotTheme.background.ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    VStack(spacing: 8) {
-                        Text("\u{1F4F1} Tracked Apps")
+                if !screenTimeManager.isAuthorized {
+                    VStack(spacing: 16) {
+                        Text("\u{1F4F1}")
+                            .font(.system(size: 60))
+                        Text("Screen Time Required")
                             .font(.title2.bold())
                             .foregroundColor(BrainRotTheme.textPrimary)
-
-                        Text("Select the apps contributing to your brainrot")
-                            .font(.subheadline)
+                        Text("Enable Screen Time on the Overview tab to select apps to track")
+                            .font(.body)
                             .foregroundColor(BrainRotTheme.textSecondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .padding(.top, 20)
+                    .padding(40)
+                } else {
+                    VStack(spacing: 24) {
+                        VStack(spacing: 8) {
+                            Text("\u{1F4F1} Tracked Apps")
+                                .font(.title2.bold())
+                                .foregroundColor(BrainRotTheme.textPrimary)
 
-                    selectionSummaryCard
-
-                    Button {
-                        #if targetEnvironment(simulator)
-                        // Simulate selecting some apps
-                        screenTimeManager.mockSelectedAppCount = 5
-                        screenTimeManager.mockSelectedCategoryCount = 2
-                        #else
-                        isPickerPresented = true
-                        #endif
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus.app")
-                            Text(screenTimeManager.hasSelectedApps ? "Change Apps" : "Select Apps")
+                            Text(screenTimeManager.hasSelectedApps
+                                ? "Tracking selected apps"
+                                : "Tracking all apps \u{2014} select specific ones to filter")
+                                .font(.subheadline)
+                                .foregroundColor(BrainRotTheme.textSecondary)
                         }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(BrainRotTheme.accentGradient)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                    .padding(.horizontal)
+                        .padding(.top, 20)
 
-                    Spacer()
+                        selectionSummaryCard
+
+                        Button {
+                            isPickerPresented = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus.app")
+                                Text(screenTimeManager.hasSelectedApps ? "Change Apps" : "Select Apps")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(BrainRotTheme.accentGradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        .padding(.horizontal)
+
+                        Spacer()
+                    }
                 }
             }
             .navigationTitle("Apps")
@@ -67,18 +78,18 @@ struct AppSelectionView: View {
 
     private var selectionSummaryCard: some View {
         HStack {
-            #if targetEnvironment(simulator)
-            summaryItem(label: "Apps", count: screenTimeManager.mockSelectedAppCount, color: BrainRotTheme.neonGreen)
-            Spacer()
-            summaryItem(label: "Categories", count: screenTimeManager.mockSelectedCategoryCount, color: BrainRotTheme.neonBlue)
-            Spacer()
-            summaryItem(label: "Websites", count: 0, color: BrainRotTheme.neonPurple)
-            #else
+            #if !targetEnvironment(simulator)
             summaryItem(label: "Apps", count: screenTimeManager.activitySelection.applicationTokens.count, color: BrainRotTheme.neonGreen)
             Spacer()
             summaryItem(label: "Categories", count: screenTimeManager.activitySelection.categoryTokens.count, color: BrainRotTheme.neonBlue)
             Spacer()
             summaryItem(label: "Websites", count: screenTimeManager.activitySelection.webDomainTokens.count, color: BrainRotTheme.neonPurple)
+            #else
+            summaryItem(label: "Apps", count: 0, color: BrainRotTheme.neonGreen)
+            Spacer()
+            summaryItem(label: "Categories", count: 0, color: BrainRotTheme.neonBlue)
+            Spacer()
+            summaryItem(label: "Websites", count: 0, color: BrainRotTheme.neonPurple)
             #endif
         }
         .padding()

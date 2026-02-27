@@ -1,85 +1,60 @@
 import SwiftUI
 
 struct TotalActivityView: View {
-    let activityReport: ActivityReportData
+    let activityData: TotalActivityData
 
     var body: some View {
-        VStack(spacing: 24) {
-            BrainRotScoreView(
-                score: activityReport.brainRotScore,
-                totalScreenTime: activityReport.formattedDuration
-            )
-            .padding(.top, 8)
-
-            HStack(spacing: 12) {
-                StatsCardView(
-                    title: "Screen Time",
-                    value: activityReport.formattedDuration,
-                    icon: "clock.fill",
-                    color: BrainRotTheme.neonBlue
+        // ScrollView lives INSIDE the extension so it runs in the same
+        // process as the remote view — host-level ScrollView can't scroll
+        // because the remote UIKit layer intercepts touch events.
+        ScrollView {
+            VStack(spacing: 16) {
+                // 1. Enhanced Score Ring
+                BrainRotScoreView(
+                    score: activityData.brainRotScore,
+                    totalScreenTime: activityData.formattedDuration
                 )
-                StatsCardView(
-                    title: "Apps Used",
-                    value: "\(activityReport.topApps.count)",
-                    icon: "app.fill",
-                    color: BrainRotTheme.neonPurple
+                .padding(.top, 4)
+
+                // 2. Quick Stats Row (Pickups | Avg Session | Frequency)
+                QuickStatsRowView(
+                    pickups: activityData.totalPickups,
+                    avgSessionMinutes: activityData.smartKPIs.avgSessionMinutes,
+                    pickupFrequencyMinutes: activityData.smartKPIs.pickupFrequencyMinutes
                 )
-            }
-            .padding(.horizontal)
+                .padding(.horizontal)
 
-            if !activityReport.topApps.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Top Brainrot Sources")
-                        .font(.headline)
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                        .padding(.horizontal)
-
-                    ForEach(Array(activityReport.topApps.enumerated()), id: \.element.id) { index, app in
-                        appRow(app: app, rank: index + 1)
-                    }
+                // 3. Doom Ratio Bar
+                if activityData.smartKPIs.doomRatioPercent > 0 {
+                    DoomRatioView(
+                        appName: activityData.smartKPIs.doomRatioAppName,
+                        percentage: activityData.smartKPIs.doomRatioPercent
+                    )
+                    .padding(.horizontal)
                 }
+
+                // 4. Achievement Banner (conditional)
+                if !activityData.smartKPIs.achievements.isEmpty {
+                    AchievementBannerView(
+                        achievements: activityData.smartKPIs.achievements
+                    )
+                    .padding(.horizontal)
+                }
+
+                // 5. Brainrot Leaderboard
+                if !activityData.topApps.isEmpty {
+                    AppLeaderboardView(
+                        apps: activityData.topApps,
+                        totalDuration: activityData.totalDuration
+                    )
+                    .padding(.horizontal)
+                }
+
+                // Bottom padding for tab bar clearance
+                Spacer().frame(height: 40)
             }
+            .padding(.vertical, 8)
         }
-        .padding(.vertical)
         .background(BrainRotTheme.background)
-    }
-
-    private func appRow(app: AppUsageData, rank: Int) -> some View {
-        HStack(spacing: 12) {
-            Text("\(rank)")
-                .font(.caption.bold())
-                .foregroundColor(BrainRotTheme.textSecondary)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(app.displayName)
-                    .font(.body.bold())
-                    .foregroundColor(BrainRotTheme.textPrimary)
-                    .lineLimit(1)
-
-                Text("\(app.numberOfPickups) pickups")
-                    .font(.caption)
-                    .foregroundColor(BrainRotTheme.textSecondary)
-            }
-
-            Spacer()
-
-            Text(app.formattedDuration)
-                .font(.body.bold())
-                .foregroundColor(appDurationColor(app.duration))
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(BrainRotTheme.cardBackground.opacity(0.5))
-    }
-
-    private func appDurationColor(_ duration: TimeInterval) -> Color {
-        let minutes = duration / 60.0
-        switch minutes {
-        case ..<15: return BrainRotTheme.neonGreen
-        case 15..<45: return BrainRotTheme.neonBlue
-        case 45..<90: return BrainRotTheme.neonPurple
-        default: return BrainRotTheme.neonPink
-        }
     }
 }

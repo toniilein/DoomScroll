@@ -30,6 +30,9 @@ struct MainTabView: View {
             Tab("Apps", systemImage: "app.badge.checkmark") {
                 AppSelectionView()
             }
+            Tab("Settings", systemImage: "gearshape.fill") {
+                SettingsView()
+            }
         }
         .tint(BrainRotTheme.neonPink)
     }

@@ -1,4 +1,6 @@
 import DeviceActivity
+import ExtensionKit
+import ManagedSettings
 import SwiftUI
 
 struct BrainHealthData {
@@ -8,6 +10,8 @@ struct BrainHealthData {
     let totalPickups: Int
     let longestSessionMinutes: Int
     let topApps: [AppUsageData]
+    let smartKPIs: SmartKPIs
+    let weeklyTrend: WeeklyTrendData
 }
 
 struct BrainHealthReport: DeviceActivityReportScene {
@@ -17,54 +21,158 @@ struct BrainHealthReport: DeviceActivityReportScene {
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> BrainHealthData {
-        var totalDuration: TimeInterval = 0
-        var totalPickups = 0
-        var longestSession: TimeInterval = 0
-        var appUsages: [AppUsageData] = []
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: .now)
+
+        // --- Collect all segments, grouped by day ---
+        var todayDuration: TimeInterval = 0
+        var todayPickups = 0
+        var todayLongestSession: TimeInterval = 0
+        var todayAppUsages: [AppUsageData] = []
+
+        // For weekly trend
+        var dayDurations: [Date: TimeInterval] = [:]
+        let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+        // Pre-fill last 7 days with 0
+        for i in 0..<7 {
+            if let date = calendar.date(byAdding: .day, value: -6 + i, to: todayStart) {
+                dayDurations[calendar.startOfDay(for: date)] = 0
+            }
+        }
 
         for await dataItem in data {
             for await segment in dataItem.activitySegments {
-                totalDuration += segment.totalActivityDuration
+                let segmentDate = calendar.startOfDay(for: segment.dateInterval.start)
+                let segmentDuration = segment.totalActivityDuration
 
-                for await categoryActivity in segment.categories {
-                    for await appActivity in categoryActivity.applications {
-                        let appName = appActivity.application.localizedDisplayName ?? "Unknown App"
-                        let appDuration = appActivity.totalActivityDuration
-                        let pickups = appActivity.numberOfPickups
-                        totalPickups += pickups
+                // Weekly trend accumulation
+                let existing = dayDurations[segmentDate] ?? 0
+                dayDurations[segmentDate] = existing + segmentDuration
 
-                        if appDuration > longestSession {
-                            longestSession = appDuration
-                        }
+                // Today-only: drill into apps for brain health KPIs
+                let isToday = calendar.isDate(segmentDate, inSameDayAs: todayStart)
+                if isToday {
+                    todayDuration += segmentDuration
 
-                        if appDuration > 0 {
-                            appUsages.append(AppUsageData(
-                                displayName: appName,
-                                duration: appDuration,
-                                formattedDuration: BrainRotCalculator.formatDuration(appDuration),
-                                numberOfPickups: pickups
-                            ))
+                    for await categoryActivity in segment.categories {
+                        for await appActivity in categoryActivity.applications {
+                            let appName = appActivity.application.localizedDisplayName ?? "Unknown App"
+                            let appDuration = appActivity.totalActivityDuration
+                            let pickups = appActivity.numberOfPickups
+                            todayPickups += pickups
+
+                            if appDuration > todayLongestSession {
+                                todayLongestSession = appDuration
+                            }
+
+                            if appDuration > 0 {
+                                todayAppUsages.append(AppUsageData(
+                                    displayName: appName,
+                                    duration: appDuration,
+                                    formattedDuration: BrainRotCalculator.formatDuration(appDuration),
+                                    numberOfPickups: pickups
+                                ))
+                            }
                         }
                     }
                 }
             }
         }
 
-        appUsages.sort { $0.duration > $1.duration }
-        let topApps = Array(appUsages.prefix(5))
+        // --- Today's brain health stats ---
+        todayAppUsages.sort { $0.duration > $1.duration }
+        let topApps = Array(todayAppUsages.prefix(10))
 
-        let totalMinutes = totalDuration / 60.0
+        let totalMinutes = todayDuration / 60.0
         let score = BrainRotCalculator.score(totalMinutes: totalMinutes)
-        let formatted = BrainRotCalculator.formatDuration(totalDuration)
-        let longestMins = Int(longestSession / 60.0)
+        let formatted = BrainRotCalculator.formatDuration(todayDuration)
+        let longestMins = Int(todayLongestSession / 60.0)
+
+        let smartKPIs = BrainRotCalculator.computeSmartKPIs(
+            totalDuration: todayDuration,
+            totalPickups: todayPickups,
+            topApps: topApps,
+            brainRotScore: score
+        )
+
+        // --- Weekly trend ---
+        var dailyScores: [DailyScore] = []
+        var weeklyTotal: TimeInterval = 0
+        for i in 0..<7 {
+            if let date = calendar.date(byAdding: .day, value: -6 + i, to: todayStart) {
+                let startOfDate = calendar.startOfDay(for: date)
+                let duration = dayDurations[startOfDate] ?? 0
+                weeklyTotal += duration
+                let dayMinutes = duration / 60.0
+                let dayScore = BrainRotCalculator.score(totalMinutes: dayMinutes)
+                let weekday = calendar.component(.weekday, from: date)
+                let labelIndex = weekday == 1 ? 6 : weekday - 2
+                let label = dayLabels[labelIndex]
+
+                dailyScores.append(DailyScore(
+                    dayLabel: label,
+                    score: dayScore,
+                    duration: duration,
+                    formattedDuration: BrainRotCalculator.formatDuration(duration),
+                    isToday: calendar.isDateInToday(date)
+                ))
+            }
+        }
+
+        let totalScoreSum = dailyScores.reduce(0) { $0 + $1.score }
+        let avgScore = dailyScores.isEmpty ? 0 : totalScoreSum / dailyScores.count
+
+        let firstHalf = dailyScores.prefix(3).map(\.score)
+        let secondHalf = dailyScores.suffix(3).map(\.score)
+        let firstAvg = firstHalf.isEmpty ? 0 : firstHalf.reduce(0, +) / firstHalf.count
+        let secondAvg = secondHalf.isEmpty ? 0 : secondHalf.reduce(0, +) / secondHalf.count
+
+        let trend: TrendDirection
+        if secondAvg < firstAvg - 5 {
+            trend = .improving
+        } else if secondAvg > firstAvg + 5 {
+            trend = .worsening
+        } else {
+            trend = .stable
+        }
+
+        var streakDays = 0
+        for day in dailyScores.reversed() {
+            if day.score < 50 { streakDays += 1 } else { break }
+        }
+
+        var bestIdx: Int? = nil
+        var worstIdx: Int? = nil
+        if !dailyScores.isEmpty {
+            var bestScore = Int.max
+            var worstScore = Int.min
+            for (i, day) in dailyScores.enumerated() {
+                if day.score < bestScore { bestScore = day.score; bestIdx = i }
+                if day.score > worstScore { worstScore = day.score; worstIdx = i }
+            }
+        }
+
+        let weeklyTrend = WeeklyTrendData(
+            dailyScores: dailyScores,
+            averageScore: avgScore,
+            trend: trend,
+            streakDays: streakDays,
+            weeklyTotal: weeklyTotal,
+            formattedWeeklyTotal: BrainRotCalculator.formatDuration(weeklyTotal),
+            bestDayIndex: bestIdx,
+            worstDayIndex: worstIdx
+        )
 
         return BrainHealthData(
-            totalDuration: totalDuration,
+            totalDuration: todayDuration,
             brainRotScore: score,
             formattedDuration: formatted,
-            totalPickups: totalPickups,
+            totalPickups: todayPickups,
             longestSessionMinutes: longestMins,
-            topApps: topApps
+            topApps: topApps,
+            smartKPIs: smartKPIs,
+            weeklyTrend: weeklyTrend
         )
     }
 }

@@ -10,7 +10,11 @@ struct pookie1App: App {
 
     init() {
         #if !targetEnvironment(simulator)
-        FirebaseApp.configure()
+        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
+            FirebaseApp.configure()
+        } else {
+            print("⚠️ GoogleService-Info.plist not found — Firebase disabled. Download it from https://console.firebase.google.com/")
+        }
         #endif
     }
 

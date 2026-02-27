@@ -1,29 +1,26 @@
 import DeviceActivity
+import ExtensionKit
+import ManagedSettings
 import SwiftUI
 
-struct ActivityReportData {
+struct TotalActivityData {
     let totalDuration: TimeInterval
+    let formattedDuration: String
     let brainRotScore: Int
-    let formattedDuration: String
+    let totalPickups: Int
     let topApps: [AppUsageData]
-}
-
-struct AppUsageData: Identifiable {
-    let id = UUID()
-    let displayName: String
-    let duration: TimeInterval
-    let formattedDuration: String
-    let numberOfPickups: Int
+    let smartKPIs: SmartKPIs
 }
 
 struct TotalActivityReport: DeviceActivityReportScene {
     let context: DeviceActivityReport.Context = .totalActivity
-    let content: (ActivityReportData) -> TotalActivityView
+    let content: (TotalActivityData) -> TotalActivityView
 
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
-    ) async -> ActivityReportData {
+    ) async -> TotalActivityData {
         var totalDuration: TimeInterval = 0
+        var totalPickups = 0
         var appUsages: [AppUsageData] = []
 
         for await dataItem in data {
@@ -32,9 +29,10 @@ struct TotalActivityReport: DeviceActivityReportScene {
 
                 for await categoryActivity in segment.categories {
                     for await appActivity in categoryActivity.applications {
-                        let appName = appActivity.application.localizedDisplayName ?? "Unknown App"
+                        let appName = appActivity.application.localizedDisplayName ?? "Unknown"
                         let appDuration = appActivity.totalActivityDuration
                         let pickups = appActivity.numberOfPickups
+                        totalPickups += pickups
 
                         if appDuration > 0 {
                             appUsages.append(AppUsageData(
@@ -51,16 +49,23 @@ struct TotalActivityReport: DeviceActivityReportScene {
 
         appUsages.sort { $0.duration > $1.duration }
         let topApps = Array(appUsages.prefix(10))
-
-        let totalMinutes = totalDuration / 60.0
-        let score = BrainRotCalculator.score(totalMinutes: totalMinutes)
+        let score = BrainRotCalculator.score(totalMinutes: totalDuration / 60.0)
         let formatted = BrainRotCalculator.formatDuration(totalDuration)
 
-        return ActivityReportData(
+        let smartKPIs = BrainRotCalculator.computeSmartKPIs(
             totalDuration: totalDuration,
-            brainRotScore: score,
+            totalPickups: totalPickups,
+            topApps: topApps,
+            brainRotScore: score
+        )
+
+        return TotalActivityData(
+            totalDuration: totalDuration,
             formattedDuration: formatted,
-            topApps: topApps
+            brainRotScore: score,
+            totalPickups: totalPickups,
+            topApps: topApps,
+            smartKPIs: smartKPIs
         )
     }
 }

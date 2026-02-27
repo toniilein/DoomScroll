@@ -82,6 +82,14 @@ struct SocialView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             .padding(.horizontal, 32)
+
+            if let error = firebaseManager.firebaseError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(BrainRotTheme.neonPink)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
         }
         .padding()
     }

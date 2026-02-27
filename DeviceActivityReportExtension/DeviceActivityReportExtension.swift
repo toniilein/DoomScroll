@@ -1,15 +1,19 @@
 import DeviceActivity
+import ExtensionKit
+import ManagedSettings
 import SwiftUI
 
 @main
-struct DeviceActivityReportExtensionMain: DeviceActivityReportExtension {
+struct DoomScrollReportExtension: DeviceActivityReportExtension {
     var body: some DeviceActivityReportScene {
-        TotalActivityReport { activityReport in
-            TotalActivityView(activityReport: activityReport)
+        TotalActivityReport { totalActivity in
+            TotalActivityView(activityData: totalActivity)
         }
-
         BrainHealthReport { healthData in
             BrainHealthReportView(healthData: healthData)
+        }
+        WeeklyTrendReport { trendData in
+            WeeklyTrendView(trendData: trendData)
         }
     }
 }
