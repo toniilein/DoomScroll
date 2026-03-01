@@ -6,6 +6,11 @@ import DeviceActivity
 
 struct BrainHealthView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
+    @State private var selectedDayOffset = 0
+
+    private var selectedDate: Date {
+        Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now))!
+    }
 
     var body: some View {
         NavigationStack {
@@ -18,18 +23,87 @@ struct BrainHealthView: View {
                             .padding(.top)
                     }
                 } else {
-                    #if !targetEnvironment(simulator)
-                    // Single report fills the whole screen. Weekly trend is now
-                    // merged into the brain health report, so there's only ONE
-                    // remote view. Its internal ScrollView handles scrolling.
-                    DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    #endif
+                    VStack(spacing: 0) {
+                        daySelector
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+
+                        #if !targetEnvironment(simulator)
+                        DeviceActivityReport(.brainHealth, filter: screenTimeManager.filterForDate(selectedDate))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        #endif
+                    }
                 }
             }
             .navigationTitle("Brain Health")
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
+    }
+
+    // MARK: - Day Selector
+
+    private var daySelector: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(-29...0, id: \.self) { offset in
+                        let date = Calendar.current.date(byAdding: .day, value: offset, to: Calendar.current.startOfDay(for: .now))!
+                        let isSelected = offset == selectedDayOffset
+                        let isToday = offset == 0
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedDayOffset = offset
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                Text(dayLabel(for: date))
+                                    .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                                    .foregroundColor(isSelected ? .white : BrainRotTheme.textSecondary)
+
+                                Text(dayNumber(for: date))
+                                    .font(.system(size: 15, weight: isSelected ? .black : .medium, design: .rounded))
+                                    .foregroundColor(isSelected ? .white : BrainRotTheme.textPrimary)
+
+                                if isToday {
+                                    Circle()
+                                        .fill(isSelected ? Color.white : BrainRotTheme.neonPink)
+                                        .frame(width: 4, height: 4)
+                                } else {
+                                    Circle()
+                                        .fill(Color.clear)
+                                        .frame(width: 4, height: 4)
+                                }
+                            }
+                            .frame(width: 44)
+                            .padding(.vertical, 8)
+                            .background(
+                                isSelected
+                                    ? AnyShapeStyle(BrainRotTheme.accentGradient)
+                                    : AnyShapeStyle(BrainRotTheme.cardBackground)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .id(offset)
+                    }
+                }
+            }
+            .onAppear {
+                proxy.scrollTo(selectedDayOffset, anchor: .trailing)
+            }
+        }
+    }
+
+    private func dayLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return String(formatter.string(from: date).prefix(3))
+    }
+
+    private func dayNumber(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
     }
 
     private var notAuthorizedState: some View {

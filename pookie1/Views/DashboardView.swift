@@ -47,45 +47,53 @@ struct DashboardView: View {
     // MARK: - Week Day Selector
 
     private var weekDaySelector: some View {
-        HStack(spacing: 4) {
-            ForEach(-6...0, id: \.self) { offset in
-                let date = Calendar.current.date(byAdding: .day, value: offset, to: Calendar.current.startOfDay(for: .now))!
-                let isSelected = offset == selectedDayOffset
-                let isToday = offset == 0
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(-29...0, id: \.self) { offset in
+                        let date = Calendar.current.date(byAdding: .day, value: offset, to: Calendar.current.startOfDay(for: .now))!
+                        let isSelected = offset == selectedDayOffset
+                        let isToday = offset == 0
 
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedDayOffset = offset
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        Text(dayLabel(for: date))
-                            .font(.system(size: 11, weight: isSelected ? .bold : .regular))
-                            .foregroundColor(isSelected ? .white : BrainRotTheme.textSecondary)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedDayOffset = offset
+                            }
+                        } label: {
+                            VStack(spacing: 4) {
+                                Text(dayLabel(for: date))
+                                    .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                                    .foregroundColor(isSelected ? .white : BrainRotTheme.textSecondary)
 
-                        Text(dayNumber(for: date))
-                            .font(.system(size: 15, weight: isSelected ? .black : .medium, design: .rounded))
-                            .foregroundColor(isSelected ? .white : BrainRotTheme.textPrimary)
+                                Text(dayNumber(for: date))
+                                    .font(.system(size: 15, weight: isSelected ? .black : .medium, design: .rounded))
+                                    .foregroundColor(isSelected ? .white : BrainRotTheme.textPrimary)
 
-                        if isToday {
-                            Circle()
-                                .fill(isSelected ? Color.white : BrainRotTheme.neonPink)
-                                .frame(width: 4, height: 4)
-                        } else {
-                            Circle()
-                                .fill(Color.clear)
-                                .frame(width: 4, height: 4)
+                                if isToday {
+                                    Circle()
+                                        .fill(isSelected ? Color.white : BrainRotTheme.neonPink)
+                                        .frame(width: 4, height: 4)
+                                } else {
+                                    Circle()
+                                        .fill(Color.clear)
+                                        .frame(width: 4, height: 4)
+                                }
+                            }
+                            .frame(width: 44)
+                            .padding(.vertical, 8)
+                            .background(
+                                isSelected
+                                    ? AnyShapeStyle(BrainRotTheme.accentGradient)
+                                    : AnyShapeStyle(BrainRotTheme.cardBackground)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
+                        .id(offset)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(
-                        isSelected
-                            ? AnyShapeStyle(BrainRotTheme.accentGradient)
-                            : AnyShapeStyle(BrainRotTheme.cardBackground)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+            }
+            .onAppear {
+                proxy.scrollTo(selectedDayOffset, anchor: .trailing)
             }
         }
     }
