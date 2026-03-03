@@ -24,7 +24,7 @@ struct DailyChallengeView: View {
 
                 Text(BrainRotCalculator.dailyChallenge(for: score, pickups: pickups))
                     .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(BrainRotTheme.textPrimary)
             }
 
             Spacer()

@@ -10,6 +10,7 @@ struct BrainHealthData {
     let totalPickups: Int
     let longestSessionMinutes: Int
     let topApps: [AppUsageData]
+    let allApps: [AppUsageData]
     let smartKPIs: SmartKPIs
     let weeklyTrend: WeeklyTrendData
 }
@@ -164,6 +165,18 @@ struct BrainHealthReport: DeviceActivityReportScene {
             worstDayIndex: worstIdx
         )
 
+        // Write challenge data to shared UserDefaults so the host Challenges tab can read it
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        shared?.set(score, forKey: "lastBrainRotScore")
+        shared?.set(todayPickups, forKey: "lastPickups")
+        shared?.set(totalMinutes, forKey: "lastScreenTimeMinutes")
+        shared?.set(streakDays, forKey: "streakDays")
+        shared?.set(Date(), forKey: "lastChallengeDataUpdate")
+
+        // Write unlocked achievement IDs
+        let achievementIDs = smartKPIs.achievements.map { $0.id }
+        shared?.set(achievementIDs, forKey: "unlockedAchievements")
+
         return BrainHealthData(
             totalDuration: todayDuration,
             brainRotScore: score,
@@ -171,6 +184,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
             totalPickups: todayPickups,
             longestSessionMinutes: longestMins,
             topApps: topApps,
+            allApps: todayAppUsages,
             smartKPIs: smartKPIs,
             weeklyTrend: weeklyTrend
         )

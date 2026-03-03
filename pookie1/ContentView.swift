@@ -11,26 +11,25 @@ struct ContentView: View {
                 OnboardingView()
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 }
 
 struct MainTabView: View {
+    @State private var selectedTab = "Overview"
+
     var body: some View {
-        TabView {
-            Tab("Overview", systemImage: "chart.bar.fill") {
-                DashboardView()
+        TabView(selection: $selectedTab) {
+            Tab("Challenges", systemImage: "flag.checkered", value: "Challenges") {
+                ChallengesView()
             }
-            Tab("Brain Health", systemImage: "brain.head.profile") {
+            Tab("Overview", systemImage: "chart.bar.fill", value: "BrainHealth") {
                 BrainHealthView()
             }
-            Tab("Social", systemImage: "person.2.fill") {
-                SocialView()
+            Tab("Brain Health", systemImage: "brain.head.profile", value: "Overview") {
+                DashboardView()
             }
-            Tab("Apps", systemImage: "app.badge.checkmark") {
-                AppSelectionView()
-            }
-            Tab("Settings", systemImage: "gearshape.fill") {
+            Tab("Settings", systemImage: "gearshape.fill", value: "Settings") {
                 SettingsView()
             }
         }

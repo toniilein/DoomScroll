@@ -3,23 +3,21 @@ import ExtensionKit
 import ManagedSettings
 import SwiftUI
 
-struct TotalActivityData {
-    let totalDuration: TimeInterval
-    let formattedDuration: String
-    let brainRotScore: Int
-    let totalPickups: Int
-    let topApps: [AppUsageData]
+struct AppAnalyticsData {
     let allApps: [AppUsageData]
-    let smartKPIs: SmartKPIs
+    let totalDuration: TimeInterval
+    let formattedTotalDuration: String
+    let totalPickups: Int
+    let appCount: Int
 }
 
-struct TotalActivityReport: DeviceActivityReportScene {
-    let context: DeviceActivityReport.Context = .totalActivity
-    let content: (TotalActivityData) -> TotalActivityView
+struct AppAnalyticsReport: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .appAnalytics
+    let content: (AppAnalyticsData) -> AppAnalyticsView
 
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
-    ) async -> TotalActivityData {
+    ) async -> AppAnalyticsData {
         var totalDuration: TimeInterval = 0
         var totalPickups = 0
         var appUsages: [AppUsageData] = []
@@ -48,26 +46,16 @@ struct TotalActivityReport: DeviceActivityReportScene {
             }
         }
 
+        // Sort by duration descending — keep ALL apps
         appUsages.sort { $0.duration > $1.duration }
-        let topApps = Array(appUsages.prefix(10))
-        let score = BrainRotCalculator.score(totalMinutes: totalDuration / 60.0)
         let formatted = BrainRotCalculator.formatDuration(totalDuration)
 
-        let smartKPIs = BrainRotCalculator.computeSmartKPIs(
-            totalDuration: totalDuration,
-            totalPickups: totalPickups,
-            topApps: topApps,
-            brainRotScore: score
-        )
-
-        return TotalActivityData(
-            totalDuration: totalDuration,
-            formattedDuration: formatted,
-            brainRotScore: score,
-            totalPickups: totalPickups,
-            topApps: topApps,
+        return AppAnalyticsData(
             allApps: appUsages,
-            smartKPIs: smartKPIs
+            totalDuration: totalDuration,
+            formattedTotalDuration: formatted,
+            totalPickups: totalPickups,
+            appCount: appUsages.count
         )
     }
 }

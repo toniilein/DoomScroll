@@ -63,7 +63,6 @@ struct AppSelectionView: View {
                 }
             }
             .navigationTitle("Apps")
-            .toolbarColorScheme(.dark, for: .navigationBar)
             #if !targetEnvironment(simulator)
             .familyActivityPicker(
                 isPresented: $isPickerPresented,
