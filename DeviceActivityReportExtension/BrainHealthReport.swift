@@ -26,10 +26,13 @@ struct BrainHealthReport: DeviceActivityReportScene {
         let todayStart = calendar.startOfDay(for: .now)
 
         // --- Collect all segments, grouped by day ---
-        var todayDuration: TimeInterval = 0
-        var todayPickups = 0
-        var todayLongestSession: TimeInterval = 0
-        var todayAppUsages: [AppUsageData] = []
+        var weeklyDuration: TimeInterval = 0
+        var weeklyPickups = 0
+        var longestSession: TimeInterval = 0
+
+        // Accumulate per-app data across all days (weekly aggregation)
+        var appDurations: [String: TimeInterval] = [:]
+        var appPickups: [String: Int] = [:]
 
         // For weekly trend
         var dayDurations: [Date: TimeInterval] = [:]
@@ -51,48 +54,49 @@ struct BrainHealthReport: DeviceActivityReportScene {
                 let existing = dayDurations[segmentDate] ?? 0
                 dayDurations[segmentDate] = existing + segmentDuration
 
-                // Today-only: drill into apps for brain health KPIs
-                let isToday = calendar.isDate(segmentDate, inSameDayAs: todayStart)
-                if isToday {
-                    todayDuration += segmentDuration
+                // Aggregate all days for weekly KPIs
+                weeklyDuration += segmentDuration
 
-                    for await categoryActivity in segment.categories {
-                        for await appActivity in categoryActivity.applications {
-                            let appName = appActivity.application.localizedDisplayName ?? "Unknown App"
-                            let appDuration = appActivity.totalActivityDuration
-                            let pickups = appActivity.numberOfPickups
-                            todayPickups += pickups
+                for await categoryActivity in segment.categories {
+                    for await appActivity in categoryActivity.applications {
+                        let appName = appActivity.application.localizedDisplayName ?? "Unknown App"
+                        let appDuration = appActivity.totalActivityDuration
+                        let pickups = appActivity.numberOfPickups
+                        weeklyPickups += pickups
 
-                            if appDuration > todayLongestSession {
-                                todayLongestSession = appDuration
-                            }
+                        if appDuration > longestSession {
+                            longestSession = appDuration
+                        }
 
-                            if appDuration > 0 {
-                                todayAppUsages.append(AppUsageData(
-                                    displayName: appName,
-                                    duration: appDuration,
-                                    formattedDuration: BrainRotCalculator.formatDuration(appDuration),
-                                    numberOfPickups: pickups
-                                ))
-                            }
+                        if appDuration > 0 {
+                            appDurations[appName, default: 0] += appDuration
+                            appPickups[appName, default: 0] += pickups
                         }
                     }
                 }
             }
         }
 
-        // --- Today's brain health stats ---
-        todayAppUsages.sort { $0.duration > $1.duration }
-        let topApps = Array(todayAppUsages.prefix(10))
+        // --- Weekly brain health stats ---
+        var weeklyAppUsages: [AppUsageData] = appDurations.map { name, duration in
+            AppUsageData(
+                displayName: name,
+                duration: duration,
+                formattedDuration: BrainRotCalculator.formatDuration(duration),
+                numberOfPickups: appPickups[name] ?? 0
+            )
+        }
+        weeklyAppUsages.sort { $0.duration > $1.duration }
+        let topApps = Array(weeklyAppUsages.prefix(10))
 
-        let totalMinutes = todayDuration / 60.0
+        let totalMinutes = weeklyDuration / 60.0
         let score = BrainRotCalculator.score(totalMinutes: totalMinutes)
-        let formatted = BrainRotCalculator.formatDuration(todayDuration)
-        let longestMins = Int(todayLongestSession / 60.0)
+        let formatted = BrainRotCalculator.formatDuration(weeklyDuration)
+        let longestMins = Int(longestSession / 60.0)
 
         let smartKPIs = BrainRotCalculator.computeSmartKPIs(
-            totalDuration: todayDuration,
-            totalPickups: todayPickups,
+            totalDuration: weeklyDuration,
+            totalPickups: weeklyPickups,
             topApps: topApps,
             brainRotScore: score
         )
@@ -168,7 +172,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
         // Write challenge data to shared UserDefaults so the host Challenges tab can read it
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         shared?.set(score, forKey: "lastBrainRotScore")
-        shared?.set(todayPickups, forKey: "lastPickups")
+        shared?.set(weeklyPickups, forKey: "lastPickups")
         shared?.set(totalMinutes, forKey: "lastScreenTimeMinutes")
         shared?.set(streakDays, forKey: "streakDays")
         shared?.set(Date(), forKey: "lastChallengeDataUpdate")
@@ -178,13 +182,13 @@ struct BrainHealthReport: DeviceActivityReportScene {
         shared?.set(achievementIDs, forKey: "unlockedAchievements")
 
         return BrainHealthData(
-            totalDuration: todayDuration,
+            totalDuration: weeklyDuration,
             brainRotScore: score,
             formattedDuration: formatted,
-            totalPickups: todayPickups,
+            totalPickups: weeklyPickups,
             longestSessionMinutes: longestMins,
             topApps: topApps,
-            allApps: todayAppUsages,
+            allApps: weeklyAppUsages,
             smartKPIs: smartKPIs,
             weeklyTrend: weeklyTrend
         )

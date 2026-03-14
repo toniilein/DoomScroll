@@ -23,16 +23,12 @@ struct DashboardView: View {
                             .padding(.top)
                     }
                 } else {
-                    // NO host ScrollView — the extension's internal ScrollView
-                    // handles scrolling (remote views intercept host gestures).
                     VStack(spacing: 0) {
-                        // Week day selector (interactive, lives in host process)
                         weekDaySelector
                             .padding(.horizontal)
                             .padding(.vertical, 8)
 
                         #if !targetEnvironment(simulator)
-                        // Report fills remaining space; its internal ScrollView scrolls
                         DeviceActivityReport(.totalActivity, filter: screenTimeManager.filterForDate(selectedDate))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         #endif

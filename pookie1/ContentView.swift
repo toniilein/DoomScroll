@@ -23,10 +23,10 @@ struct MainTabView: View {
             Tab("Challenges", systemImage: "flag.checkered", value: "Challenges") {
                 ChallengesView()
             }
-            Tab("Overview", systemImage: "chart.bar.fill", value: "BrainHealth") {
+            Tab("Brain Health", systemImage: "chart.bar.fill", value: "BrainHealth") {
                 BrainHealthView()
             }
-            Tab("Brain Health", systemImage: "brain.head.profile", value: "Overview") {
+            Tab("Overview", systemImage: "brain.head.profile", value: "Overview") {
                 DashboardView()
             }
             Tab("Settings", systemImage: "gearshape.fill", value: "Settings") {
