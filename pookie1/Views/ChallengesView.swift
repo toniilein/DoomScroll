@@ -6,7 +6,6 @@ struct ChallengesView: View {
     @State private var screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
     @State private var streakDays = SharedSettings.streakDays
     @State private var bestStreak = SharedSettings.bestStreak
-    @State private var unlockedIDs = SharedSettings.unlockedAchievements
     @State private var streakHistory = SharedSettings.streakHistory
 
     @State private var fireScale: CGFloat = 1.0
@@ -22,10 +21,7 @@ struct ChallengesView: View {
                     VStack(spacing: 16) {
                         streakHeroCard
                         streakCalendar
-                        nextMilestoneCard
                         dailyChallengesCard
-                        weeklyGoalsCard
-                        achievementGalleryCard
                     }
                     .padding(.horizontal)
                     .padding(.top, 4)
@@ -46,7 +42,6 @@ struct ChallengesView: View {
         screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
         streakDays = SharedSettings.streakDays
         bestStreak = SharedSettings.bestStreak
-        unlockedIDs = SharedSettings.unlockedAchievements
         streakHistory = SharedSettings.streakHistory
         SharedSettings.recordStreakDay()
     }
@@ -283,68 +278,6 @@ struct ChallengesView: View {
         )
     }
 
-    // MARK: - Milestones (compact — only next 3)
-
-    private var nextMilestoneCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(icon: "star.fill", title: "Milestones", color: BrainRotTheme.neonOrange)
-
-            // Show last completed + next 2 upcoming
-            let completed = streakMilestones.filter { streakDays >= $0.0 }
-            let upcoming = streakMilestones.filter { streakDays < $0.0 }
-            let visible: [(Int, String, String)] =
-                (completed.isEmpty ? [] : [completed.last!]) + Array(upcoming.prefix(2))
-
-            ForEach(visible, id: \.0) { target, emoji, name in
-                let reached = streakDays >= target
-                let isNext = !reached && (upcoming.first?.0 == target)
-                let progress = reached ? 1.0 : Double(streakDays) / Double(target)
-
-                HStack(spacing: 12) {
-                    Text(emoji)
-                        .font(.system(size: 22))
-                        .opacity(reached ? 1.0 : 0.4)
-                        .grayscale(reached ? 0 : 0.8)
-                        .frame(width: 30)
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack {
-                            Text(name)
-                                .font(.system(size: 13, weight: reached ? .black : .bold, design: .rounded))
-                                .foregroundColor(reached ? streakTier.color : BrainRotTheme.textPrimary)
-                            Spacer()
-                            if reached {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(BrainRotTheme.neonGreen)
-                                    .font(.system(size: 13))
-                            } else {
-                                Text("\(target - streakDays)d left")
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                                    .foregroundColor(isNext ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
-                            }
-                        }
-
-                        if !reached {
-                            progressBar(
-                                value: progress,
-                                color: isNext ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary.opacity(0.3),
-                                height: 4
-                            )
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-        }
-        .padding(16)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
-        )
-    }
-
     // MARK: - Daily Challenges
 
     private var dailyChallengesCard: some View {
@@ -430,50 +363,6 @@ struct ChallengesView: View {
         return challenges
     }
 
-    // MARK: - Weekly Goals
-
-    private var weeklyGoalsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(icon: "calendar", title: "Weekly Goals", color: BrainRotTheme.neonBlue)
-
-            weeklyGoalRow(emoji: "\u{1F525}", title: "7-Day Streak", current: streakDays, target: 7)
-            Divider().foregroundColor(BrainRotTheme.cardBorder)
-            weeklyGoalRow(emoji: "\u{1F9D8}", title: "Digital Detox", current: min(3, streakDays), target: 3)
-            Divider().foregroundColor(BrainRotTheme.cardBorder)
-            weeklyGoalRow(emoji: "\u{1F4AA}", title: "Consistency King", current: min(7, max(1, streakDays)), target: 7)
-        }
-        .padding(16)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
-        )
-    }
-
-    private func weeklyGoalRow(emoji: String, title: String, current: Int, target: Int) -> some View {
-        let progress = Double(min(current, target)) / Double(target)
-        let isComplete = current >= target
-
-        return HStack(spacing: 12) {
-            Text(emoji).font(.system(size: 24))
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack {
-                    Text(title)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                    Spacer()
-                    Text("\(min(current, target))/\(target)")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(isComplete ? BrainRotTheme.neonGreen : BrainRotTheme.neonBlue)
-                }
-                progressBar(value: progress, color: isComplete ? BrainRotTheme.neonGreen : BrainRotTheme.neonBlue)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-
     /// Reusable progress bar without GeometryReader to avoid layout overlap issues
     private func progressBar(value: Double, color: Color, height: CGFloat = 5) -> some View {
         RoundedRectangle(cornerRadius: height / 2)
@@ -488,53 +377,6 @@ struct ChallengesView: View {
             .clipShape(RoundedRectangle(cornerRadius: height / 2))
     }
 
-    // MARK: - Achievements
-
-    private var achievementGalleryCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(icon: "trophy.fill", title: "Achievements", color: BrainRotTheme.goldColor)
-
-            let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(allAchievements) { a in
-                    let unlocked = unlockedIDs.contains(a.id)
-                    VStack(spacing: 4) {
-                        Text(a.emoji)
-                            .font(.system(size: 28))
-                            .opacity(unlocked ? 1.0 : 0.3)
-                            .grayscale(unlocked ? 0 : 1)
-                        Text(a.title)
-                            .font(.system(size: 9, weight: .bold, design: .rounded))
-                            .foregroundColor(unlocked ? BrainRotTheme.textPrimary : BrainRotTheme.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                        Text(a.requirement)
-                            .font(.system(size: 8))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 4)
-                    .background(BrainRotTheme.cardBorder.opacity(0.3))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(unlocked ? a.color.opacity(0.4) : Color.clear, lineWidth: 1)
-                    )
-                }
-            }
-        }
-        .padding(16)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
-        )
-    }
 }
 
 // MARK: - Data
@@ -619,22 +461,3 @@ private struct Challenge: Identifiable {
     let isComplete: Bool
 }
 
-private struct AchievementInfo: Identifiable {
-    let id: String
-    let emoji: String
-    let title: String
-    let requirement: String
-    let color: Color
-}
-
-private let allAchievements: [AchievementInfo] = [
-    AchievementInfo(id: "GRASS TOUCHER", emoji: "\u{1F33F}", title: "Grass Toucher", requirement: "Score under 20", color: BrainRotTheme.neonGreen),
-    AchievementInfo(id: "ZEN MASTER", emoji: "\u{1F9D8}", title: "Zen Master", requirement: "Score of 0", color: BrainRotTheme.neonGreen),
-    AchievementInfo(id: "PHONE ADDICT", emoji: "\u{1F4F1}", title: "Phone Addict", requirement: "50+ pickups", color: BrainRotTheme.neonPurple),
-    AchievementInfo(id: "PICKUP ARTIST", emoji: "\u{1F3AF}", title: "Pickup Artist", requirement: "80+ pickups", color: BrainRotTheme.neonBlue),
-    AchievementInfo(id: "MARATHON SCROLLER", emoji: "\u{23F1}\u{FE0F}", title: "Marathon Scroller", requirement: "3h on one app", color: BrainRotTheme.neonPink),
-    AchievementInfo(id: "TERMINAL BRAINROT", emoji: "\u{1F9E0}\u{1F480}", title: "Terminal Brainrot", requirement: "Score over 90", color: BrainRotTheme.neonPink),
-    AchievementInfo(id: "WEEK WARRIOR", emoji: "\u{1F525}", title: "Week Warrior", requirement: "7-day streak", color: BrainRotTheme.neonOrange),
-    AchievementInfo(id: "MONTHLY MASTER", emoji: "\u{1F451}", title: "Monthly Master", requirement: "30-day streak", color: BrainRotTheme.goldColor),
-    AchievementInfo(id: "DIAMOND HANDS", emoji: "\u{1F48E}", title: "Diamond Hands", requirement: "60-day streak", color: BrainRotTheme.neonBlue),
-]

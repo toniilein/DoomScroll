@@ -18,7 +18,11 @@ struct TotalActivityView: View {
                 )
                 .padding(.top, 4)
 
-                // 2. Quick Stats Row (Pickups | Avg Session | Frequency)
+                // 2. Kraken Evolution — show all tiers
+                krakenEvolutionCard
+                    .padding(.horizontal)
+
+                // 3. Quick Stats Row (Pickups | Avg Session | Frequency)
                 QuickStatsRowView(
                     pickups: activityData.totalPickups,
                     avgSessionMinutes: activityData.smartKPIs.avgSessionMinutes,
@@ -55,6 +59,114 @@ struct TotalActivityView: View {
             .padding(.vertical, 8)
         }
         .background(BrainRotTheme.background)
+    }
+
+    // MARK: - Kraken Evolution
+
+    private var krakenEvolutionCard: some View {
+        let currentMood = OctopusMood.from(score: activityData.brainRotScore)
+        let tiers: [(mood: OctopusMood, name: String, range: String, emoji: String)] = [
+            (.ecstatic,   "Digital Monk",     "0-19",  "✨"),
+            (.happy,      "Grass Toucher",    "20-39", "♪"),
+            (.neutral,    "Casual Scroller",  "40-59", "📱"),
+            (.sad,        "Doomscroller",     "60-79", "😢"),
+            (.distressed, "Brainrot Mode",    "80-94", "🧠"),
+            (.zombie,     "Full Brainrot",    "95+",   "💀"),
+        ]
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.right.circle.fill")
+                    .foregroundColor(BrainRotTheme.neonPurple)
+                Text("Kraken Evolution")
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(tiers, id: \.name) { tier in
+                        let isCurrent = tier.mood == currentMood
+                        // Best tier is first (ecstatic), worst is last (zombie)
+                        let isBetter = tiers.firstIndex(where: { $0.mood == tier.mood })! <
+                                       tiers.firstIndex(where: { $0.mood == currentMood })!
+
+                        VStack(spacing: 6) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [tier.mood.bodyColor, tier.mood.bodyColorDark],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 44, height: 44)
+
+                                Text(tier.emoji)
+                                    .font(.system(size: 20))
+
+                                if isCurrent {
+                                    Circle()
+                                        .stroke(tier.mood.bodyColor, lineWidth: 2.5)
+                                        .frame(width: 52, height: 52)
+                                }
+                            }
+
+                            if isCurrent {
+                                Text("YOU")
+                                    .font(.system(size: 8, weight: .black, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(tier.mood.bodyColor)
+                                    .clipShape(Capsule())
+                            }
+
+                            Text(tier.name)
+                                .font(.system(size: 10, weight: isCurrent ? .black : .semibold, design: .rounded))
+                                .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textSecondary)
+                                .lineLimit(1)
+
+                            Text(tier.range)
+                                .font(.system(size: 9, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+
+                            if isBetter {
+                                Image(systemName: "lock.open.fill")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(BrainRotTheme.neonGreen)
+                            } else if !isCurrent {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
+                            }
+                        }
+                        .frame(width: 80)
+                        .padding(.vertical, 10)
+                        .background(
+                            isCurrent
+                                ? tier.mood.bodyColor.opacity(0.12)
+                                : BrainRotTheme.cardBorder.opacity(0.3)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isCurrent ? tier.mood.bodyColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                        )
+                        .opacity(isCurrent ? 1.0 : (isBetter ? 0.85 : 0.55))
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+
+            Spacer().frame(height: 6)
+        }
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - App Breakdown

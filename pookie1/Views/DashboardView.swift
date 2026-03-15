@@ -7,6 +7,8 @@ import DeviceActivity
 struct DashboardView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @State private var selectedDayOffset = 0 // 0 = today, -1 = yesterday, etc.
+    @State private var showShareSheet = false
+    @State private var shareImage: UIImage?
 
     private var selectedDate: Date {
         Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now)) ?? .now
@@ -37,6 +39,37 @@ struct DashboardView: View {
             }
             .navigationTitle("Overview")
             .toolbarColorScheme(.light, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        generateAndShare()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(BrainRotTheme.neonPink)
+                    }
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let image = shareImage {
+                    ShareSheet(items: [image])
+                }
+            }
+        }
+    }
+
+    // MARK: - Share
+
+    @MainActor
+    private func generateAndShare() {
+        let score = SharedSettings.lastScore
+        let streak = SharedSettings.streakDays
+        let card = KrakenShareCardView(score: score, streakDays: streak)
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = UIScreen.main.scale
+        if let image = renderer.uiImage {
+            shareImage = image
+            showShareSheet = true
         }
     }
 
@@ -148,4 +181,16 @@ struct DashboardView: View {
         }
         .padding(.vertical, 40)
     }
+}
+
+// MARK: - UIKit Share Sheet Wrapper
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
