@@ -11,18 +11,14 @@ struct TotalActivityView: View {
         // because the remote UIKit layer intercepts touch events.
         ScrollView {
             VStack(spacing: 16) {
-                // 1. Octopus Mascot
+                // 1. Octopus Mascot + Tier Progress
                 OctopusMascotView(
                     score: activityData.brainRotScore,
                     totalScreenTime: activityData.formattedDuration
                 )
                 .padding(.top, 4)
 
-                // 2. Next Evolution — current tier → next goal
-                krakenEvolutionCard
-                    .padding(.horizontal)
-
-                // 3. Quick Stats Row (Pickups | Avg Session | Frequency)
+                // 2. Quick Stats Row (Pickups | Avg Session | Frequency)
                 QuickStatsRowView(
                     pickups: activityData.totalPickups,
                     avgSessionMinutes: activityData.smartKPIs.avgSessionMinutes,
@@ -42,88 +38,6 @@ struct TotalActivityView: View {
             .padding(.vertical, 8)
         }
         .background(BrainRotTheme.background)
-    }
-
-    // MARK: - Kraken Evolution
-
-    private var krakenEvolutionCard: some View {
-        let score = activityData.brainRotScore
-        let currentMood = OctopusMood.from(score: score)
-        let tiers: [(mood: OctopusMood, name: String, maxScore: Int, emoji: String)] = [
-            (.ecstatic,   "Digital Monk",    19,  "✨"),
-            (.happy,      "Grass Toucher",   39,  "♪"),
-            (.neutral,    "Casual Scroller", 59,  "📱"),
-            (.sad,        "Doomscroller",    79,  "😢"),
-            (.distressed, "Brainrot Mode",   94,  "🧠"),
-            (.zombie,     "Full Brainrot",   100, "💀"),
-        ]
-
-        let currentIdx = tiers.firstIndex(where: { $0.mood == currentMood }) ?? 0
-        let currentTier = tiers[currentIdx]
-        // Next better tier (lower index = better)
-        let nextTier = currentIdx > 0 ? tiers[currentIdx - 1] : nil
-        // Best tier
-        let isAlreadyBest = currentMood == .ecstatic
-
-        return HStack(spacing: 14) {
-            // Current tier circle
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [currentMood.bodyColor, currentMood.bodyColorDark],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 50, height: 50)
-                Text(currentTier.emoji)
-                    .font(.system(size: 24))
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(currentTier.name)
-                    .font(.system(size: 15, weight: .black, design: .rounded))
-                    .foregroundColor(currentMood.bodyColorDark)
-
-                if isAlreadyBest {
-                    Text("You're at the top! Keep it up \u{1F451}")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(BrainRotTheme.neonGreen)
-                } else if let next = nextTier {
-                    HStack(spacing: 4) {
-                        Text("Next:")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                        Text("\(next.emoji) \(next.name)")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(next.mood.bodyColorDark)
-                        Text("(score \u{2264} \(next.maxScore))")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                    }
-                }
-            }
-
-            Spacer(minLength: 0)
-
-            if !isAlreadyBest, let next = nextTier {
-                // Arrow pointing to next tier
-                ZStack {
-                    Circle()
-                        .fill(next.mood.bodyColor.opacity(0.15))
-                        .frame(width: 36, height: 36)
-                    Text(next.emoji)
-                        .font(.system(size: 18))
-                }
-            }
-        }
-        .padding(14)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(currentMood.bodyColor.opacity(0.3), lineWidth: 1)
-        )
     }
 
     // MARK: - App Breakdown

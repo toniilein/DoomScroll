@@ -621,38 +621,97 @@ struct OctopusMascotView: View {
 
     // MARK: - Score Display
 
+    private var tierInfo: (name: String, emoji: String, nextName: String?, nextEmoji: String?, progress: Double) {
+        let tiers: [(name: String, emoji: String, min: Int, max: Int)] = [
+            ("Digital Monk",    "\u{2728}", 0,  19),
+            ("Grass Toucher",   "\u{266A}", 20, 39),
+            ("Casual Scroller", "\u{1F4F1}", 40, 59),
+            ("Doomscroller",    "\u{1F62E}", 60, 79),
+            ("Brainrot Mode",   "\u{1F9E0}", 80, 94),
+            ("Full Brainrot",   "\u{1F480}", 95, 100),
+        ]
+
+        let idx = tiers.firstIndex(where: { score >= $0.min && score <= $0.max }) ?? tiers.count - 1
+        let current = tiers[idx]
+
+        if idx == 0 {
+            // Already best tier
+            let progress = 1.0 - Double(score) / Double(current.max + 1)
+            return (current.name, current.emoji, nil, nil, progress)
+        }
+
+        let next = tiers[idx - 1]
+        let range = Double(current.max - current.min)
+        let progress = range > 0 ? Double(current.max - score) / range : 1.0
+        return (current.name, current.emoji, next.name, next.emoji, progress)
+    }
+
     private var scoreDisplay: some View {
-        VStack(spacing: 4) {
-            Text("\(score)")
-                .font(.system(size: 42, weight: .black, design: .rounded))
-                .foregroundColor(BrainRotTheme.scoreColor(for: score))
+        let info = tierInfo
 
-            Text(totalScreenTime)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(BrainRotTheme.textSecondary)
-
+        return VStack(spacing: 8) {
+            // Tier badge
             HStack(spacing: 6) {
-                Text(BrainRotTheme.scoreEmoji(for: score))
+                Text(info.emoji)
                     .font(.system(size: 16))
-                Text(BrainRotTheme.scoreLabel(for: score))
-                    .font(.system(size: 13, weight: .black, design: .rounded))
+                Text(info.name)
+                    .font(.system(size: 15, weight: .black, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 6)
-            .background(BrainRotTheme.tierBadgeColor(for: score).opacity(0.3))
+            .background(mood.bodyColor.opacity(0.2))
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(BrainRotTheme.tierBadgeColor(for: score).opacity(0.6), lineWidth: 1)
+                    .stroke(mood.bodyColor.opacity(0.4), lineWidth: 1)
             )
 
-            Text(BrainRotCalculator.snarkyOneLiner(for: score))
-                .font(.system(size: 13, weight: .medium, design: .rounded))
+            // Screen time
+            Text(totalScreenTime)
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(BrainRotTheme.textSecondary)
-                .italic()
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+
+            // Progress bar to next tier
+            if let nextName = info.nextName, let nextEmoji = info.nextEmoji {
+                VStack(spacing: 6) {
+                    // Progress bar
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(BrainRotTheme.cardBorder)
+                            .frame(height: 8)
+
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [mood.bodyColor, mood.bodyColorDark],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                            )
+                            .frame(
+                                width: max(0, min(1, info.progress)) * 220,
+                                height: 8
+                            )
+                    }
+                    .frame(width: 220)
+
+                    // Next tier label
+                    HStack(spacing: 4) {
+                        Text("Next:")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                        Text(nextEmoji)
+                            .font(.system(size: 12))
+                        Text(nextName)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                    }
+                }
+            } else {
+                Text("You're at the top! \u{1F451}")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.neonGreen)
+            }
         }
     }
 
