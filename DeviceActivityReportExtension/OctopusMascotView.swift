@@ -672,40 +672,57 @@ struct OctopusMascotView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
-            // Progress bar to next tier
+            // Progress bar to next tier — shows current → next octopus
             if let nextName = info.nextName, let nextEmoji = info.nextEmoji {
                 VStack(spacing: 6) {
-                    // Progress bar
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(BrainRotTheme.cardBorder)
-                            .frame(height: 8)
+                    // Bar with tier emojis at each end
+                    HStack(spacing: 8) {
+                        // Current tier emoji
+                        Text(info.emoji)
+                            .font(.system(size: 20))
 
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(
-                                LinearGradient(
-                                    colors: [mood.bodyColor, mood.bodyColorDark],
-                                    startPoint: .leading, endPoint: .trailing
+                        // Progress bar
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(BrainRotTheme.cardBorder)
+                                .frame(height: 8)
+
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [mood.bodyColor, mood.bodyColorDark],
+                                        startPoint: .leading, endPoint: .trailing
+                                    )
                                 )
-                            )
-                            .frame(
-                                width: max(0, min(1, info.progress)) * 220,
-                                height: 8
-                            )
-                    }
-                    .frame(width: 220)
+                                .frame(
+                                    width: max(0, min(1, info.progress)) * 180,
+                                    height: 8
+                                )
+                        }
+                        .frame(width: 180)
 
-                    // Next tier label
-                    HStack(spacing: 4) {
-                        Text("Next:")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
+                        // Next tier emoji (dimmed until reached)
                         Text(nextEmoji)
-                            .font(.system(size: 12))
-                        Text(nextName)
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
+                            .font(.system(size: 20))
+                            .opacity(0.4)
                     }
+
+                    // Tier labels
+                    HStack {
+                        Text(info.name)
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(mood.bodyColorDark)
+                        Spacer()
+                        HStack(spacing: 2) {
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                            Text(nextName)
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                    }
+                    .frame(width: 230)
                 }
             } else {
                 Text("You're at the top! \u{1F451}")
