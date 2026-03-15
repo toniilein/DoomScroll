@@ -12,30 +12,11 @@ struct BrainHealthReportView: View {
                 WeeklyTrendView(trendData: healthData.weeklyTrend)
                     .padding(.horizontal)
 
-                // 2. Metrics Grid (2x2)
-                MetricsGridView(
-                    addictionIndex: healthData.smartKPIs.addictionIndex,
-                    pickupsPerHour: healthData.smartKPIs.pickupsPerHour,
-                    longestSessionMinutes: healthData.longestSessionMinutes,
-                    focusDestroyerApp: healthData.smartKPIs.focusDestroyerApp,
-                    focusDestroyerPickups: healthData.smartKPIs.focusDestroyerPickups
-                )
-                .padding(.horizontal)
-
-                // 3. Scroll Type Card
-                ScrollTypeView(scrollType: healthData.smartKPIs.scrollType)
+                // 2. Recommendations
+                recommendationsCard
                     .padding(.horizontal)
 
-                // 4. Doom Ratio
-                if healthData.smartKPIs.doomRatioPercent > 0 {
-                    DoomRatioView(
-                        appName: healthData.smartKPIs.doomRatioAppName,
-                        percentage: healthData.smartKPIs.doomRatioPercent
-                    )
-                    .padding(.horizontal)
-                }
-
-                // 5. App Breakdown
+                // 3. App Breakdown
                 if !healthData.allApps.isEmpty {
                     appBreakdownSection
                         .padding(.horizontal)
@@ -46,6 +27,108 @@ struct BrainHealthReportView: View {
             .padding(.vertical, 8)
         }
         .background(BrainRotTheme.background)
+    }
+
+    // MARK: - Recommendations
+
+    private var recommendationsCard: some View {
+        let tips = generateTips()
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .foregroundColor(BrainRotTheme.neonOrange)
+                Text("Recommendations")
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+            }
+
+            ForEach(tips, id: \.icon) { tip in
+                HStack(alignment: .top, spacing: 10) {
+                    Text(tip.icon)
+                        .font(.system(size: 22))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(tip.title)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                        Text(tip.detail)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(16)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
+        )
+    }
+
+    private struct Tip {
+        let icon: String
+        let title: String
+        let detail: String
+    }
+
+    private func generateTips() -> [Tip] {
+        var tips: [Tip] = []
+        let score = healthData.brainRotScore
+        let pickups = healthData.totalPickups
+        let topApp = healthData.topApps.first
+
+        // Tip based on score range
+        if score >= 80 {
+            tips.append(Tip(
+                icon: "\u{1F6A8}",
+                title: "Screen time is very high",
+                detail: "Try setting app timers in Settings \u{2192} Screen Time to limit your heaviest apps."
+            ))
+        } else if score >= 50 {
+            tips.append(Tip(
+                icon: "\u{26A0}\u{FE0F}",
+                title: "Room to improve",
+                detail: "You're halfway there. Try putting your phone in another room during meals."
+            ))
+        } else {
+            tips.append(Tip(
+                icon: "\u{2705}",
+                title: "Great job this week!",
+                detail: "Your screen time is well under control. Keep up the healthy habits."
+            ))
+        }
+
+        // Tip based on pickups
+        if pickups > 200 {
+            tips.append(Tip(
+                icon: "\u{1F4F1}",
+                title: "Too many pickups",
+                detail: "You picked up your phone \(pickups) times. Try turning off non-essential notifications."
+            ))
+        } else if pickups > 100 {
+            tips.append(Tip(
+                icon: "\u{1F514}",
+                title: "Watch your pickups",
+                detail: "\(pickups) pickups this week. Batch-check notifications at set times instead of reacting to every buzz."
+            ))
+        }
+
+        // Tip based on top app
+        if let app = topApp, app.duration > 7200 {
+            let hours = Int(app.duration / 3600)
+            tips.append(Tip(
+                icon: "\u{23F0}",
+                title: "\(app.displayName) is your biggest drain",
+                detail: "\(hours)h+ this week. Consider setting a daily limit for this app."
+            ))
+        }
+
+        return tips
     }
 
     // MARK: - App Breakdown Section

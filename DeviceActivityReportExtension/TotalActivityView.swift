@@ -11,14 +11,14 @@ struct TotalActivityView: View {
         // because the remote UIKit layer intercepts touch events.
         ScrollView {
             VStack(spacing: 16) {
-                // 1. Octopus Mascot (replaces score ring)
+                // 1. Octopus Mascot
                 OctopusMascotView(
                     score: activityData.brainRotScore,
                     totalScreenTime: activityData.formattedDuration
                 )
                 .padding(.top, 4)
 
-                // 2. Kraken Evolution — show all tiers
+                // 2. Next Evolution — current tier → next goal
                 krakenEvolutionCard
                     .padding(.horizontal)
 
@@ -30,24 +30,7 @@ struct TotalActivityView: View {
                 )
                 .padding(.horizontal)
 
-                // 3. Doom Ratio Bar
-                if activityData.smartKPIs.doomRatioPercent > 0 {
-                    DoomRatioView(
-                        appName: activityData.smartKPIs.doomRatioAppName,
-                        percentage: activityData.smartKPIs.doomRatioPercent
-                    )
-                    .padding(.horizontal)
-                }
-
-                // 4. Achievement Banner (conditional)
-                if !activityData.smartKPIs.achievements.isEmpty {
-                    AchievementBannerView(
-                        achievements: activityData.smartKPIs.achievements
-                    )
-                    .padding(.horizontal)
-                }
-
-                // 5. App Breakdown
+                // 4. App Breakdown
                 if !activityData.allApps.isEmpty {
                     appBreakdownSection
                         .padding(.horizontal)
@@ -64,109 +47,83 @@ struct TotalActivityView: View {
     // MARK: - Kraken Evolution
 
     private var krakenEvolutionCard: some View {
-        let currentMood = OctopusMood.from(score: activityData.brainRotScore)
-        let tiers: [(mood: OctopusMood, name: String, range: String, emoji: String)] = [
-            (.ecstatic,   "Digital Monk",     "0-19",  "✨"),
-            (.happy,      "Grass Toucher",    "20-39", "♪"),
-            (.neutral,    "Casual Scroller",  "40-59", "📱"),
-            (.sad,        "Doomscroller",     "60-79", "😢"),
-            (.distressed, "Brainrot Mode",    "80-94", "🧠"),
-            (.zombie,     "Full Brainrot",    "95+",   "💀"),
+        let score = activityData.brainRotScore
+        let currentMood = OctopusMood.from(score: score)
+        let tiers: [(mood: OctopusMood, name: String, maxScore: Int, emoji: String)] = [
+            (.ecstatic,   "Digital Monk",    19,  "✨"),
+            (.happy,      "Grass Toucher",   39,  "♪"),
+            (.neutral,    "Casual Scroller", 59,  "📱"),
+            (.sad,        "Doomscroller",    79,  "😢"),
+            (.distressed, "Brainrot Mode",   94,  "🧠"),
+            (.zombie,     "Full Brainrot",   100, "💀"),
         ]
 
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.right.circle.fill")
-                    .foregroundColor(BrainRotTheme.neonPurple)
-                Text("Kraken Evolution")
-                    .font(.headline)
-                    .foregroundColor(BrainRotTheme.textPrimary)
-                Spacer()
+        let currentIdx = tiers.firstIndex(where: { $0.mood == currentMood }) ?? 0
+        let currentTier = tiers[currentIdx]
+        // Next better tier (lower index = better)
+        let nextTier = currentIdx > 0 ? tiers[currentIdx - 1] : nil
+        // Best tier
+        let isAlreadyBest = currentMood == .ecstatic
+
+        return HStack(spacing: 14) {
+            // Current tier circle
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [currentMood.bodyColor, currentMood.bodyColorDark],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 50, height: 50)
+                Text(currentTier.emoji)
+                    .font(.system(size: 24))
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(tiers, id: \.name) { tier in
-                        let isCurrent = tier.mood == currentMood
-                        // Best tier is first (ecstatic), worst is last (zombie)
-                        let isBetter = tiers.firstIndex(where: { $0.mood == tier.mood })! <
-                                       tiers.firstIndex(where: { $0.mood == currentMood })!
+            VStack(alignment: .leading, spacing: 4) {
+                Text(currentTier.name)
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .foregroundColor(currentMood.bodyColorDark)
 
-                        VStack(spacing: 6) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [tier.mood.bodyColor, tier.mood.bodyColorDark],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 44, height: 44)
-
-                                Text(tier.emoji)
-                                    .font(.system(size: 20))
-
-                                if isCurrent {
-                                    Circle()
-                                        .stroke(tier.mood.bodyColor, lineWidth: 2.5)
-                                        .frame(width: 52, height: 52)
-                                }
-                            }
-
-                            if isCurrent {
-                                Text("YOU")
-                                    .font(.system(size: 8, weight: .black, design: .rounded))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(tier.mood.bodyColor)
-                                    .clipShape(Capsule())
-                            }
-
-                            Text(tier.name)
-                                .font(.system(size: 10, weight: isCurrent ? .black : .semibold, design: .rounded))
-                                .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textSecondary)
-                                .lineLimit(1)
-
-                            Text(tier.range)
-                                .font(.system(size: 9, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-
-                            if isBetter {
-                                Image(systemName: "lock.open.fill")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(BrainRotTheme.neonGreen)
-                            } else if !isCurrent {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
-                            }
-                        }
-                        .frame(width: 80)
-                        .padding(.vertical, 10)
-                        .background(
-                            isCurrent
-                                ? tier.mood.bodyColor.opacity(0.12)
-                                : BrainRotTheme.cardBorder.opacity(0.3)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(isCurrent ? tier.mood.bodyColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
-                        )
-                        .opacity(isCurrent ? 1.0 : (isBetter ? 0.85 : 0.55))
+                if isAlreadyBest {
+                    Text("You're at the top! Keep it up \u{1F451}")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.neonGreen)
+                } else if let next = nextTier {
+                    HStack(spacing: 4) {
+                        Text("Next:")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                        Text("\(next.emoji) \(next.name)")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(next.mood.bodyColorDark)
+                        Text("(score \u{2264} \(next.maxScore))")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
                     }
                 }
-                .padding(.horizontal, 16)
             }
 
-            Spacer().frame(height: 6)
+            Spacer(minLength: 0)
+
+            if !isAlreadyBest, let next = nextTier {
+                // Arrow pointing to next tier
+                ZStack {
+                    Circle()
+                        .fill(next.mood.bodyColor.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    Text(next.emoji)
+                        .font(.system(size: 18))
+                }
+            }
         }
+        .padding(14)
         .background(BrainRotTheme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(currentMood.bodyColor.opacity(0.3), lineWidth: 1)
+        )
     }
 
     // MARK: - App Breakdown

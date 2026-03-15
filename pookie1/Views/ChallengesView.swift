@@ -21,7 +21,6 @@ struct ChallengesView: View {
                     VStack(spacing: 16) {
                         streakHeroCard
                         streakCalendar
-                        dailyChallengesCard
                     }
                     .padding(.horizontal)
                     .padding(.top, 4)
@@ -123,79 +122,93 @@ struct ChallengesView: View {
         return f.string(from: date)
     }
 
-    private func sectionHeader(icon: String, title: String, color: Color) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(color)
-            Text(title)
-                .font(.system(size: 17, weight: .bold, design: .rounded))
-                .foregroundColor(BrainRotTheme.textPrimary)
-            Spacer()
-        }
-    }
-
     // MARK: - Streak Hero Card
 
     private var streakHeroCard: some View {
-        HStack(spacing: 16) {
-            // Left: ring + streak count
-            ZStack {
-                Circle()
-                    .stroke(BrainRotTheme.cardBorder, lineWidth: 5)
-                    .frame(width: 80, height: 80)
+        VStack(spacing: 0) {
+            // Top: streak ring + tier info
+            HStack(spacing: 16) {
+                // Left: ring + streak count
+                ZStack {
+                    Circle()
+                        .stroke(BrainRotTheme.cardBorder, lineWidth: 5)
+                        .frame(width: 80, height: 80)
 
-                Circle()
-                    .trim(from: 0, to: ringProgress)
-                    .stroke(
-                        streakTier.color,
-                        style: StrokeStyle(lineWidth: 5, lineCap: .round)
-                    )
-                    .frame(width: 80, height: 80)
-                    .rotationEffect(.degrees(-90))
+                    Circle()
+                        .trim(from: 0, to: ringProgress)
+                        .stroke(
+                            streakTier.color,
+                            style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                        )
+                        .frame(width: 80, height: 80)
+                        .rotationEffect(.degrees(-90))
 
-                VStack(spacing: 0) {
-                    Text(streakTier.fireEmoji)
-                        .font(.system(size: 22))
-                        .scaleEffect(fireScale)
-                    Text("\(streakDays)")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
+                    VStack(spacing: 0) {
+                        Text(streakTier.fireEmoji)
+                            .font(.system(size: 22))
+                            .scaleEffect(fireScale)
+                        Text("\(streakDays)")
+                            .font(.system(size: 24, weight: .black, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                    }
+                }
+
+                // Right: tier + message + stats
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 5) {
+                        Text(streakTier.icon).font(.system(size: 11))
+                        Text(streakTier.name)
+                            .font(.system(size: 11, weight: .black, design: .rounded))
+                            .foregroundColor(streakTier.color)
+                            .textCase(.uppercase)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 3)
+                    .background(streakTier.color.opacity(0.15))
+                    .clipShape(Capsule())
+
+                    Text(streakMessage)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
+                        .lineLimit(2)
+
+                    HStack(spacing: 12) {
+                        Label("\(bestStreak) best", systemImage: "trophy.fill")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.goldColor)
+                        Label("\(daysToNextMilestone)d to next", systemImage: "arrow.right.circle.fill")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.neonBlue)
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+
+            // Divider
+            Divider().foregroundColor(BrainRotTheme.cardBorder)
+
+            // Bottom: compact daily challenges
+            HStack(spacing: 0) {
+                ForEach(dailyChallenges) { challenge in
+                    VStack(spacing: 4) {
+                        Text(challenge.emoji)
+                            .font(.system(size: 18))
+                        Text(challenge.isComplete ? "\u{2705}" : "\(Int(challenge.progress * 100))%")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(challenge.isComplete ? BrainRotTheme.neonGreen : BrainRotTheme.textSecondary)
+                        Text(challenge.title)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
             }
-
-            // Right: tier + message + stats
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 5) {
-                    Text(streakTier.icon).font(.system(size: 11))
-                    Text(streakTier.name)
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundColor(streakTier.color)
-                        .textCase(.uppercase)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 3)
-                .background(streakTier.color.opacity(0.15))
-                .clipShape(Capsule())
-
-                Text(streakMessage)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
-                    .lineLimit(2)
-
-                HStack(spacing: 12) {
-                    Label("\(bestStreak) best", systemImage: "trophy.fill")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.goldColor)
-                    Label("\(daysToNextMilestone)d to next", systemImage: "arrow.right.circle.fill")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.neonBlue)
-                }
-            }
-
-            Spacer(minLength: 0)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
         }
-        .padding(16)
         .background(BrainRotTheme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
@@ -208,7 +221,15 @@ struct ChallengesView: View {
 
     private var streakCalendar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(icon: "flame.fill", title: "Last 28 Days", color: BrainRotTheme.neonOrange)
+            HStack(spacing: 8) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(BrainRotTheme.neonOrange)
+                Text("Last 28 Days")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+            }
 
             let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
             let dayLabels = [
@@ -278,53 +299,6 @@ struct ChallengesView: View {
         )
     }
 
-    // MARK: - Daily Challenges
-
-    private var dailyChallengesCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeader(icon: "flag.checkered", title: "Today's Challenges", color: BrainRotTheme.neonPink)
-
-            ForEach(dailyChallenges) { challenge in
-                HStack(spacing: 12) {
-                    Text(challenge.emoji).font(.system(size: 24))
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack {
-                            Text(challenge.title)
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                            Spacer()
-                            if challenge.isComplete {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(BrainRotTheme.neonGreen)
-                                    .font(.system(size: 14))
-                            }
-                        }
-                        Text(challenge.description)
-                            .font(.system(size: 11))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                        progressBar(
-                            value: challenge.progress,
-                            color: challenge.isComplete ? BrainRotTheme.neonGreen : BrainRotTheme.neonPink
-                        )
-                    }
-                }
-                .padding(.vertical, 4)
-
-                if challenge.id != dailyChallenges.last?.id {
-                    Divider().foregroundColor(BrainRotTheme.cardBorder)
-                }
-            }
-        }
-        .padding(16)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
-        )
-    }
-
     private var dailyChallenges: [Challenge] {
         let limit = SharedSettings.dailyLimitMinutes
         let halfLimit = limit / 2.0
@@ -361,20 +335,6 @@ struct ChallengesView: View {
         ))
 
         return challenges
-    }
-
-    /// Reusable progress bar without GeometryReader to avoid layout overlap issues
-    private func progressBar(value: Double, color: Color, height: CGFloat = 5) -> some View {
-        RoundedRectangle(cornerRadius: height / 2)
-            .fill(BrainRotTheme.cardBorder)
-            .frame(height: height)
-            .overlay(alignment: .leading) {
-                RoundedRectangle(cornerRadius: height / 2)
-                    .fill(color)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .scaleEffect(x: max(0, min(1, value)), y: 1, anchor: .leading)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: height / 2))
     }
 
 }
