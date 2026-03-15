@@ -2,19 +2,22 @@ import SwiftUI
 
 struct ChallengesView: View {
     @State private var score = SharedSettings.lastScore
-    @State private var pickups = SharedSettings.lastPickups
-    @State private var screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
     @State private var streakDays = SharedSettings.streakDays
     @State private var bestStreak = SharedSettings.bestStreak
     @State private var streakHistory = SharedSettings.streakHistory
 
     @State private var fireScale: CGFloat = 1.0
+    @State private var ringProgress: CGFloat = 0
 
-    // Ring animation states
-    @State private var scoreRingProgress: CGFloat = 0
-    @State private var screenTimeRingProgress: CGFloat = 0
-    @State private var pickupsRingProgress: CGFloat = 0
-    @State private var selectedRing: RingType? = nil
+    private var ringClosed: Bool { score < 50 }
+    private var streakTier: StreakTier { .from(days: streakDays) }
+
+    private var ringColor: Color {
+        if ringClosed { return BrainRotTheme.neonGreen }
+        if score < 70 { return BrainRotTheme.neonBlue }
+        if score < 85 { return BrainRotTheme.neonOrange }
+        return BrainRotTheme.neonPink
+    }
 
     var body: some View {
         NavigationStack {
@@ -22,13 +25,12 @@ struct ChallengesView: View {
                 BrainRotTheme.background.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 16) {
-                        activityRingsCard
-                        streakRow
+                    VStack(spacing: 24) {
+                        dailyRingView
                         streakCalendar
                     }
                     .padding(.horizontal)
-                    .padding(.top, 4)
+                    .padding(.top, 8)
                     .padding(.bottom, 20)
                 }
             }
@@ -40,10 +42,10 @@ struct ChallengesView: View {
         }
     }
 
+    // MARK: - Data
+
     private func refreshData() {
         score = SharedSettings.lastScore
-        pickups = SharedSettings.lastPickups
-        screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
         streakDays = SharedSettings.streakDays
         bestStreak = SharedSettings.bestStreak
         streakHistory = SharedSettings.streakHistory
@@ -51,290 +53,142 @@ struct ChallengesView: View {
     }
 
     private func startAnimations() {
-        // Fire pulse
         withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
             fireScale = 1.15
         }
 
-        // Staggered ring fill — outer first, inner last
-        let challenges = dailyChallenges
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2)) {
-            scoreRingProgress = CGFloat(challenges[0].progress)
-        }
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.4)) {
-            screenTimeRingProgress = CGFloat(challenges[1].progress)
-        }
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.6)) {
-            pickupsRingProgress = CGFloat(challenges[2].progress)
+        let target: CGFloat = ringClosed
+            ? 1.0
+            : CGFloat(min(1.0, max(0, Double(100 - score) / 50.0)))
+
+        withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(0.3)) {
+            ringProgress = target
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - The Ring
 
-    private var streakTier: StreakTier { .from(days: streakDays) }
+    private var dailyRingView: some View {
+        VStack(spacing: 16) {
+            // Ring
+            ZStack {
+                // Soft glow
+                Circle()
+                    .fill(ringColor.opacity(0.08))
+                    .frame(width: 240, height: 240)
+                    .blur(radius: 20)
 
-    private func challengeFor(_ ringType: RingType) -> Challenge? {
-        dailyChallenges.first { $0.ringType == ringType }
+                // Background track
+                Circle()
+                    .stroke(ringColor.opacity(0.15), lineWidth: 18)
+                    .frame(width: 200, height: 200)
+
+                // Filled arc
+                Circle()
+                    .trim(from: 0, to: min(ringProgress, 1.0))
+                    .stroke(
+                        ringColor,
+                        style: StrokeStyle(lineWidth: 18, lineCap: .round)
+                    )
+                    .frame(width: 200, height: 200)
+                    .rotationEffect(.degrees(-90))
+
+                // Completion glow
+                if ringClosed {
+                    Circle()
+                        .stroke(BrainRotTheme.neonGreen.opacity(0.3), lineWidth: 4)
+                        .frame(width: 224, height: 224)
+                        .blur(radius: 6)
+                }
+
+                // Center content
+                VStack(spacing: 4) {
+                    Text(streakTier.fireEmoji)
+                        .font(.system(size: 32))
+                        .scaleEffect(fireScale)
+
+                    Text("\(streakDays)")
+                        .font(.system(size: 48, weight: .black, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+
+                    Text(streakDays == 1 ? "day" : "days")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+            }
+            .frame(height: 250)
+
+            // Status
+            if ringClosed {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(BrainRotTheme.neonGreen)
+                    Text("Ring Closed!")
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundColor(BrainRotTheme.neonGreen)
+                }
+            } else {
+                Text("Close your ring!")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+
+            // Motivational message
+            Text(streakMessage)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundColor(BrainRotTheme.textPrimary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+
+            // Best streak (subtle)
+            if bestStreak > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(BrainRotTheme.goldColor)
+                    Text("Best: \(bestStreak) days")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+            }
+        }
+        .padding(.vertical, 8)
     }
 
-    private func ringProgress(for ringType: RingType) -> CGFloat {
-        switch ringType {
-        case .score: return scoreRingProgress
-        case .screenTime: return screenTimeRingProgress
-        case .pickups: return pickupsRingProgress
+    // MARK: - Motivational Message
+
+    private var streakMessage: String {
+        if streakDays == 0 { return "Start your streak today!" }
+        switch streakDays {
+        case 1: return "Day 1 \u{2014} the hardest part is starting!"
+        case 2: return "2 days in! Don't stop now!"
+        case 3: return "3 days \u{1F525} Momentum is building!"
+        case 4...6: return "\(streakDays) days! You're getting stronger!"
+        case 7: return "\u{1F389} ONE WEEK! You're unstoppable!"
+        case 8...13: return "\(streakDays) days \u{2014} don't throw it away!"
+        case 14: return "\u{1F3C6} TWO WEEKS! This is serious!"
+        case 15...20: return "\(streakDays) days \u{2014} imagine losing this..."
+        case 21: return "3 WEEKS! You're a legend!"
+        case 22...29: return "\(streakDays) days \u{2014} SO close to a month!"
+        case 30: return "\u{1F451} 30 DAYS! KING STATUS!"
+        case 31...59: return "\(streakDays) days \u{2014} you'd be crazy to quit now"
+        case 60: return "\u{1F48E} 60 DAYS! Diamond hands!"
+        case 61...89: return "\(streakDays) days \u{2014} don't you dare break this"
+        case 90: return "\u{1F680} 90 DAYS! ABSOLUTE LEGEND!"
+        case 91...99: return "\(streakDays) days \u{2014} triple digits is RIGHT THERE"
+        case 100: return "\u{1F31F} 100 DAYS! YOU ARE THE GOAT!"
+        default: return "\(streakDays) days \u{2014} nobody can touch you"
         }
     }
+
+    // MARK: - Calendar
 
     private func formatDateISO(_ date: Date) -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         return f.string(from: date)
     }
-
-    // MARK: - Activity Rings Card
-
-    private var activityRingsCard: some View {
-        let challenges = dailyChallenges
-        let allComplete = challenges.allSatisfy { $0.isComplete }
-
-        return VStack(spacing: 16) {
-            // Concentric rings
-            ZStack {
-                // Outer ring — Score (green)
-                ringPair(
-                    type: .score,
-                    diameter: 160,
-                    progress: scoreRingProgress,
-                    isComplete: challenges[0].isComplete
-                )
-
-                // Middle ring — Screen Time (blue)
-                ringPair(
-                    type: .screenTime,
-                    diameter: 116,
-                    progress: screenTimeRingProgress,
-                    isComplete: challenges[1].isComplete
-                )
-
-                // Inner ring — Pickups (purple)
-                ringPair(
-                    type: .pickups,
-                    diameter: 72,
-                    progress: pickupsRingProgress,
-                    isComplete: challenges[2].isComplete
-                )
-
-                // Center: streak fire + count
-                VStack(spacing: 0) {
-                    Text(streakTier.fireEmoji)
-                        .font(.system(size: 18))
-                        .scaleEffect(fireScale)
-                    Text("\(streakDays)")
-                        .font(.system(size: 20, weight: .black, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                }
-            }
-            .frame(height: 180)
-            .padding(.top, 12)
-
-            // Legend row
-            HStack(spacing: 0) {
-                ForEach(RingType.allCases, id: \.self) { ring in
-                    legendItem(ring: ring)
-                        .frame(maxWidth: .infinity)
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                selectedRing = (selectedRing == ring) ? nil : ring
-                            }
-                        }
-                }
-            }
-            .padding(.horizontal, 4)
-
-            // Expanded detail (if a ring is selected)
-            if let ring = selectedRing, let challenge = challengeFor(ring) {
-                VStack(spacing: 8) {
-                    Divider().foregroundColor(BrainRotTheme.cardBorder)
-
-                    HStack(spacing: 10) {
-                        Text(challenge.emoji)
-                            .font(.system(size: 28))
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(challenge.title)
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                            Text(challenge.description)
-                                .font(.system(size: 12))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        }
-
-                        Spacer()
-
-                        Text(challenge.isComplete ? "Done!" : "\(Int(challenge.progress * 100))%")
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .foregroundColor(challenge.isComplete ? BrainRotTheme.neonGreen : ring.color)
-                    }
-
-                    // Progress bar
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(BrainRotTheme.cardBorder)
-                            .frame(height: 6)
-
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(ring.color)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .scaleEffect(x: max(0, min(1, challenge.progress)), y: 1, anchor: .leading)
-                            .frame(height: 6)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-                }
-                .padding(.horizontal, 4)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .padding(16)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(
-                    allComplete
-                        ? AnyShapeStyle(
-                            LinearGradient(
-                                colors: [BrainRotTheme.neonGreen, BrainRotTheme.neonBlue, BrainRotTheme.neonPurple],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            )
-                          )
-                        : AnyShapeStyle(BrainRotTheme.cardBorder),
-                    lineWidth: allComplete ? 2 : 1
-                )
-        )
-    }
-
-    // MARK: - Ring Pair (track + fill)
-
-    private func ringPair(type: RingType, diameter: CGFloat, progress: CGFloat, isComplete: Bool) -> some View {
-        ZStack {
-            // Background track
-            Circle()
-                .stroke(type.color.opacity(0.15), lineWidth: 14)
-                .frame(width: diameter, height: diameter)
-
-            // Filled arc
-            Circle()
-                .trim(from: 0, to: min(progress, 1.0))
-                .stroke(
-                    type.color,
-                    style: StrokeStyle(lineWidth: 14, lineCap: .round)
-                )
-                .frame(width: diameter, height: diameter)
-                .rotationEffect(.degrees(-90))
-
-            // Completion checkmark at end of ring
-            if isComplete {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(type.color)
-                    .background(
-                        Circle()
-                            .fill(BrainRotTheme.cardBackground)
-                            .frame(width: 18, height: 18)
-                    )
-                    .offset(y: -(diameter / 2))
-            }
-        }
-        // Tap target
-        .contentShape(Circle().size(width: diameter + 14, height: diameter + 14))
-        .onTapGesture {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                selectedRing = (selectedRing == type) ? nil : type
-            }
-        }
-    }
-
-    // MARK: - Legend Item
-
-    private func legendItem(ring: RingType) -> some View {
-        let challenge = challengeFor(ring)
-        let pct = Int((challenge?.progress ?? 0) * 100)
-        let isSelected = selectedRing == ring
-        let isComplete = challenge?.isComplete ?? false
-
-        return VStack(spacing: 4) {
-            // Color dot
-            Circle()
-                .fill(ring.color)
-                .frame(width: 10, height: 10)
-
-            // Label
-            Text(ring.label)
-                .font(.system(size: 12, weight: isSelected ? .bold : .semibold, design: .rounded))
-                .foregroundColor(isSelected ? ring.color : BrainRotTheme.textSecondary)
-
-            // Percentage or checkmark
-            if isComplete {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(BrainRotTheme.neonGreen)
-            } else {
-                Text("\(pct)%")
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundColor(ring.color)
-            }
-        }
-    }
-
-    // MARK: - Streak Row
-
-    private var streakRow: some View {
-        HStack(spacing: 12) {
-            // Fire + days
-            HStack(spacing: 6) {
-                Text(streakTier.fireEmoji)
-                    .font(.system(size: 18))
-                    .scaleEffect(fireScale)
-                Text("\(streakDays)-day streak")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
-            }
-
-            Spacer()
-
-            // Best streak
-            HStack(spacing: 4) {
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 11))
-                    .foregroundColor(BrainRotTheme.goldColor)
-                Text("Best: \(bestStreak)")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textSecondary)
-            }
-
-            // Tier badge
-            HStack(spacing: 4) {
-                Text(streakTier.icon).font(.system(size: 11))
-                Text(streakTier.name)
-                    .font(.system(size: 11, weight: .black, design: .rounded))
-                    .foregroundColor(streakTier.color)
-                    .textCase(.uppercase)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(streakTier.color.opacity(0.15))
-            .clipShape(Capsule())
-        }
-        .padding(14)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(streakTier.color.opacity(streakDays > 0 ? 0.3 : 0.1), lineWidth: 1.5)
-        )
-    }
-
-    // MARK: - Streak Calendar
 
     private var streakCalendar: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -415,93 +269,9 @@ struct ChallengesView: View {
                 .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
         )
     }
-
-    // MARK: - Daily Challenges Data
-
-    private var dailyChallenges: [Challenge] {
-        let limit = SharedSettings.dailyLimitMinutes
-        let halfLimit = limit / 2.0
-        var challenges: [Challenge] = []
-
-        // 1. Score challenge (outer ring — green)
-        if score > 50 {
-            challenges.append(Challenge(
-                emoji: "\u{1F3AF}", title: "Score Smasher",
-                description: "Get your score below 50",
-                progress: min(1.0, max(0, Double(100 - score) / 50.0)),
-                isComplete: false,
-                color: BrainRotTheme.neonGreen,
-                ringType: .score
-            ))
-        } else {
-            challenges.append(Challenge(
-                emoji: "\u{1F3AF}", title: "Score Smasher",
-                description: "Keep your score below 50",
-                progress: 1.0, isComplete: true,
-                color: BrainRotTheme.neonGreen,
-                ringType: .score
-            ))
-        }
-
-        // 2. Screen time challenge (middle ring — blue)
-        let screenTimeGoal = halfLimit
-        let stProgress = screenTimeMinutes > 0 ? min(1.0, (screenTimeGoal - screenTimeMinutes) / screenTimeGoal) : 1.0
-        challenges.append(Challenge(
-            emoji: "\u{23F1}\u{FE0F}", title: "Half Day Hero",
-            description: "Stay under \(SharedSettings.formatLimit(screenTimeGoal))",
-            progress: max(0, stProgress), isComplete: screenTimeMinutes <= screenTimeGoal,
-            color: BrainRotTheme.neonBlue,
-            ringType: .screenTime
-        ))
-
-        // 3. Pickups challenge (inner ring — purple)
-        let pickupGoal = 30
-        let pkProgress = pickups > 0 ? min(1.0, Double(pickupGoal - pickups) / Double(pickupGoal)) : 1.0
-        challenges.append(Challenge(
-            emoji: "\u{1F4F1}", title: "Phone Down",
-            description: "Keep pickups under \(pickupGoal)",
-            progress: max(0, pkProgress), isComplete: pickups <= pickupGoal,
-            color: BrainRotTheme.neonPurple,
-            ringType: .pickups
-        ))
-
-        return challenges
-    }
 }
 
-// MARK: - Data Types
-
-private enum RingType: String, CaseIterable {
-    case score, screenTime, pickups
-
-    var label: String {
-        switch self {
-        case .score: return "Score"
-        case .screenTime: return "Time"
-        case .pickups: return "Pickups"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .score: return BrainRotTheme.neonGreen
-        case .screenTime: return BrainRotTheme.neonBlue
-        case .pickups: return BrainRotTheme.neonPurple
-        }
-    }
-}
-
-private let streakMilestones: [(Int, String, String)] = [
-    (3, "\u{1F331}", "3-Day Starter"),
-    (7, "\u{1F525}", "One Week Warrior"),
-    (14, "\u{26A1}", "Two Week Tank"),
-    (21, "\u{1F4AA}", "3-Week Beast"),
-    (30, "\u{1F451}", "Monthly Master"),
-    (60, "\u{1F48E}", "Diamond Hands"),
-    (90, "\u{1F680}", "Quarter Legend"),
-    (100, "\u{1F31F}", "Triple Digit God"),
-    (365, "\u{1F3C6}", "YEAR KING"),
-]
+// MARK: - Streak Tier
 
 private enum StreakTier {
     case none, bronze, silver, gold, diamond, legendary
@@ -514,28 +284,6 @@ private enum StreakTier {
         case 14...29: return .gold
         case 30...59: return .diamond
         default: return .legendary
-        }
-    }
-
-    var name: String {
-        switch self {
-        case .none: return "No Streak"
-        case .bronze: return "Bronze"
-        case .silver: return "Silver"
-        case .gold: return "Gold"
-        case .diamond: return "Diamond"
-        case .legendary: return "Legendary"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .none: return "\u{26AA}"
-        case .bronze: return "\u{1F7E4}"
-        case .silver: return "\u{26AA}"
-        case .gold: return "\u{1F7E1}"
-        case .diamond: return "\u{1F48E}"
-        case .legendary: return "\u{1F451}"
         }
     }
 
@@ -560,15 +308,4 @@ private enum StreakTier {
         case .legendary: return BrainRotTheme.neonPurple
         }
     }
-}
-
-private struct Challenge: Identifiable {
-    let id = UUID()
-    let emoji: String
-    let title: String
-    let description: String
-    let progress: Double
-    let isComplete: Bool
-    let color: Color
-    let ringType: RingType
 }
