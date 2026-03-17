@@ -23,20 +23,14 @@ struct BrainHealthView: View {
                             .padding(.top)
                     }
                 } else {
-                    VStack(spacing: 0) {
-                        daySelector
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-
-                        #if !targetEnvironment(simulator)
-                        DeviceActivityReport(.brainHealth, filter: screenTimeManager.filterForDate(selectedDate))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        #endif
-                    }
+                    #if !targetEnvironment(simulator)
+                    DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    #endif
                 }
             }
             .navigationTitle("Brain Health")
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
         }
     }
 

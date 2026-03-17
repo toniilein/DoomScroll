@@ -25,7 +25,7 @@ struct BrainRotScoreView: View {
 
                 // Background ring
                 Circle()
-                    .stroke(Color.white.opacity(0.08), lineWidth: lineWidth)
+                    .stroke(BrainRotTheme.cardBorder, lineWidth: lineWidth)
                     .frame(width: ringSize, height: ringSize)
 
                 // Score ring
@@ -65,7 +65,7 @@ struct BrainRotScoreView: View {
                     .font(.system(size: compact ? 14 : 16))
                 Text(BrainRotTheme.scoreLabel(for: score))
                     .font(.system(size: compact ? 11 : 13, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(BrainRotTheme.textPrimary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 6)

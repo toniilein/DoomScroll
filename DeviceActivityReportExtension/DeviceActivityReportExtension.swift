@@ -15,5 +15,8 @@ struct DoomScrollReportExtension: DeviceActivityReportExtension {
         WeeklyTrendReport { trendData in
             WeeklyTrendView(trendData: trendData)
         }
+        AppAnalyticsReport { analyticsData in
+            AppAnalyticsView(data: analyticsData)
+        }
     }
 }

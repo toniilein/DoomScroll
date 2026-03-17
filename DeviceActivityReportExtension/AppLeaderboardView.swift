@@ -47,7 +47,7 @@ struct AppLeaderboardView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(app.displayName)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(BrainRotTheme.textPrimary)
                     .lineLimit(1)
 
                 // Pickup badge
@@ -75,7 +75,7 @@ struct AppLeaderboardView: View {
                     let ratio = totalDuration > 0 ? app.duration / totalDuration : 0
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.white.opacity(0.1))
+                            .fill(BrainRotTheme.cardBorder)
                             .frame(height: 3)
                         RoundedRectangle(cornerRadius: 2)
                             .fill(BrainRotTheme.scoreColor(

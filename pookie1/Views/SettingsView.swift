@@ -1,7 +1,12 @@
 import SwiftUI
+#if !targetEnvironment(simulator)
+import FamilyControls
+#endif
 
 struct SettingsView: View {
+    @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @State private var dailyLimitMinutes: Double = SharedSettings.dailyLimitMinutes
+    @State private var isPickerPresented = false
 
     // Slider steps: 30, 60, 90, 120, 180, 240, 300, 360, 420, 480
     private let minLimit: Double = 30
@@ -14,6 +19,9 @@ struct SettingsView: View {
 
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Tracked Apps
+                        trackedAppsCard
+
                         // Daily Limit Card
                         dailyLimitCard
 
@@ -28,7 +36,84 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            #if !targetEnvironment(simulator)
+            .familyActivityPicker(
+                isPresented: $isPickerPresented,
+                selection: $screenTimeManager.activitySelection
+            )
+            .onChange(of: screenTimeManager.activitySelection) { _, _ in
+                screenTimeManager.saveSelection()
+            }
+            #endif
+        }
+    }
+
+    // MARK: - Tracked Apps
+
+    private var trackedAppsCard: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Image(systemName: "app.badge.checkmark")
+                    .font(.title2)
+                    .foregroundColor(BrainRotTheme.neonGreen)
+                Text("Tracked Apps")
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+            }
+
+            #if !targetEnvironment(simulator)
+            let appCount = screenTimeManager.activitySelection.applicationTokens.count
+            let catCount = screenTimeManager.activitySelection.categoryTokens.count
+            let webCount = screenTimeManager.activitySelection.webDomainTokens.count
+            #else
+            let appCount = 0
+            let catCount = 0
+            let webCount = 0
+            #endif
+
+            HStack {
+                statBubble(label: "Apps", count: appCount, color: BrainRotTheme.neonGreen)
+                Spacer()
+                statBubble(label: "Categories", count: catCount, color: BrainRotTheme.neonBlue)
+                Spacer()
+                statBubble(label: "Websites", count: webCount, color: BrainRotTheme.neonPurple)
+            }
+
+            Text(appCount > 0 || catCount > 0
+                ? "Only selected apps count toward your score"
+                : "All apps count toward your score")
+                .font(.caption)
+                .foregroundColor(BrainRotTheme.textSecondary)
+
+            Button {
+                isPickerPresented = true
+            } label: {
+                HStack {
+                    Image(systemName: "plus.app")
+                    Text(appCount > 0 || catCount > 0 ? "Change Apps" : "Select Apps")
+                }
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(BrainRotTheme.accentGradient)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .padding(16)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func statBubble(label: String, count: Int, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text("\(count)")
+                .font(.system(size: 22, weight: .black, design: .rounded))
+                .foregroundColor(color)
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(BrainRotTheme.textSecondary)
         }
     }
 
@@ -136,7 +221,7 @@ struct SettingsView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.white.opacity(0.08))
+                        .fill(BrainRotTheme.cardBorder)
                         .frame(height: 8)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(BrainRotTheme.scoreColor(for: score))
@@ -191,7 +276,7 @@ struct SettingsView: View {
                 .frame(width: 70, alignment: .leading)
             Text("Score \(range)")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.white)
+                .foregroundColor(BrainRotTheme.textPrimary)
                 .frame(width: 80, alignment: .leading)
             Text(desc)
                 .font(.system(size: 12))

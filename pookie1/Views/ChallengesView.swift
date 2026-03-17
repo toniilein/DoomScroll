@@ -5,7 +5,15 @@ struct ChallengesView: View {
     @State private var pickups = SharedSettings.lastPickups
     @State private var screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
     @State private var streakDays = SharedSettings.streakDays
-    @State private var unlockedIDs = SharedSettings.unlockedAchievements
+    @State private var bestStreak = SharedSettings.bestStreak
+    @State private var streakHistory = SharedSettings.streakHistory
+
+    @State private var fireScale: CGFloat = 1.0
+    @State private var questProgress: [CGFloat] = [0, 0, 0]
+    @State private var bubbleBounce: CGFloat = 0
+    @State private var calendarMonthOffset: Int = 0
+
+    private var streakTier: StreakTier { .from(days: streakDays) }
 
     var body: some View {
         NavigationStack {
@@ -13,361 +21,536 @@ struct ChallengesView: View {
                 BrainRotTheme.background.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 20) {
-                        // Streak banner
+                    VStack(spacing: 16) {
+                        krakenSpeechBubble
+                        questBoard
                         streakBanner
-
-                        // Daily challenges
-                        dailyChallengesSection
-
-                        // Weekly goals
-                        weeklyGoalsSection
-
-                        // Achievement gallery
-                        achievementGallery
+                        streakCalendar
                     }
-                    .padding()
+                    .padding(.horizontal)
                     .padding(.top, 4)
+                    .padding(.bottom, 20)
                 }
             }
             .navigationTitle("Challenges")
-            .onAppear { refreshData() }
+            .onAppear {
+                refreshData()
+                startAnimations()
+            }
         }
     }
+
+    // MARK: - Data
 
     private func refreshData() {
         score = SharedSettings.lastScore
         pickups = SharedSettings.lastPickups
         screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
         streakDays = SharedSettings.streakDays
-        unlockedIDs = SharedSettings.unlockedAchievements
+        bestStreak = SharedSettings.bestStreak
+        streakHistory = SharedSettings.streakHistory
+        SharedSettings.recordStreakDay()
+    }
+
+    private func startAnimations() {
+        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+            fireScale = 1.15
+        }
+        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+            bubbleBounce = 4
+        }
+
+        let quests = dailyQuests
+        for i in 0..<min(3, quests.count) {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3 + Double(i) * 0.15)) {
+                questProgress[i] = CGFloat(quests[i].progress)
+            }
+        }
+    }
+
+    // MARK: - Kraken Speech Bubble
+
+    private var krakenSpeech: String {
+        let quests = dailyQuests
+        let done = quests.filter { $0.isComplete }.count
+
+        if done == 3 {
+            return ["You're crushing it! I'm so happy!", "All quests done! You're my hero!", "Best. Human. Ever."].randomElement()!
+        } else if done == 2 {
+            return ["Almost there! One more quest!", "So close, don't stop now!"].randomElement()!
+        } else if done == 1 {
+            return ["Come on, I believe in you!", "We can do better together!"].randomElement()!
+        } else if streakDays > 7 {
+            return "We've been at this for \(streakDays) days... don't quit on me!"
+        } else if streakDays > 0 {
+            return "Let's keep the streak alive today!"
+        } else {
+            return "Hey! Let's start a streak together!"
+        }
+    }
+
+    private var krakenMood: String {
+        let done = dailyQuests.filter { $0.isComplete }.count
+        switch done {
+        case 3: return "\u{2728}"   // sparkles
+        case 2: return "\u{1F60A}"  // smile
+        case 1: return "\u{1F614}"  // pensive
+        default: return "\u{1F630}" // anxious
+        }
+    }
+
+    private var krakenSpeechBubble: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Mini kraken face
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [krakenBodyColor, krakenBodyColor.opacity(0.7)],
+                            center: .init(x: 0.4, y: 0.35),
+                            startRadius: 5,
+                            endRadius: 25
+                        )
+                    )
+                    .frame(width: 50, height: 50)
+                    .shadow(color: krakenBodyColor.opacity(0.3), radius: 6, y: 3)
+
+                Text(krakenMood)
+                    .font(.system(size: 22))
+            }
+            .offset(y: bubbleBounce)
+
+            // Speech bubble
+            VStack(alignment: .leading, spacing: 4) {
+                Text(krakenSpeech)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                let done = dailyQuests.filter { $0.isComplete }.count
+                Text("\(done)/3 quests complete")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+            .padding(12)
+            .background(BrainRotTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
+            )
+        }
+        .padding(.top, 4)
+    }
+
+    private var krakenBodyColor: Color {
+        let done = dailyQuests.filter { $0.isComplete }.count
+        switch done {
+        case 3: return Color(red: 0.55, green: 0.88, blue: 0.70)  // mint (happy)
+        case 2: return Color(red: 0.52, green: 0.82, blue: 0.78)  // seafoam
+        case 1: return Color(red: 0.75, green: 0.62, blue: 0.88)  // lavender
+        default: return Color(red: 0.92, green: 0.58, blue: 0.58) // coral (anxious)
+        }
+    }
+
+    // MARK: - Quest Board
+
+    private var questBoard: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(spacing: 8) {
+                Image(systemName: "scroll.fill")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(BrainRotTheme.neonOrange)
+                Text("Daily Quests")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            // Quest rows
+            let quests = dailyQuests
+            ForEach(Array(quests.enumerated()), id: \.element.id) { index, quest in
+                questRow(quest: quest, index: index)
+
+                if index < quests.count - 1 {
+                    Divider()
+                        .padding(.leading, 56)
+                }
+            }
+
+            Spacer().frame(height: 6)
+        }
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
+        )
+    }
+
+    private func questRow(quest: Quest, index: Int) -> some View {
+        HStack(spacing: 12) {
+            // Mini ring
+            ZStack {
+                Circle()
+                    .stroke(quest.color.opacity(0.15), lineWidth: 4)
+                    .frame(width: 36, height: 36)
+
+                Circle()
+                    .trim(from: 0, to: min(questProgress[index], 1.0))
+                    .stroke(
+                        quest.color,
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    )
+                    .frame(width: 36, height: 36)
+                    .rotationEffect(.degrees(-90))
+
+                if quest.isComplete {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(quest.color)
+                } else {
+                    Text(quest.emoji)
+                        .font(.system(size: 16))
+                }
+            }
+
+            // Quest info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(quest.name)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(quest.isComplete ? BrainRotTheme.textSecondary : BrainRotTheme.textPrimary)
+                    .strikethrough(quest.isComplete, color: BrainRotTheme.textSecondary)
+
+                Text(quest.subtitle)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+
+            Spacer()
+
+            // Status
+            if quest.isComplete {
+                Text("DONE")
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.neonGreen)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(BrainRotTheme.neonGreen.opacity(0.12))
+                    .clipShape(Capsule())
+            } else {
+                Text("\(Int(quest.progress * 100))%")
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(quest.color)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
     }
 
     // MARK: - Streak Banner
 
     private var streakBanner: some View {
-        HStack(spacing: 14) {
-            VStack(spacing: 2) {
-                Text("\(streakDays)")
-                    .font(.system(size: 40, weight: .black, design: .rounded))
-                    .foregroundColor(streakDays > 0 ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
-                Text("day streak")
-                    .font(.system(size: 13, weight: .medium))
+        HStack(spacing: 10) {
+            Text(streakTier.fireEmoji)
+                .font(.system(size: 24))
+                .scaleEffect(fireScale)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(streakDays)-day streak")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+
+                Text(streakMessage)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundColor(BrainRotTheme.textSecondary)
+                    .lineLimit(1)
             }
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(streakMessage)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
-                    .multilineTextAlignment(.trailing)
-
-                Text("Score under 50 = streak day")
-                    .font(.system(size: 11))
-                    .foregroundColor(BrainRotTheme.textSecondary)
-            }
-        }
-        .padding(18)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(BrainRotTheme.neonOrange.opacity(streakDays > 0 ? 0.3 : 0.1), lineWidth: 1)
-        )
-    }
-
-    private var streakMessage: String {
-        switch streakDays {
-        case 0: return "Start your streak today!"
-        case 1: return "Day 1 - Let's go!"
-        case 2...3: return "Building momentum!"
-        case 4...6: return "You're on fire!"
-        case 7...13: return "One week strong!"
-        case 14...29: return "Unstoppable!"
-        default: return "Legendary streak!"
-        }
-    }
-
-    // MARK: - Daily Challenges
-
-    private var dailyChallengesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader(icon: "flag.checkered", title: "Today's Challenges", color: BrainRotTheme.neonPink)
-
-            VStack(spacing: 10) {
-                ForEach(dailyChallenges) { challenge in
-                    challengeCard(challenge)
+            if bestStreak > 0 {
+                VStack(spacing: 2) {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(BrainRotTheme.goldColor)
+                    Text("\(bestStreak)")
+                        .font(.system(size: 13, weight: .black, design: .rounded))
+                        .foregroundColor(BrainRotTheme.goldColor)
+                    Text("best")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(BrainRotTheme.textSecondary)
                 }
             }
         }
+        .padding(14)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(streakTier.color.opacity(streakDays > 0 ? 0.3 : 0.1), lineWidth: 1.5)
+        )
     }
 
-    private var dailyChallenges: [Challenge] {
+    // MARK: - Quest Data
+
+    private var dailyQuests: [Quest] {
         let limit = SharedSettings.dailyLimitMinutes
         let halfLimit = limit / 2.0
+        var quests: [Quest] = []
 
-        var challenges: [Challenge] = []
-
-        // Score-based challenge
-        if score > 50 {
-            challenges.append(Challenge(
-                emoji: "\u{1F3AF}",
-                title: "Score Smasher",
-                description: "Get your score below 50",
-                progress: max(0, Double(100 - score) / 50.0),
-                isComplete: score < 50
-            ))
-        } else {
-            challenges.append(Challenge(
-                emoji: "\u{1F3AF}",
-                title: "Score Smasher",
-                description: "Keep your score below 50",
-                progress: 1.0,
-                isComplete: true
-            ))
-        }
-
-        // Screen time challenge
-        let screenTimeGoal = halfLimit
-        let stProgress = screenTimeMinutes > 0 ? min(1.0, (screenTimeGoal - screenTimeMinutes) / screenTimeGoal) : 1.0
-        challenges.append(Challenge(
-            emoji: "\u{23F1}\u{FE0F}",
-            title: "Half Day Hero",
-            description: "Stay under \(SharedSettings.formatLimit(screenTimeGoal))",
-            progress: max(0, stProgress),
-            isComplete: screenTimeMinutes <= screenTimeGoal
+        // Quest 1: Score
+        let scoreComplete = score < 50
+        let scoreProgress = scoreComplete ? 1.0 : min(1.0, max(0, Double(100 - score) / 50.0))
+        quests.append(Quest(
+            emoji: "\u{1F3AF}", name: "Slay the Score",
+            subtitle: scoreComplete ? "Score is under 50!" : "Get your score below 50",
+            progress: scoreProgress, isComplete: scoreComplete,
+            color: BrainRotTheme.neonGreen
         ))
 
-        // Pickup challenge
-        let pickupGoal = 30
-        let pkProgress = pickups > 0 ? min(1.0, Double(pickupGoal - pickups) / Double(pickupGoal)) : 1.0
-        challenges.append(Challenge(
-            emoji: "\u{1F4F1}",
-            title: "Phone Down",
-            description: "Keep pickups under \(pickupGoal)",
-            progress: max(0, pkProgress),
-            isComplete: pickups <= pickupGoal
+        // Quest 2: Screen time
+        let stGoal = halfLimit
+        let stComplete = screenTimeMinutes <= stGoal
+        let stProgress = screenTimeMinutes > 0 ? min(1.0, max(0, (stGoal - screenTimeMinutes) / stGoal)) : 1.0
+        quests.append(Quest(
+            emoji: "\u{23F1}\u{FE0F}", name: "Time Bandit",
+            subtitle: stComplete ? "Under \(SharedSettings.formatLimit(stGoal))!" : "Stay under \(SharedSettings.formatLimit(stGoal))",
+            progress: stProgress, isComplete: stComplete,
+            color: BrainRotTheme.neonBlue
         ))
 
-        return challenges
+        // Quest 3: Pickups
+        let pkGoal = 30
+        let pkComplete = pickups <= pkGoal
+        let pkProgress = pickups > 0 ? min(1.0, max(0, Double(pkGoal - pickups) / Double(pkGoal))) : 1.0
+        quests.append(Quest(
+            emoji: "\u{1F4F1}", name: "Hands Off!",
+            subtitle: pkComplete ? "Under \(pkGoal) pickups!" : "Keep pickups under \(pkGoal)",
+            progress: pkProgress, isComplete: pkComplete,
+            color: BrainRotTheme.neonPurple
+        ))
+
+        return quests
     }
 
-    private func challengeCard(_ challenge: Challenge) -> some View {
-        HStack(spacing: 14) {
-            Text(challenge.emoji)
-                .font(.system(size: 28))
+    // MARK: - Motivational Message
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(challenge.title)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+    private var streakMessage: String {
+        if streakDays == 0 { return "Start your streak today!" }
+        switch streakDays {
+        case 1: return "Day 1 \u{2014} let's go!"
+        case 2: return "2 days! Don't stop!"
+        case 3: return "3 days \u{1F525} Building momentum!"
+        case 4...6: return "\(streakDays) days! Getting stronger!"
+        case 7: return "\u{1F389} ONE WEEK!"
+        case 8...13: return "\(streakDays) days \u{2014} keep it up!"
+        case 14: return "\u{1F3C6} TWO WEEKS!"
+        case 15...29: return "\(streakDays) days \u{2014} unstoppable!"
+        case 30: return "\u{1F451} 30 DAYS!"
+        case 31...59: return "\(streakDays) days \u{2014} legend!"
+        case 60...89: return "\u{1F48E} \(streakDays) days!"
+        case 90...99: return "\u{1F680} \(streakDays) days!"
+        case 100: return "\u{1F31F} 100 DAYS! GOAT!"
+        default: return "\(streakDays) days \u{2014} untouchable"
+        }
+    }
+
+    // MARK: - Calendar
+
+    private func formatDateISO(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: date)
+    }
+
+    private var calendarMonthName: String {
+        let cal = Calendar.current
+        let date = cal.date(byAdding: .month, value: calendarMonthOffset, to: .now)!
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
+    }
+
+    private var streakCalendar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header with month navigation
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        calendarMonthOffset = max(-2, calendarMonthOffset - 1)
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(calendarMonthOffset > -2 ? BrainRotTheme.neonPink : BrainRotTheme.cardBorder)
+                }
+                .disabled(calendarMonthOffset <= -2)
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(BrainRotTheme.neonOrange)
+                    Text(calendarMonthName)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
-                    Spacer()
-                    if challenge.isComplete {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(BrainRotTheme.neonGreen)
+                }
+
+                Spacer()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        calendarMonthOffset = min(0, calendarMonthOffset + 1)
                     }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(calendarMonthOffset < 0 ? BrainRotTheme.neonPink : BrainRotTheme.cardBorder)
+                }
+                .disabled(calendarMonthOffset >= 0)
+            }
+
+            let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+            let dayLabels = [
+                (0, "M"), (1, "T"), (2, "W"), (3, "T"), (4, "F"), (5, "S"), (6, "S")
+            ]
+
+            HStack(spacing: 4) {
+                ForEach(dayLabels, id: \.0) { _, label in
+                    Text(label)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+
+            let cal = Calendar.current
+            // First day of the displayed month
+            let viewDate = cal.date(byAdding: .month, value: calendarMonthOffset, to: .now)!
+            let comps = cal.dateComponents([.year, .month], from: viewDate)
+            let firstOfMonth = cal.date(from: comps)!
+            let daysInMonth = cal.range(of: .day, in: .month, for: firstOfMonth)!.count
+            let firstWeekday = (cal.component(.weekday, from: firstOfMonth) + 5) % 7
+
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(0..<firstWeekday, id: \.self) { idx in
+                    Color.clear.frame(height: 30).id("pad-\(idx)")
                 }
 
-                Text(challenge.description)
-                    .font(.system(size: 12))
-                    .foregroundColor(BrainRotTheme.textSecondary)
+                ForEach(0..<daysInMonth, id: \.self) { dayIdx in
+                    let date = cal.date(byAdding: .day, value: dayIdx, to: firstOfMonth)!
+                    let dateStr = formatDateISO(date)
+                    let isStreakDay = streakHistory.contains(dateStr)
+                    let isToday = cal.isDateInToday(date)
+                    let isFuture = date > .now
 
-                // Progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(BrainRotTheme.cardBorder)
-                            .frame(height: 6)
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(challenge.isComplete ? BrainRotTheme.neonGreen : BrainRotTheme.neonPink)
-                            .frame(width: geo.size.width * max(0, min(1, challenge.progress)), height: 6)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(
+                                isFuture ? Color.clear :
+                                isStreakDay ? streakTier.color.opacity(0.8) :
+                                isToday ? BrainRotTheme.neonPink.opacity(0.15) :
+                                BrainRotTheme.cardBorder.opacity(0.5)
+                            )
+
+                        if isStreakDay {
+                            Text("\u{1F525}").font(.system(size: 13))
+                        } else if isToday {
+                            Text("\(dayIdx + 1)")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.neonPink)
+                        } else if !isFuture {
+                            Text("\(dayIdx + 1)")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
                     }
+                    .frame(height: 30)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(isToday ? BrainRotTheme.neonPink.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                    )
                 }
-                .frame(height: 6)
+            }
+
+            // Month summary
+            let monthStreakDays = (0..<daysInMonth).filter { dayIdx in
+                let date = cal.date(byAdding: .day, value: dayIdx, to: firstOfMonth)!
+                return streakHistory.contains(formatDateISO(date))
+            }.count
+
+            if monthStreakDays > 0 {
+                HStack(spacing: 4) {
+                    Text("\u{1F525}")
+                        .font(.system(size: 11))
+                    Text("\(monthStreakDays) active days this month")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                .padding(.top, 4)
             }
         }
-        .padding(14)
+        .padding(16)
         .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(challenge.isComplete ? BrainRotTheme.neonGreen.opacity(0.3) : BrainRotTheme.cardBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
         )
-    }
-
-    // MARK: - Weekly Goals
-
-    private var weeklyGoalsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader(icon: "calendar", title: "Weekly Goals", color: BrainRotTheme.neonBlue)
-
-            VStack(spacing: 10) {
-                weeklyGoalCard(
-                    emoji: "\u{1F525}",
-                    title: "7-Day Streak",
-                    description: "Keep score under 50 for 7 consecutive days",
-                    current: streakDays,
-                    target: 7
-                )
-
-                weeklyGoalCard(
-                    emoji: "\u{1F9D8}",
-                    title: "Digital Detox",
-                    description: "Score under 30 for 3 days this week",
-                    current: min(3, streakDays),
-                    target: 3
-                )
-
-                weeklyGoalCard(
-                    emoji: "\u{1F4AA}",
-                    title: "Consistency King",
-                    description: "Open the app every day this week",
-                    current: min(7, max(1, streakDays)),
-                    target: 7
-                )
-            }
-        }
-    }
-
-    private func weeklyGoalCard(emoji: String, title: String, description: String, current: Int, target: Int) -> some View {
-        let progress = Double(min(current, target)) / Double(target)
-        let isComplete = current >= target
-
-        return HStack(spacing: 14) {
-            Text(emoji)
-                .font(.system(size: 28))
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(title)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                    Spacer()
-                    Text("\(min(current, target))/\(target)")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(isComplete ? BrainRotTheme.neonGreen : BrainRotTheme.neonBlue)
-                }
-
-                Text(description)
-                    .font(.system(size: 12))
-                    .foregroundColor(BrainRotTheme.textSecondary)
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(BrainRotTheme.cardBorder)
-                            .frame(height: 6)
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(isComplete ? BrainRotTheme.neonGreen : BrainRotTheme.neonBlue)
-                            .frame(width: geo.size.width * progress, height: 6)
-                    }
-                }
-                .frame(height: 6)
-            }
-        }
-        .padding(14)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(isComplete ? BrainRotTheme.neonGreen.opacity(0.3) : BrainRotTheme.cardBorder, lineWidth: 1)
-        )
-    }
-
-    // MARK: - Achievement Gallery
-
-    private var achievementGallery: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader(icon: "trophy.fill", title: "Achievements", color: BrainRotTheme.goldColor)
-
-            let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(allAchievements) { achievement in
-                    achievementTile(achievement)
-                }
-            }
-        }
-    }
-
-    private func achievementTile(_ achievement: AchievementInfo) -> some View {
-        let isUnlocked = unlockedIDs.contains(achievement.id)
-
-        return VStack(spacing: 6) {
-            Text(achievement.emoji)
-                .font(.system(size: 32))
-                .opacity(isUnlocked ? 1.0 : 0.3)
-                .grayscale(isUnlocked ? 0 : 1)
-
-            Text(achievement.title)
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundColor(isUnlocked ? BrainRotTheme.textPrimary : BrainRotTheme.textSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-
-            Text(achievement.requirement)
-                .font(.system(size: 9))
-                .foregroundColor(BrainRotTheme.textSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 6)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(
-                    isUnlocked ? achievement.color.opacity(0.4) : BrainRotTheme.cardBorder,
-                    lineWidth: 1
-                )
-        )
-    }
-
-    // MARK: - Helpers
-
-    private func sectionHeader(icon: String, title: String, color: Color) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(color)
-            Text(title)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundColor(BrainRotTheme.textPrimary)
-            Spacer()
-        }
     }
 }
 
-// MARK: - Models
+// MARK: - Data Types
 
-private struct Challenge: Identifiable {
+private struct Quest: Identifiable {
     let id = UUID()
     let emoji: String
-    let title: String
-    let description: String
+    let name: String
+    let subtitle: String
     let progress: Double
     let isComplete: Bool
-}
-
-private struct AchievementInfo: Identifiable {
-    let id: String
-    let emoji: String
-    let title: String
-    let requirement: String
     let color: Color
 }
 
-// All possible achievements (matches DoomAchievement in extension)
-private let allAchievements: [AchievementInfo] = [
-    AchievementInfo(id: "GRASS TOUCHER", emoji: "\u{1F33F}", title: "Grass Toucher", requirement: "Score under 20", color: BrainRotTheme.neonGreen),
-    AchievementInfo(id: "ZEN MASTER", emoji: "\u{1F9D8}", title: "Zen Master", requirement: "Score of 0", color: BrainRotTheme.neonGreen),
-    AchievementInfo(id: "PHONE ADDICT", emoji: "\u{1F4F1}", title: "Phone Addict", requirement: "50+ pickups", color: BrainRotTheme.neonPurple),
-    AchievementInfo(id: "PICKUP ARTIST", emoji: "\u{1F3AF}", title: "Pickup Artist", requirement: "80+ pickups", color: BrainRotTheme.neonBlue),
-    AchievementInfo(id: "MARATHON SCROLLER", emoji: "\u{23F1}\u{FE0F}", title: "Marathon Scroller", requirement: "3h on one app", color: BrainRotTheme.neonPink),
-    AchievementInfo(id: "TERMINAL BRAINROT", emoji: "\u{1F9E0}\u{1F480}", title: "Terminal Brainrot", requirement: "Score over 90", color: BrainRotTheme.neonPink),
-]
+private enum StreakTier {
+    case none, bronze, silver, gold, diamond, legendary
+
+    static func from(days: Int) -> StreakTier {
+        switch days {
+        case 0: return .none
+        case 1...6: return .bronze
+        case 7...13: return .silver
+        case 14...29: return .gold
+        case 30...59: return .diamond
+        default: return .legendary
+        }
+    }
+
+    var fireEmoji: String {
+        switch self {
+        case .none: return "\u{1F9CA}"
+        case .bronze: return "\u{1F525}"
+        case .silver: return "\u{1F525}"
+        case .gold: return "\u{1F525}"
+        case .diamond: return "\u{1F48E}"
+        case .legendary: return "\u{1F451}"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .none: return BrainRotTheme.textSecondary
+        case .bronze: return BrainRotTheme.bronzeColor
+        case .silver: return BrainRotTheme.silverColor
+        case .gold: return BrainRotTheme.goldColor
+        case .diamond: return BrainRotTheme.neonBlue
+        case .legendary: return BrainRotTheme.neonPurple
+        }
+    }
+}

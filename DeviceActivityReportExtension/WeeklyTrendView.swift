@@ -56,7 +56,7 @@ struct WeeklyTrendView: View {
                     VStack(spacing: 4) {
                         Text(day.formattedDuration)
                             .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(day.isToday ? .white : BrainRotTheme.textSecondary)
+                            .foregroundColor(day.isToday ? BrainRotTheme.textPrimary : BrainRotTheme.textSecondary)
 
                         ZStack(alignment: .top) {
                             RoundedRectangle(cornerRadius: 5)
@@ -83,7 +83,7 @@ struct WeeklyTrendView: View {
 
                         Text(day.dayLabel)
                             .font(.system(size: 11, weight: day.isToday ? .bold : .regular))
-                            .foregroundColor(day.isToday ? .white : BrainRotTheme.textSecondary)
+                            .foregroundColor(day.isToday ? BrainRotTheme.textPrimary : BrainRotTheme.textSecondary)
                     }
                     .frame(maxWidth: .infinity)
                 }

@@ -64,7 +64,7 @@ struct MetricsGridView: View {
             HStack {
                 Text(value)
                     .font(.system(size: 20, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(BrainRotTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Spacer()
