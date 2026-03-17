@@ -101,6 +101,75 @@ enum SharedSettings {
         }
     }
 
+    // MARK: - Quest History (per-day quest completion)
+
+    static let questHistoryKey = "questHistory"
+
+    /// Dictionary of date string -> [Bool] (quest1 complete, quest2 complete, quest3 complete)
+    static var questHistory: [String: [Bool]] {
+        get {
+            guard let data = sharedDefaults.data(forKey: questHistoryKey),
+                  let dict = try? JSONDecoder().decode([String: [Bool]].self, from: data) else {
+                return [:]
+            }
+            return dict
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                sharedDefaults.set(data, forKey: questHistoryKey)
+            }
+        }
+    }
+
+    /// Save today's quest results
+    static func recordQuestResults(_ results: [Bool]) {
+        let today = ISO8601DateFormatter().string(from: Calendar.current.startOfDay(for: .now)).prefix(10)
+        var history = questHistory
+        history[String(today)] = results
+        // Keep last 90 days
+        if history.count > 90 {
+            let sorted = history.keys.sorted()
+            for key in sorted.prefix(history.count - 90) {
+                history.removeValue(forKey: key)
+            }
+        }
+        questHistory = history
+    }
+
+    // MARK: - Achievement History (per-day)
+
+    static let achievementHistoryKey = "achievementHistory"
+
+    /// Dictionary of date string -> [String] (achievement IDs earned that day)
+    static var achievementHistory: [String: [String]] {
+        get {
+            guard let data = sharedDefaults.data(forKey: achievementHistoryKey),
+                  let dict = try? JSONDecoder().decode([String: [String]].self, from: data) else {
+                return [:]
+            }
+            return dict
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                sharedDefaults.set(data, forKey: achievementHistoryKey)
+            }
+        }
+    }
+
+    /// Save today's achievements
+    static func recordAchievements(_ achievementIDs: [String]) {
+        let today = ISO8601DateFormatter().string(from: Calendar.current.startOfDay(for: .now)).prefix(10)
+        var history = achievementHistory
+        history[String(today)] = achievementIDs
+        if history.count > 90 {
+            let sorted = history.keys.sorted()
+            for key in sorted.prefix(history.count - 90) {
+                history.removeValue(forKey: key)
+            }
+        }
+        achievementHistory = history
+    }
+
     static func formatLimit(_ minutes: Double) -> String {
         let hours = Int(minutes) / 60
         let mins = Int(minutes) % 60

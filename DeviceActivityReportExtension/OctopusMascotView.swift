@@ -179,6 +179,7 @@ struct OctopusMascotView: View {
     @State private var particleDrift: CGFloat = 0
     @State private var particleFade: Double = 1
     @State private var eyeBlink: Bool = false
+    @State private var showTierSheet = false
 
     private var mood: OctopusMood { .from(score: score) }
 
@@ -202,19 +203,124 @@ struct OctopusMascotView: View {
                 // Floating particle decorations
                 floatingParticles
 
-                // Octopus character
+                // Octopus character — tap to see all tiers
                 VStack(spacing: -10) {
                     octopusBody
                     tentacles
                 }
                 .offset(y: bodyBob)
+                .onTapGesture { showTierSheet = true }
             }
             .frame(height: 220)
+
+            // ── Daily screen time ──
+            Text(totalScreenTime)
+                .font(.system(size: 22, weight: .black, design: .rounded))
+                .foregroundColor(BrainRotTheme.textPrimary)
 
             // ── Score info ──
             scoreDisplay
         }
         .onAppear { startAnimations() }
+        .sheet(isPresented: $showTierSheet) {
+            tierGallerySheet
+        }
+    }
+
+    // MARK: - Tier Gallery Sheet
+
+    private var allTiers: [(name: String, emoji: String, min: Int, max: Int, mood: OctopusMood)] {
+        [
+            ("Digital Monk",    "\u{2728}", 0,  19, .ecstatic),
+            ("Grass Toucher",   "\u{266A}", 20, 39, .happy),
+            ("Casual Scroller", "\u{1F4F1}", 40, 59, .neutral),
+            ("Doomscroller",    "\u{1F62E}", 60, 79, .sad),
+            ("Brainrot Mode",   "\u{1F9E0}", 80, 94, .distressed),
+            ("Full Brainrot",   "\u{1F480}", 95, 100, .zombie),
+        ]
+    }
+
+    private var tierGallerySheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(Array(allTiers.enumerated()), id: \.offset) { _, tier in
+                        let isCurrent = score >= tier.min && score <= tier.max
+                        let isUnlocked = score <= tier.max // better tiers are "unlocked" if your score is low enough
+
+                        HStack(spacing: 14) {
+                            // Mini octopus circle
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        RadialGradient(
+                                            colors: [tier.mood.bodyColor, tier.mood.bodyColorDark],
+                                            center: .init(x: 0.4, y: 0.35),
+                                            startRadius: 5,
+                                            endRadius: 25
+                                        )
+                                    )
+                                    .frame(width: 50, height: 50)
+
+                                Text(tier.emoji)
+                                    .font(.system(size: 22))
+                            }
+                            .opacity(isUnlocked ? 1.0 : 0.4)
+                            .grayscale(isUnlocked ? 0 : 0.8)
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack {
+                                    Text(tier.name)
+                                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                                        .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textPrimary)
+                                    if isCurrent {
+                                        Text("CURRENT")
+                                            .font(.system(size: 9, weight: .black, design: .rounded))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(tier.mood.bodyColorDark)
+                                            .clipShape(Capsule())
+                                    }
+                                }
+
+                                Text("Score \(tier.min)\u{2013}\(tier.max)")
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundColor(BrainRotTheme.textSecondary)
+                            }
+
+                            Spacer()
+
+                            if isCurrent {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(tier.mood.bodyColorDark)
+                            } else if !isUnlocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
+                            }
+                        }
+                        .padding(14)
+                        .background(isCurrent ? tier.mood.bodyColor.opacity(0.12) : BrainRotTheme.cardBorder.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(isCurrent ? tier.mood.bodyColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+                        )
+                    }
+                }
+                .padding()
+            }
+            .background(BrainRotTheme.background)
+            .navigationTitle("Kraken Tiers")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { showTierSheet = false }
+                }
+            }
+        }
     }
 
     // MARK: - Speech Bubble
@@ -740,40 +846,34 @@ struct OctopusMascotView: View {
             )
 
             // Progress to next tier
-            if let nextName = info.nextName, let nextEmoji = info.nextEmoji {
+            if let nextName = info.nextName {
                 VStack(spacing: 6) {
-                    // Bar with tier emojis at each end
-                    HStack(spacing: 8) {
-                        Text(info.emoji)
-                            .font(.system(size: 20))
+                    // Clean progress bar (no emojis)
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(BrainRotTheme.cardBorder)
+                            .frame(height: 8)
 
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(BrainRotTheme.cardBorder)
-                                .frame(height: 8)
-
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [mood.bodyColor, mood.bodyColorDark],
-                                        startPoint: .leading, endPoint: .trailing
-                                    )
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [mood.bodyColor, mood.bodyColorDark],
+                                    startPoint: .leading, endPoint: .trailing
                                 )
-                                .frame(
-                                    width: max(0, min(1, info.progress)) * 180,
-                                    height: 8
-                                )
-                        }
-                        .frame(width: 180)
-
-                        Text(nextEmoji)
-                            .font(.system(size: 20))
-                            .opacity(0.4)
+                            )
+                            .frame(
+                                width: max(0, min(1, info.progress)) * 220,
+                                height: 8
+                            )
                     }
+                    .frame(width: 220)
 
-                    // How much to level up
-                    let pointsToNext = score - info.nextMax
-                    Text("Reduce \(pointsToNext) points to become \(nextName)")
+                    // Time to reduce under the bar
+                    let currentMinutes = totalDurationSeconds / 60.0
+                    let targetMinutes = BrainRotCalculator.minutesForScore(info.nextMax)
+                    let reduceMinutes = max(0, currentMinutes - targetMinutes)
+                    let reduceFormatted = BrainRotCalculator.formatDuration(reduceMinutes * 60)
+                    Text("Reduce \(reduceFormatted) to become \(nextName)")
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                         .multilineTextAlignment(.center)
@@ -783,6 +883,7 @@ struct OctopusMascotView: View {
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(BrainRotTheme.neonGreen)
             }
+
         }
     }
 
