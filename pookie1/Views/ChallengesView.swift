@@ -2,22 +2,17 @@ import SwiftUI
 
 struct ChallengesView: View {
     @State private var score = SharedSettings.lastScore
+    @State private var pickups = SharedSettings.lastPickups
+    @State private var screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
     @State private var streakDays = SharedSettings.streakDays
     @State private var bestStreak = SharedSettings.bestStreak
     @State private var streakHistory = SharedSettings.streakHistory
 
     @State private var fireScale: CGFloat = 1.0
-    @State private var ringProgress: CGFloat = 0
+    @State private var questProgress: [CGFloat] = [0, 0, 0]
+    @State private var bubbleBounce: CGFloat = 0
 
-    private var ringClosed: Bool { score < 50 }
     private var streakTier: StreakTier { .from(days: streakDays) }
-
-    private var ringColor: Color {
-        if ringClosed { return BrainRotTheme.neonGreen }
-        if score < 70 { return BrainRotTheme.neonBlue }
-        if score < 85 { return BrainRotTheme.neonOrange }
-        return BrainRotTheme.neonPink
-    }
 
     var body: some View {
         NavigationStack {
@@ -25,12 +20,14 @@ struct ChallengesView: View {
                 BrainRotTheme.background.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 24) {
-                        dailyRingView
+                    VStack(spacing: 16) {
+                        krakenSpeechBubble
+                        questBoard
+                        streakBanner
                         streakCalendar
                     }
                     .padding(.horizontal)
-                    .padding(.top, 8)
+                    .padding(.top, 4)
                     .padding(.bottom, 20)
                 }
             }
@@ -46,6 +43,8 @@ struct ChallengesView: View {
 
     private func refreshData() {
         score = SharedSettings.lastScore
+        pickups = SharedSettings.lastPickups
+        screenTimeMinutes = SharedSettings.lastScreenTimeMinutes
         streakDays = SharedSettings.streakDays
         bestStreak = SharedSettings.bestStreak
         streakHistory = SharedSettings.streakHistory
@@ -56,104 +55,286 @@ struct ChallengesView: View {
         withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
             fireScale = 1.15
         }
+        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+            bubbleBounce = 4
+        }
 
-        let target: CGFloat = ringClosed
-            ? 1.0
-            : CGFloat(min(1.0, max(0, Double(100 - score) / 50.0)))
-
-        withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(0.3)) {
-            ringProgress = target
+        let quests = dailyQuests
+        for i in 0..<min(3, quests.count) {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3 + Double(i) * 0.15)) {
+                questProgress[i] = CGFloat(quests[i].progress)
+            }
         }
     }
 
-    // MARK: - The Ring
+    // MARK: - Kraken Speech Bubble
 
-    private var dailyRingView: some View {
-        VStack(spacing: 16) {
-            // Ring
+    private var krakenSpeech: String {
+        let quests = dailyQuests
+        let done = quests.filter { $0.isComplete }.count
+
+        if done == 3 {
+            return ["You're crushing it! I'm so happy!", "All quests done! You're my hero!", "Best. Human. Ever."].randomElement()!
+        } else if done == 2 {
+            return ["Almost there! One more quest!", "So close, don't stop now!"].randomElement()!
+        } else if done == 1 {
+            return ["Come on, I believe in you!", "We can do better together!"].randomElement()!
+        } else if streakDays > 7 {
+            return "We've been at this for \(streakDays) days... don't quit on me!"
+        } else if streakDays > 0 {
+            return "Let's keep the streak alive today!"
+        } else {
+            return "Hey! Let's start a streak together!"
+        }
+    }
+
+    private var krakenMood: String {
+        let done = dailyQuests.filter { $0.isComplete }.count
+        switch done {
+        case 3: return "\u{2728}"   // sparkles
+        case 2: return "\u{1F60A}"  // smile
+        case 1: return "\u{1F614}"  // pensive
+        default: return "\u{1F630}" // anxious
+        }
+    }
+
+    private var krakenSpeechBubble: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Mini kraken face
             ZStack {
-                // Soft glow
                 Circle()
-                    .fill(ringColor.opacity(0.08))
-                    .frame(width: 240, height: 240)
-                    .blur(radius: 20)
-
-                // Background track
-                Circle()
-                    .stroke(ringColor.opacity(0.15), lineWidth: 18)
-                    .frame(width: 200, height: 200)
-
-                // Filled arc
-                Circle()
-                    .trim(from: 0, to: min(ringProgress, 1.0))
-                    .stroke(
-                        ringColor,
-                        style: StrokeStyle(lineWidth: 18, lineCap: .round)
+                    .fill(
+                        RadialGradient(
+                            colors: [krakenBodyColor, krakenBodyColor.opacity(0.7)],
+                            center: .init(x: 0.4, y: 0.35),
+                            startRadius: 5,
+                            endRadius: 25
+                        )
                     )
-                    .frame(width: 200, height: 200)
-                    .rotationEffect(.degrees(-90))
+                    .frame(width: 50, height: 50)
+                    .shadow(color: krakenBodyColor.opacity(0.3), radius: 6, y: 3)
 
-                // Completion glow
-                if ringClosed {
-                    Circle()
-                        .stroke(BrainRotTheme.neonGreen.opacity(0.3), lineWidth: 4)
-                        .frame(width: 224, height: 224)
-                        .blur(radius: 6)
-                }
+                Text(krakenMood)
+                    .font(.system(size: 22))
+            }
+            .offset(y: bubbleBounce)
 
-                // Center content
-                VStack(spacing: 4) {
-                    Text(streakTier.fireEmoji)
-                        .font(.system(size: 32))
-                        .scaleEffect(fireScale)
+            // Speech bubble
+            VStack(alignment: .leading, spacing: 4) {
+                Text(krakenSpeech)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text("\(streakDays)")
-                        .font(.system(size: 48, weight: .black, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
+                let done = dailyQuests.filter { $0.isComplete }.count
+                Text("\(done)/3 quests complete")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+            .padding(12)
+            .background(BrainRotTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
+            )
+        }
+        .padding(.top, 4)
+    }
 
-                    Text(streakDays == 1 ? "day" : "days")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textSecondary)
+    private var krakenBodyColor: Color {
+        let done = dailyQuests.filter { $0.isComplete }.count
+        switch done {
+        case 3: return Color(red: 0.55, green: 0.88, blue: 0.70)  // mint (happy)
+        case 2: return Color(red: 0.52, green: 0.82, blue: 0.78)  // seafoam
+        case 1: return Color(red: 0.75, green: 0.62, blue: 0.88)  // lavender
+        default: return Color(red: 0.92, green: 0.58, blue: 0.58) // coral (anxious)
+        }
+    }
+
+    // MARK: - Quest Board
+
+    private var questBoard: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(spacing: 8) {
+                Image(systemName: "scroll.fill")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(BrainRotTheme.neonOrange)
+                Text("Daily Quests")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            // Quest rows
+            let quests = dailyQuests
+            ForEach(Array(quests.enumerated()), id: \.element.id) { index, quest in
+                questRow(quest: quest, index: index)
+
+                if index < quests.count - 1 {
+                    Divider()
+                        .padding(.leading, 56)
                 }
             }
-            .frame(height: 250)
 
-            // Status
-            if ringClosed {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(BrainRotTheme.neonGreen)
-                    Text("Ring Closed!")
-                        .font(.system(size: 16, weight: .black, design: .rounded))
-                        .foregroundColor(BrainRotTheme.neonGreen)
+            Spacer().frame(height: 6)
+        }
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
+        )
+    }
+
+    private func questRow(quest: Quest, index: Int) -> some View {
+        HStack(spacing: 12) {
+            // Mini ring
+            ZStack {
+                Circle()
+                    .stroke(quest.color.opacity(0.15), lineWidth: 4)
+                    .frame(width: 36, height: 36)
+
+                Circle()
+                    .trim(from: 0, to: min(questProgress[index], 1.0))
+                    .stroke(
+                        quest.color,
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    )
+                    .frame(width: 36, height: 36)
+                    .rotationEffect(.degrees(-90))
+
+                if quest.isComplete {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(quest.color)
+                } else {
+                    Text(quest.emoji)
+                        .font(.system(size: 16))
                 }
-            } else {
-                Text("Close your ring!")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+            }
+
+            // Quest info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(quest.name)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(quest.isComplete ? BrainRotTheme.textSecondary : BrainRotTheme.textPrimary)
+                    .strikethrough(quest.isComplete, color: BrainRotTheme.textSecondary)
+
+                Text(quest.subtitle)
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }
 
-            // Motivational message
-            Text(streakMessage)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundColor(BrainRotTheme.textPrimary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+            Spacer()
 
-            // Best streak (subtle)
+            // Status
+            if quest.isComplete {
+                Text("DONE")
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.neonGreen)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(BrainRotTheme.neonGreen.opacity(0.12))
+                    .clipShape(Capsule())
+            } else {
+                Text("\(Int(quest.progress * 100))%")
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(quest.color)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+
+    // MARK: - Streak Banner
+
+    private var streakBanner: some View {
+        HStack(spacing: 10) {
+            Text(streakTier.fireEmoji)
+                .font(.system(size: 24))
+                .scaleEffect(fireScale)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(streakDays)-day streak")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+
+                Text(streakMessage)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
             if bestStreak > 0 {
-                HStack(spacing: 4) {
+                VStack(spacing: 2) {
                     Image(systemName: "trophy.fill")
-                        .font(.system(size: 11))
+                        .font(.system(size: 14))
                         .foregroundColor(BrainRotTheme.goldColor)
-                    Text("Best: \(bestStreak) days")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    Text("\(bestStreak)")
+                        .font(.system(size: 13, weight: .black, design: .rounded))
+                        .foregroundColor(BrainRotTheme.goldColor)
+                    Text("best")
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(14)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(streakTier.color.opacity(streakDays > 0 ? 0.3 : 0.1), lineWidth: 1.5)
+        )
+    }
+
+    // MARK: - Quest Data
+
+    private var dailyQuests: [Quest] {
+        let limit = SharedSettings.dailyLimitMinutes
+        let halfLimit = limit / 2.0
+        var quests: [Quest] = []
+
+        // Quest 1: Score
+        let scoreComplete = score < 50
+        let scoreProgress = scoreComplete ? 1.0 : min(1.0, max(0, Double(100 - score) / 50.0))
+        quests.append(Quest(
+            emoji: "\u{1F3AF}", name: "Slay the Score",
+            subtitle: scoreComplete ? "Score is under 50!" : "Get your score below 50",
+            progress: scoreProgress, isComplete: scoreComplete,
+            color: BrainRotTheme.neonGreen
+        ))
+
+        // Quest 2: Screen time
+        let stGoal = halfLimit
+        let stComplete = screenTimeMinutes <= stGoal
+        let stProgress = screenTimeMinutes > 0 ? min(1.0, max(0, (stGoal - screenTimeMinutes) / stGoal)) : 1.0
+        quests.append(Quest(
+            emoji: "\u{23F1}\u{FE0F}", name: "Time Bandit",
+            subtitle: stComplete ? "Under \(SharedSettings.formatLimit(stGoal))!" : "Stay under \(SharedSettings.formatLimit(stGoal))",
+            progress: stProgress, isComplete: stComplete,
+            color: BrainRotTheme.neonBlue
+        ))
+
+        // Quest 3: Pickups
+        let pkGoal = 30
+        let pkComplete = pickups <= pkGoal
+        let pkProgress = pickups > 0 ? min(1.0, max(0, Double(pkGoal - pickups) / Double(pkGoal))) : 1.0
+        quests.append(Quest(
+            emoji: "\u{1F4F1}", name: "Hands Off!",
+            subtitle: pkComplete ? "Under \(pkGoal) pickups!" : "Keep pickups under \(pkGoal)",
+            progress: pkProgress, isComplete: pkComplete,
+            color: BrainRotTheme.neonPurple
+        ))
+
+        return quests
     }
 
     // MARK: - Motivational Message
@@ -161,24 +342,20 @@ struct ChallengesView: View {
     private var streakMessage: String {
         if streakDays == 0 { return "Start your streak today!" }
         switch streakDays {
-        case 1: return "Day 1 \u{2014} the hardest part is starting!"
-        case 2: return "2 days in! Don't stop now!"
-        case 3: return "3 days \u{1F525} Momentum is building!"
-        case 4...6: return "\(streakDays) days! You're getting stronger!"
-        case 7: return "\u{1F389} ONE WEEK! You're unstoppable!"
-        case 8...13: return "\(streakDays) days \u{2014} don't throw it away!"
-        case 14: return "\u{1F3C6} TWO WEEKS! This is serious!"
-        case 15...20: return "\(streakDays) days \u{2014} imagine losing this..."
-        case 21: return "3 WEEKS! You're a legend!"
-        case 22...29: return "\(streakDays) days \u{2014} SO close to a month!"
-        case 30: return "\u{1F451} 30 DAYS! KING STATUS!"
-        case 31...59: return "\(streakDays) days \u{2014} you'd be crazy to quit now"
-        case 60: return "\u{1F48E} 60 DAYS! Diamond hands!"
-        case 61...89: return "\(streakDays) days \u{2014} don't you dare break this"
-        case 90: return "\u{1F680} 90 DAYS! ABSOLUTE LEGEND!"
-        case 91...99: return "\(streakDays) days \u{2014} triple digits is RIGHT THERE"
-        case 100: return "\u{1F31F} 100 DAYS! YOU ARE THE GOAT!"
-        default: return "\(streakDays) days \u{2014} nobody can touch you"
+        case 1: return "Day 1 \u{2014} let's go!"
+        case 2: return "2 days! Don't stop!"
+        case 3: return "3 days \u{1F525} Building momentum!"
+        case 4...6: return "\(streakDays) days! Getting stronger!"
+        case 7: return "\u{1F389} ONE WEEK!"
+        case 8...13: return "\(streakDays) days \u{2014} keep it up!"
+        case 14: return "\u{1F3C6} TWO WEEKS!"
+        case 15...29: return "\(streakDays) days \u{2014} unstoppable!"
+        case 30: return "\u{1F451} 30 DAYS!"
+        case 31...59: return "\(streakDays) days \u{2014} legend!"
+        case 60...89: return "\u{1F48E} \(streakDays) days!"
+        case 90...99: return "\u{1F680} \(streakDays) days!"
+        case 100: return "\u{1F31F} 100 DAYS! GOAT!"
+        default: return "\(streakDays) days \u{2014} untouchable"
         }
     }
 
@@ -271,7 +448,17 @@ struct ChallengesView: View {
     }
 }
 
-// MARK: - Streak Tier
+// MARK: - Data Types
+
+private struct Quest: Identifiable {
+    let id = UUID()
+    let emoji: String
+    let name: String
+    let subtitle: String
+    let progress: Double
+    let isComplete: Bool
+    let color: Color
+}
 
 private enum StreakTier {
     case none, bronze, silver, gold, diamond, legendary

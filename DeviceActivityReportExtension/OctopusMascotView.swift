@@ -621,7 +621,7 @@ struct OctopusMascotView: View {
 
     // MARK: - Score Display
 
-    private var tierInfo: (name: String, emoji: String, nextName: String?, nextEmoji: String?, progress: Double) {
+    private var tierInfo: (name: String, emoji: String, nextName: String?, nextEmoji: String?, nextMax: Int, progress: Double) {
         let tiers: [(name: String, emoji: String, min: Int, max: Int)] = [
             ("Digital Monk",    "\u{2728}", 0,  19),
             ("Grass Toucher",   "\u{266A}", 20, 39),
@@ -635,15 +635,14 @@ struct OctopusMascotView: View {
         let current = tiers[idx]
 
         if idx == 0 {
-            // Already best tier
             let progress = 1.0 - Double(score) / Double(current.max + 1)
-            return (current.name, current.emoji, nil, nil, progress)
+            return (current.name, current.emoji, nil, nil, 0, progress)
         }
 
         let next = tiers[idx - 1]
         let range = Double(current.max - current.min)
         let progress = range > 0 ? Double(current.max - score) / range : 1.0
-        return (current.name, current.emoji, next.name, next.emoji, progress)
+        return (current.name, current.emoji, next.name, next.emoji, next.max, progress)
     }
 
     private var scoreDisplay: some View {
@@ -667,21 +666,14 @@ struct OctopusMascotView: View {
                     .stroke(mood.bodyColor.opacity(0.4), lineWidth: 1)
             )
 
-            // Screen time
-            Text(totalScreenTime)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(BrainRotTheme.textSecondary)
-
-            // Progress bar to next tier — shows current → next octopus
+            // Progress to next tier
             if let nextName = info.nextName, let nextEmoji = info.nextEmoji {
                 VStack(spacing: 6) {
                     // Bar with tier emojis at each end
                     HStack(spacing: 8) {
-                        // Current tier emoji
                         Text(info.emoji)
                             .font(.system(size: 20))
 
-                        // Progress bar
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(BrainRotTheme.cardBorder)
@@ -701,28 +693,17 @@ struct OctopusMascotView: View {
                         }
                         .frame(width: 180)
 
-                        // Next tier emoji (dimmed until reached)
                         Text(nextEmoji)
                             .font(.system(size: 20))
                             .opacity(0.4)
                     }
 
-                    // Tier labels
-                    HStack {
-                        Text(info.name)
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(mood.bodyColorDark)
-                        Spacer()
-                        HStack(spacing: 2) {
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                            Text(nextName)
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        }
-                    }
-                    .frame(width: 230)
+                    // How much to level up
+                    let pointsToNext = score - info.nextMax
+                    Text("Reduce \(pointsToNext) points to become \(nextName)")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                        .multilineTextAlignment(.center)
                 }
             } else {
                 Text("You're at the top! \u{1F451}")
