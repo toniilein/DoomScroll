@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import os.log
 #if !targetEnvironment(simulator)
 import FamilyControls
 import DeviceActivity
@@ -55,7 +56,7 @@ class ScreenTimeManager: ObservableObject {
             authorizationStatus = .denied
             isAuthorized = false
             authError = error.localizedDescription
-            print("\u{274C} Screen Time auth error: \(error)")
+            Logger.screenTime.error("Auth error: \(error.localizedDescription)")
         }
         #endif
     }
@@ -117,23 +118,10 @@ class ScreenTimeManager: ObservableObject {
                 during: schedule
             )
         } catch {
-            print("Failed to start monitoring: \(error)")
+            Logger.screenTime.error("Failed to start monitoring: \(error.localizedDescription)")
         }
     }
     #endif
-
-    // MARK: - Firebase Score Sync
-
-    func pushScoreToFirebase(brainRotScore: Int, totalSeconds: TimeInterval) {
-        let formatted = BrainRotCalculator.formatDuration(totalSeconds)
-        Task {
-            await FirebaseManager.shared.updateScore(
-                brainRotScore: brainRotScore,
-                totalScreenTimeSeconds: totalSeconds,
-                formattedTime: formatted
-            )
-        }
-    }
 
     // MARK: - Selection Persistence
 
@@ -144,10 +132,10 @@ class ScreenTimeManager: ObservableObject {
             UserDefaults.standard.set(data, forKey: "savedActivitySelection")
             let hasApps = !activitySelection.applicationTokens.isEmpty || !activitySelection.categoryTokens.isEmpty
             UserDefaults.standard.set(hasApps, forKey: "hasSelectedApps")
-            print("\u{2705} Saved selection: \(activitySelection.applicationTokens.count) apps, \(activitySelection.categoryTokens.count) categories")
+            Logger.screenTime.info("Saved selection: \(self.activitySelection.applicationTokens.count) apps, \(self.activitySelection.categoryTokens.count) categories")
             startMonitoring()
         } catch {
-            print("\u{274C} Failed to save selection: \(error)")
+            Logger.screenTime.error("Failed to save selection: \(error.localizedDescription)")
         }
         #endif
     }
@@ -155,16 +143,16 @@ class ScreenTimeManager: ObservableObject {
     func loadSelection() {
         #if !targetEnvironment(simulator)
         guard let data = UserDefaults.standard.data(forKey: "savedActivitySelection") else {
-            print("\u{26A0}\u{FE0F} No saved selection found")
+            Logger.screenTime.info("No saved selection found")
             return
         }
         do {
             let decoded = try JSONDecoder().decode(FamilyActivitySelection.self, from: data)
             activitySelection = decoded
             objectWillChange.send()
-            print("\u{2705} Loaded selection: \(decoded.applicationTokens.count) apps, \(decoded.categoryTokens.count) categories")
+            Logger.screenTime.info("Loaded selection: \(decoded.applicationTokens.count) apps, \(decoded.categoryTokens.count) categories")
         } catch {
-            print("\u{274C} Failed to load selection: \(error)")
+            Logger.screenTime.error("Failed to load selection: \(error.localizedDescription)")
         }
         #endif
     }
@@ -177,7 +165,7 @@ class ScreenTimeManager: ObservableObject {
         if hasTokens {
             return DeviceActivityFilter(
                 segment: .daily(
-                    during: Calendar.current.dateInterval(of: .day, for: date)!
+                    during: Calendar.current.dateInterval(of: .day, for: date) ?? DateInterval(start: date, duration: 86400)
                 ),
                 users: .all,
                 devices: .init([.iPhone, .iPad]),
@@ -188,7 +176,7 @@ class ScreenTimeManager: ObservableObject {
             // Tokens didn't survive persistence — show all activity
             return DeviceActivityFilter(
                 segment: .daily(
-                    during: Calendar.current.dateInterval(of: .day, for: date)!
+                    during: Calendar.current.dateInterval(of: .day, for: date) ?? DateInterval(start: date, duration: 86400)
                 ),
                 users: .all,
                 devices: .init([.iPhone, .iPad])
@@ -200,7 +188,7 @@ class ScreenTimeManager: ObservableObject {
         let hasTokens = !activitySelection.applicationTokens.isEmpty || !activitySelection.categoryTokens.isEmpty
         let interval = DateInterval(
             start: Calendar.current.startOfDay(
-                for: Calendar.current.date(byAdding: .day, value: -6, to: .now)!
+                for: Calendar.current.date(byAdding: .day, value: -6, to: .now) ?? .now
             ),
             end: .now
         )
@@ -245,3 +233,7 @@ extension DeviceActivityName {
     static let dailyActivity = Self("dailyActivity")
 }
 #endif
+
+extension Logger {
+    static let screenTime = Logger(subsystem: Bundle.main.bundleIdentifier ?? "pookie1", category: "ScreenTime")
+}

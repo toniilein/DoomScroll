@@ -21,7 +21,7 @@ struct BrainDamageMeterView: View {
                     ZStack(alignment: .leading) {
                         // Background
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white.opacity(0.08))
+                            .fill(BrainRotTheme.cardBorder)
                             .frame(height: 16)
 
                         // Filled gradient
@@ -34,7 +34,7 @@ struct BrainDamageMeterView: View {
 
                         // Indicator dot at position
                         Circle()
-                            .fill(.white)
+                            .fill(BrainRotTheme.cardBackground)
                             .frame(width: 10, height: 10)
                             .shadow(color: .black.opacity(0.3), radius: 2)
                             .offset(

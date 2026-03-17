@@ -17,7 +17,7 @@ struct AchievementBannerView: View {
 
                     Text(achievement.title)
                         .font(.system(size: 16, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(BrainRotTheme.textPrimary)
                 }
 
                 Spacer()

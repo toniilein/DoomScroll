@@ -38,7 +38,7 @@ struct QuickStatsRowView: View {
 
             Text(value)
                 .font(.system(size: 18, weight: .black, design: .rounded))
-                .foregroundColor(.white)
+                .foregroundColor(BrainRotTheme.textPrimary)
 
             Text(label)
                 .font(.system(size: 10, weight: .medium))

@@ -7,9 +7,11 @@ import DeviceActivity
 struct DashboardView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @State private var selectedDayOffset = 0 // 0 = today, -1 = yesterday, etc.
+    @State private var showShareSheet = false
+    @State private var shareImage: UIImage?
 
     private var selectedDate: Date {
-        Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now))!
+        Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now)) ?? .now
     }
 
     var body: some View {
@@ -23,16 +25,12 @@ struct DashboardView: View {
                             .padding(.top)
                     }
                 } else {
-                    // NO host ScrollView — the extension's internal ScrollView
-                    // handles scrolling (remote views intercept host gestures).
                     VStack(spacing: 0) {
-                        // Week day selector (interactive, lives in host process)
                         weekDaySelector
                             .padding(.horizontal)
                             .padding(.vertical, 8)
 
                         #if !targetEnvironment(simulator)
-                        // Report fills remaining space; its internal ScrollView scrolls
                         DeviceActivityReport(.totalActivity, filter: screenTimeManager.filterForDate(selectedDate))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         #endif
@@ -40,7 +38,38 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle("Overview")
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        generateAndShare()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(BrainRotTheme.neonPink)
+                    }
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let image = shareImage {
+                    ShareSheet(items: [image])
+                }
+            }
+        }
+    }
+
+    // MARK: - Share
+
+    @MainActor
+    private func generateAndShare() {
+        let score = SharedSettings.lastScore
+        let streak = SharedSettings.streakDays
+        let card = KrakenShareCardView(score: score, streakDays: streak)
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = UIScreen.main.scale
+        if let image = renderer.uiImage {
+            shareImage = image
+            showShareSheet = true
         }
     }
 
@@ -51,7 +80,7 @@ struct DashboardView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(-29...0, id: \.self) { offset in
-                        let date = Calendar.current.date(byAdding: .day, value: offset, to: Calendar.current.startOfDay(for: .now))!
+                        let date = Calendar.current.date(byAdding: .day, value: offset, to: Calendar.current.startOfDay(for: .now)) ?? .now
                         let isSelected = offset == selectedDayOffset
                         let isToday = offset == 0
 
@@ -152,4 +181,16 @@ struct DashboardView: View {
         }
         .padding(.vertical, 40)
     }
+}
+
+// MARK: - UIKit Share Sheet Wrapper
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

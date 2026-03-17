@@ -17,7 +17,7 @@ struct ScrollTypeView: View {
 
                 Text(scrollType.title)
                     .font(.system(size: 18, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(BrainRotTheme.textPrimary)
 
                 Text(scrollType.description)
                     .font(.system(size: 11, weight: .medium))

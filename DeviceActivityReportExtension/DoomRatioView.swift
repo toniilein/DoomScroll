@@ -22,7 +22,7 @@ struct DoomRatioView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white.opacity(0.08))
+                        .fill(BrainRotTheme.cardBorder)
                         .frame(height: 12)
 
                     RoundedRectangle(cornerRadius: 6)

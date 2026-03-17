@@ -9,7 +9,7 @@ struct BrainRotScoreView: View {
         VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .stroke(Color.white.opacity(0.1), lineWidth: 16)
+                    .stroke(BrainRotTheme.cardBorder, lineWidth: 16)
                     .frame(width: 180, height: 180)
 
                 Circle()
