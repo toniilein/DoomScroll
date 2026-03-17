@@ -171,6 +171,7 @@ struct TentaclesShape: Shape {
 struct OctopusMascotView: View {
     let score: Int
     let totalScreenTime: String
+    var totalDurationSeconds: TimeInterval = 0
 
     @State private var wavePhase: CGFloat = 0
     @State private var bodyBob: CGFloat = 0
@@ -185,6 +186,10 @@ struct OctopusMascotView: View {
 
     var body: some View {
         VStack(spacing: 8) {
+            // ── Speech bubble ──
+            speechBubble
+                .padding(.horizontal, 20)
+
             // ── Character area ──
             ZStack {
                 // Soft glow
@@ -204,12 +209,80 @@ struct OctopusMascotView: View {
                 }
                 .offset(y: bodyBob)
             }
-            .frame(height: 240)
+            .frame(height: 220)
 
             // ── Score info ──
             scoreDisplay
         }
         .onAppear { startAnimations() }
+    }
+
+    // MARK: - Speech Bubble
+
+    private var speechBubbleText: String {
+        let tiers: [(name: String, min: Int, max: Int)] = [
+            ("Digital Monk", 0, 19),
+            ("Grass Toucher", 20, 39),
+            ("Casual Scroller", 40, 59),
+            ("Doomscroller", 60, 79),
+            ("Brainrot Mode", 80, 94),
+            ("Full Brainrot", 95, 100),
+        ]
+
+        let idx = tiers.firstIndex(where: { score >= $0.min && score <= $0.max }) ?? tiers.count - 1
+
+        // Time until NEXT WORSE tier
+        if idx < tiers.count - 1 {
+            let nextWorse = tiers[idx + 1]
+            let minutesAtNextWorse = BrainRotCalculator.minutesForScore(nextWorse.min)
+            let currentMinutes = totalDurationSeconds / 60.0
+            let remaining = minutesAtNextWorse - currentMinutes
+
+            if remaining > 0 {
+                let fmt = BrainRotCalculator.formatDuration(remaining * 60)
+                switch mood {
+                case .ecstatic:
+                    return "I'm so happy! You have \(fmt) before I get worried"
+                case .happy:
+                    return "Feeling good! \(fmt) left before I start worrying"
+                case .neutral:
+                    return "Hmm... \(fmt) left before things get bad"
+                case .sad:
+                    return "I'm not great... only \(fmt) before it gets worse"
+                case .distressed:
+                    return "Please stop... \(fmt) until I totally lose it"
+                case .zombie:
+                    return "..."
+                }
+            }
+        }
+
+        // Already at worst or no time remaining
+        switch mood {
+        case .ecstatic: return "I'm living my best life! \(totalScreenTime) today"
+        case .happy: return "Pretty good day! \(totalScreenTime) so far"
+        case .neutral: return "Getting a bit much... \(totalScreenTime) today"
+        case .sad: return "I'm hurting... \(totalScreenTime) today"
+        case .distressed: return "My brain is melting... \(totalScreenTime) today"
+        case .zombie: return "\(totalScreenTime)... I can't even talk anymore"
+        }
+    }
+
+    private var speechBubble: some View {
+        HStack {
+            Text(speechBubbleText)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundColor(BrainRotTheme.textPrimary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(mood.bodyColor.opacity(0.3), lineWidth: 1)
+        )
     }
 
     // MARK: - Baby Octopus Body

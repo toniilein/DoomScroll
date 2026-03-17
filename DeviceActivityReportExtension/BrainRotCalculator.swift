@@ -40,6 +40,25 @@ enum BrainRotCalculator {
         return Int(min(99, max(0, score)))
     }
 
+    /// Reverse: given a target score, return the totalMinutes that would produce it.
+    static func minutesForScore(_ targetScore: Int) -> Double {
+        let limit = dailyLimitMinutes
+        let s = Double(max(0, min(99, targetScore)))
+        let ratio: Double
+        if s <= 30 {
+            ratio = s / 60.0
+        } else if s <= 65 {
+            ratio = 0.5 + (s - 30.0) / 70.0
+        } else if s <= 85 {
+            ratio = 1.0 + (s - 65.0) / 40.0
+        } else if s <= 95 {
+            ratio = 1.5 + (s - 85.0) / 20.0
+        } else {
+            ratio = 2.0 + (s - 95.0) / 2.0
+        }
+        return ratio * limit
+    }
+
     static func formatDuration(_ seconds: TimeInterval) -> String {
         let hours = Int(seconds) / 3600
         let minutes = (Int(seconds) % 3600) / 60

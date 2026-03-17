@@ -14,7 +14,8 @@ struct TotalActivityView: View {
                 // 1. Octopus Mascot + Tier Progress
                 OctopusMascotView(
                     score: activityData.brainRotScore,
-                    totalScreenTime: activityData.formattedDuration
+                    totalScreenTime: activityData.formattedDuration,
+                    totalDurationSeconds: activityData.totalDuration
                 )
                 .padding(.top, 4)
 

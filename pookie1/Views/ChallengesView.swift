@@ -11,6 +11,7 @@ struct ChallengesView: View {
     @State private var fireScale: CGFloat = 1.0
     @State private var questProgress: [CGFloat] = [0, 0, 0]
     @State private var bubbleBounce: CGFloat = 0
+    @State private var calendarMonthOffset: Int = 0
 
     private var streakTier: StreakTier { .from(days: streakDays) }
 
@@ -367,16 +368,52 @@ struct ChallengesView: View {
         return f.string(from: date)
     }
 
+    private var calendarMonthName: String {
+        let cal = Calendar.current
+        let date = cal.date(byAdding: .month, value: calendarMonthOffset, to: .now)!
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
+    }
+
     private var streakCalendar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(BrainRotTheme.neonOrange)
-                Text("Last 28 Days")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
+            // Header with month navigation
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        calendarMonthOffset = max(-2, calendarMonthOffset - 1)
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(calendarMonthOffset > -2 ? BrainRotTheme.neonPink : BrainRotTheme.cardBorder)
+                }
+                .disabled(calendarMonthOffset <= -2)
+
                 Spacer()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(BrainRotTheme.neonOrange)
+                    Text(calendarMonthName)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                }
+
+                Spacer()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        calendarMonthOffset = min(0, calendarMonthOffset + 1)
+                    }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(calendarMonthOffset < 0 ? BrainRotTheme.neonPink : BrainRotTheme.cardBorder)
+                }
+                .disabled(calendarMonthOffset >= 0)
             }
 
             let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
@@ -393,20 +430,24 @@ struct ChallengesView: View {
                 }
             }
 
-            let calendar = Calendar.current
-            let startDate = calendar.date(byAdding: .day, value: -27, to: calendar.startOfDay(for: .now))!
-            let startWeekday = (calendar.component(.weekday, from: startDate) + 5) % 7
+            let cal = Calendar.current
+            // First day of the displayed month
+            let viewDate = cal.date(byAdding: .month, value: calendarMonthOffset, to: .now)!
+            let comps = cal.dateComponents([.year, .month], from: viewDate)
+            let firstOfMonth = cal.date(from: comps)!
+            let daysInMonth = cal.range(of: .day, in: .month, for: firstOfMonth)!.count
+            let firstWeekday = (cal.component(.weekday, from: firstOfMonth) + 5) % 7
 
             LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(0..<startWeekday, id: \.self) { idx in
+                ForEach(0..<firstWeekday, id: \.self) { idx in
                     Color.clear.frame(height: 30).id("pad-\(idx)")
                 }
 
-                ForEach(0..<28, id: \.self) { dayOffset in
-                    let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate)!
+                ForEach(0..<daysInMonth, id: \.self) { dayIdx in
+                    let date = cal.date(byAdding: .day, value: dayIdx, to: firstOfMonth)!
                     let dateStr = formatDateISO(date)
                     let isStreakDay = streakHistory.contains(dateStr)
-                    let isToday = calendar.isDateInToday(date)
+                    let isToday = cal.isDateInToday(date)
                     let isFuture = date > .now
 
                     ZStack {
@@ -421,11 +462,11 @@ struct ChallengesView: View {
                         if isStreakDay {
                             Text("\u{1F525}").font(.system(size: 13))
                         } else if isToday {
-                            Text("\(calendar.component(.day, from: date))")
+                            Text("\(dayIdx + 1)")
                                 .font(.system(size: 10, weight: .bold, design: .rounded))
                                 .foregroundColor(BrainRotTheme.neonPink)
                         } else if !isFuture {
-                            Text("\(calendar.component(.day, from: date))")
+                            Text("\(dayIdx + 1)")
                                 .font(.system(size: 10, weight: .medium, design: .rounded))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         }
@@ -436,6 +477,23 @@ struct ChallengesView: View {
                             .stroke(isToday ? BrainRotTheme.neonPink.opacity(0.5) : Color.clear, lineWidth: 1.5)
                     )
                 }
+            }
+
+            // Month summary
+            let monthStreakDays = (0..<daysInMonth).filter { dayIdx in
+                let date = cal.date(byAdding: .day, value: dayIdx, to: firstOfMonth)!
+                return streakHistory.contains(formatDateISO(date))
+            }.count
+
+            if monthStreakDays > 0 {
+                HStack(spacing: 4) {
+                    Text("\u{1F525}")
+                        .font(.system(size: 11))
+                    Text("\(monthStreakDays) active days this month")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                .padding(.top, 4)
             }
         }
         .padding(16)
