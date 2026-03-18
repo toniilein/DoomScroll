@@ -5,7 +5,6 @@ struct WeeklyTrendView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // Header row with streak and weekly total
             HStack {
                 HStack(spacing: 6) {
                     Image(systemName: "chart.bar.fill")
@@ -17,7 +16,6 @@ struct WeeklyTrendView: View {
 
                 Spacer()
 
-                // Streak badge
                 if trendData.streakDays > 0 {
                     HStack(spacing: 3) {
                         Text("\u{1F525}")
@@ -32,7 +30,6 @@ struct WeeklyTrendView: View {
                     .clipShape(Capsule())
                 }
 
-                // Trend indicator
                 HStack(spacing: 3) {
                     Image(systemName: trendData.trend.icon)
                         .font(.system(size: 10, weight: .bold))
@@ -42,7 +39,6 @@ struct WeeklyTrendView: View {
                 .foregroundColor(trendData.trend.color)
             }
 
-            // Weekly total
             HStack {
                 Text("Total: \(trendData.formattedWeeklyTotal)")
                     .font(.system(size: 12, weight: .medium))
@@ -50,7 +46,6 @@ struct WeeklyTrendView: View {
                 Spacer()
             }
 
-            // Bar chart
             HStack(alignment: .bottom, spacing: 6) {
                 ForEach(Array(trendData.dailyScores.enumerated()), id: \.element.id) { index, day in
                     VStack(spacing: 4) {
@@ -67,7 +62,6 @@ struct WeeklyTrendView: View {
                                 )
                                 .frame(height: max(6, CGFloat(day.score) / 100.0 * 80))
 
-                            // Best day (green dot) / Worst day (red dot)
                             if index == trendData.bestDayIndex {
                                 Circle()
                                     .fill(BrainRotTheme.neonGreen)

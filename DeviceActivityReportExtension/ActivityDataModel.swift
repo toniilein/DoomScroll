@@ -9,7 +9,6 @@ extension DeviceActivityReport.Context {
     static let weeklyTrend = Self("Weekly Trend")
     static let appAnalytics = Self("App Analytics")
     static let dayPills = Self("Day Pills")
-    static let scorePreload = Self("Score Preload")
 }
 
 struct AppUsageData: Identifiable {

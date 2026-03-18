@@ -21,8 +21,5 @@ struct DoomScrollReportExtension: DeviceActivityReportExtension {
         DayPillsReport { pillsData in
             DayPillsView(pillsData: pillsData)
         }
-        ScorePreloadReport { preloadData in
-            ScorePreloadView(data: preloadData)
-        }
     }
 }

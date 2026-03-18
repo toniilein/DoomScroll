@@ -170,25 +170,35 @@ enum SharedSettings {
         achievementHistory = history
     }
 
-    // MARK: - Daily Score History (per-day score for mini octopus)
+    // MARK: - Per-Day Data (written by extension reports)
+    // Use a fresh UserDefaults instance each time to avoid cross-process caching issues
 
-    /// Get score for a specific date key (format: "yyyy-MM-dd")
     static func scoreForDay(_ dateKey: String) -> Int? {
-        // Force re-read from disk (extension writes cross-process)
-        sharedDefaults.synchronize()
+        guard let fresh = UserDefaults(suiteName: suiteName) else { return nil }
         let key = "score_" + dateKey
-        if sharedDefaults.object(forKey: key) != nil {
-            return sharedDefaults.integer(forKey: key)
+        if fresh.object(forKey: key) != nil {
+            return fresh.integer(forKey: key)
         }
         return nil
     }
 
-    /// Save score for today
-    static func recordDailyScore(_ score: Int) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let today = formatter.string(from: Calendar.current.startOfDay(for: .now))
-        sharedDefaults.set(score, forKey: "score_" + today)
+    static func durationForDay(_ dateKey: String) -> TimeInterval? {
+        guard let fresh = UserDefaults(suiteName: suiteName) else { return nil }
+        let key = "duration_" + dateKey
+        let val = fresh.double(forKey: key)
+        return val > 0 ? val : nil
+    }
+
+    static func formatDuration(_ seconds: TimeInterval) -> String {
+        let totalMinutes = Int(seconds / 60)
+        let hours = totalMinutes / 60
+        let mins = totalMinutes % 60
+        if hours > 0 {
+            return "\(hours)h\(mins > 0 ? " \(mins)m" : "")"
+        } else if mins > 0 {
+            return "\(mins)m"
+        }
+        return "0m"
     }
 
     static func formatLimit(_ minutes: Double) -> String {

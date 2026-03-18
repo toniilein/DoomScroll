@@ -3,14 +3,24 @@ import ExtensionKit
 import ManagedSettings
 import SwiftUI
 
-struct TotalActivityData {
-    let totalDuration: TimeInterval
+struct DayBreakdown: Identifiable {
+    let id: Int // offset from today (0 = today, -1 = yesterday, etc.)
+    let date: Date
+    let dateKey: String
+    let dayLabel: String
+    let dayNumber: String
+    let score: Int
+    let duration: TimeInterval
     let formattedDuration: String
-    let brainRotScore: Int
-    let totalPickups: Int
-    let topApps: [AppUsageData]
-    let allApps: [AppUsageData]
-    let smartKPIs: SmartKPIs
+    let pickups: Int
+    let apps: [AppUsageData]
+    let isToday: Bool
+    let hasData: Bool
+}
+
+struct TotalActivityData {
+    let days: [DayBreakdown]       // 7 days of data
+    let selectedDayIndex: Int      // which day to show initially
 }
 
 struct TotalActivityReport: DeviceActivityReportScene {
@@ -20,71 +30,97 @@ struct TotalActivityReport: DeviceActivityReportScene {
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> TotalActivityData {
-        var totalDuration: TimeInterval = 0
-        var totalPickups = 0
-        var appUsages: [AppUsageData] = []
-        var reportDate: Date = .now
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+
+        // Collect per-day data from segments
+        var dayDurations: [Date: TimeInterval] = [:]
+        var dayPickups: [Date: Int] = [:]
+        var dayApps: [Date: [AppUsageData]] = [:]
 
         for await dataItem in data {
             for await segment in dataItem.activitySegments {
-                reportDate = segment.dateInterval.start
-                totalDuration += segment.totalActivityDuration
+                let segDate = calendar.startOfDay(for: segment.dateInterval.start)
+                dayDurations[segDate, default: 0] += segment.totalActivityDuration
 
                 for await categoryActivity in segment.categories {
                     for await appActivity in categoryActivity.applications {
                         let appName = appActivity.application.localizedDisplayName ?? "Unknown"
                         let appDuration = appActivity.totalActivityDuration
                         let pickups = appActivity.numberOfPickups
-                        totalPickups += pickups
+                        dayPickups[segDate, default: 0] += pickups
 
                         if appDuration > 0 {
-                            appUsages.append(AppUsageData(
+                            var apps = dayApps[segDate] ?? []
+                            apps.append(AppUsageData(
                                 displayName: appName,
                                 duration: appDuration,
                                 formattedDuration: BrainRotCalculator.formatDuration(appDuration),
                                 numberOfPickups: pickups
                             ))
+                            dayApps[segDate] = apps
                         }
                     }
                 }
             }
         }
 
-        appUsages.sort { $0.duration > $1.duration }
-        let topApps = Array(appUsages.prefix(10))
-        let score = BrainRotCalculator.score(totalMinutes: totalDuration / 60.0)
-        let formatted = BrainRotCalculator.formatDuration(totalDuration)
-
-        let smartKPIs = BrainRotCalculator.computeSmartKPIs(
-            totalDuration: totalDuration,
-            totalPickups: totalPickups,
-            topApps: topApps,
-            brainRotScore: score
-        )
-
-        // Save score per day using simple key-per-day (safe in extension, no JSON)
+        // Read which day is selected
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let dayKey = "score_" + dateFormatter.string(from: Calendar.current.startOfDay(for: reportDate))
-        shared?.set(score, forKey: dayKey)
+        let selectedOffset = shared?.integer(forKey: "selectedDayOffset") ?? 0
 
-        // Only update "current" values for today — don't overwrite with historical data
-        if Calendar.current.isDateInToday(reportDate) {
-            shared?.set(score, forKey: "lastBrainRotScore")
-            shared?.set(totalDuration / 60.0, forKey: "lastScreenTimeMinutes")
-            shared?.set(totalPickups, forKey: "lastPickups")
+        // Build 7 day breakdowns
+        let dayLabelFmt = DateFormatter()
+        dayLabelFmt.dateFormat = "EEE"
+        let dayNumFmt = DateFormatter()
+        dayNumFmt.dateFormat = "d"
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "yyyy-MM-dd"
+
+        var days: [DayBreakdown] = []
+        var selectedIndex = 6 // default to last (today)
+
+        for i in 0..<7 {
+            let offset = i - 6 // -6, -5, -4, -3, -2, -1, 0
+            let date = calendar.date(byAdding: .day, value: offset, to: today) ?? today
+            let duration = dayDurations[date] ?? 0
+            let pickups = dayPickups[date] ?? 0
+            var apps = dayApps[date] ?? []
+            apps.sort { $0.duration > $1.duration }
+            let score = duration > 0 ? BrainRotCalculator.score(totalMinutes: duration / 60.0) : 0
+            let hasData = duration > 0
+
+            if offset == selectedOffset {
+                selectedIndex = i
+            }
+
+            days.append(DayBreakdown(
+                id: offset,
+                date: date,
+                dateKey: dateFmt.string(from: date),
+                dayLabel: String(dayLabelFmt.string(from: date).prefix(3)),
+                dayNumber: dayNumFmt.string(from: date),
+                score: score,
+                duration: duration,
+                formattedDuration: BrainRotCalculator.formatDuration(duration),
+                pickups: pickups,
+                apps: apps,
+                isToday: offset == 0,
+                hasData: hasData
+            ))
+        }
+
+        // Save today's data to shared for other features (share card, challenges)
+        if let todayData = days.last, todayData.hasData {
+            shared?.set(todayData.score, forKey: "lastBrainRotScore")
+            shared?.set(todayData.duration / 60.0, forKey: "lastScreenTimeMinutes")
+            shared?.set(todayData.pickups, forKey: "lastPickups")
         }
         shared?.synchronize()
 
         return TotalActivityData(
-            totalDuration: totalDuration,
-            formattedDuration: formatted,
-            brainRotScore: score,
-            totalPickups: totalPickups,
-            topApps: topApps,
-            allApps: appUsages,
-            smartKPIs: smartKPIs
+            days: days,
+            selectedDayIndex: selectedIndex
         )
     }
 }
