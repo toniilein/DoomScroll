@@ -16,5 +16,7 @@ extension DeviceActivityReport.Context {
     static let weeklyTrend = Self("Weekly Trend")
     static let appAnalytics = Self("App Analytics")
     static let dayPills = Self("Day Pills")
+    static let usageSummary = Self("Usage Summary")
+    static let limitUsage = Self("Limit Usage")
 }
 #endif

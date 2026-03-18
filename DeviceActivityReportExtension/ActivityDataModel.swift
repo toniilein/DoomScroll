@@ -9,6 +9,8 @@ extension DeviceActivityReport.Context {
     static let weeklyTrend = Self("Weekly Trend")
     static let appAnalytics = Self("App Analytics")
     static let dayPills = Self("Day Pills")
+    static let usageSummary = Self("Usage Summary")
+    static let limitUsage = Self("Limit Usage")
 }
 
 struct AppUsageData: Identifiable {
@@ -17,6 +19,15 @@ struct AppUsageData: Identifiable {
     let duration: TimeInterval
     let formattedDuration: String
     let numberOfPickups: Int
+}
+
+struct CategoryUsageData: Identifiable {
+    let id = UUID()
+    let categoryName: String
+    let duration: TimeInterval
+    let formattedDuration: String
+    let pickups: Int
+    let apps: [AppUsageData]
 }
 
 struct DailyScore: Identifiable {

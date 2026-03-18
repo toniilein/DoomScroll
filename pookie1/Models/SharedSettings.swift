@@ -201,6 +201,102 @@ enum SharedSettings {
         return "0m"
     }
 
+    // MARK: - Block Routines
+
+    static let blockRoutinesKey = "blockRoutines"
+
+    static var blockRoutines: [BlockRoutine] {
+        get {
+            guard let data = sharedDefaults.data(forKey: blockRoutinesKey),
+                  let routines = try? JSONDecoder().decode([BlockRoutine].self, from: data) else {
+                return []
+            }
+            return routines
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                sharedDefaults.set(data, forKey: blockRoutinesKey)
+            }
+        }
+    }
+
+    static func saveRoutine(_ routine: BlockRoutine) {
+        var routines = blockRoutines
+        if let index = routines.firstIndex(where: { $0.id == routine.id }) {
+            routines[index] = routine
+        } else {
+            routines.append(routine)
+        }
+        blockRoutines = routines
+    }
+
+    static func deleteRoutine(id: UUID) {
+        var routines = blockRoutines
+        routines.removeAll { $0.id == id }
+        blockRoutines = routines
+    }
+
+    // MARK: - Usage Limits
+
+    static let usageLimitsKey = "usageLimits"
+
+    static var usageLimits: [UsageLimit] {
+        get {
+            guard let data = sharedDefaults.data(forKey: usageLimitsKey),
+                  let limits = try? JSONDecoder().decode([UsageLimit].self, from: data) else {
+                return []
+            }
+            return limits
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                sharedDefaults.set(data, forKey: usageLimitsKey)
+            }
+        }
+    }
+
+    static func saveUsageLimit(_ limit: UsageLimit) {
+        var limits = usageLimits
+        if let index = limits.firstIndex(where: { $0.id == limit.id }) {
+            limits[index] = limit
+        } else {
+            limits.append(limit)
+        }
+        usageLimits = limits
+    }
+
+    static func deleteUsageLimit(id: UUID) {
+        var limits = usageLimits
+        limits.removeAll { $0.id == id }
+        usageLimits = limits
+    }
+
+    // MARK: - Per-category/app usage (written by extension as individual keys)
+
+    static var todayCategoryMinutes: [String: Double] {
+        let names = sharedDefaults.stringArray(forKey: "todayCategoryNames") ?? []
+        var result: [String: Double] = [:]
+        for name in names {
+            let mins = sharedDefaults.double(forKey: "catMin_\(name)")
+            if mins > 0 { result[name] = mins }
+        }
+        return result
+    }
+
+    static var todayAppMinutes: [String: Double] {
+        let names = sharedDefaults.stringArray(forKey: "todayAppNames") ?? []
+        var result: [String: Double] = [:]
+        for name in names {
+            let mins = sharedDefaults.double(forKey: "appMin_\(name)")
+            if mins > 0 { result[name] = mins }
+        }
+        return result
+    }
+
+    static func categoryMinutes(for categoryName: String) -> Double {
+        sharedDefaults.double(forKey: "catMin_\(categoryName)")
+    }
+
     static func formatLimit(_ minutes: Double) -> String {
         let hours = Int(minutes) / 60
         let mins = Int(minutes) % 60

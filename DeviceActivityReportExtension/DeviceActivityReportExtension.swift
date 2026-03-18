@@ -21,5 +21,11 @@ struct DoomScrollReportExtension: DeviceActivityReportExtension {
         DayPillsReport { pillsData in
             DayPillsView(pillsData: pillsData)
         }
+        UsageSummaryReport { summaryData in
+            UsageSummaryView(data: summaryData)
+        }
+        LimitUsageReport { limitData in
+            LimitUsageView(data: limitData)
+        }
     }
 }

@@ -28,6 +28,12 @@ struct DashboardView: View {
             }
             .navigationTitle("Overview")
             .toolbarColorScheme(.light, for: .navigationBar)
+            .onAppear {
+                // Reset to today so Overview always opens on the current day
+                let shared = UserDefaults(suiteName: "group.pookie1.shared")
+                shared?.set(0, forKey: "selectedDayOffset")
+                shared?.synchronize()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {

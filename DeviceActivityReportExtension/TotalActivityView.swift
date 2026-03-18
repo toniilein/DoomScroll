@@ -33,9 +33,9 @@ struct TotalActivityView: View {
                 )
                 .padding(.horizontal)
 
-                // 4. App Breakdown
-                if !currentDay.apps.isEmpty {
-                    appBreakdownSection
+                // 4. Category Breakdown
+                if !currentDay.categories.isEmpty {
+                    categoryBreakdownSection
                         .padding(.horizontal)
                 }
 
@@ -178,18 +178,18 @@ struct TotalActivityView: View {
         }
     }
 
-    // MARK: - App Breakdown
+    // MARK: - Category Breakdown
 
-    private var appBreakdownSection: some View {
+    private var categoryBreakdownSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                Image(systemName: "chart.pie.fill")
+                Image(systemName: "square.grid.2x2.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("App Breakdown")
+                Text("Category Breakdown")
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
-                Text("\(currentDay.apps.count) apps")
+                Text("\(currentDay.categories.count) groups")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }
@@ -197,12 +197,11 @@ struct TotalActivityView: View {
             .padding(.top, 16)
             .padding(.bottom, 10)
 
-            ForEach(Array(currentDay.apps.enumerated()), id: \.element.id) { index, app in
-                appRow(app: app, rank: index + 1)
+            ForEach(Array(currentDay.categories.enumerated()), id: \.element.id) { index, category in
+                categoryRow(category: category, rank: index + 1)
 
-                if index < currentDay.apps.count - 1 {
-                    Divider()
-                        .padding(.leading, 60)
+                if index < currentDay.categories.count - 1 {
+                    Divider().padding(.leading, 60)
                 }
             }
 
@@ -212,28 +211,28 @@ struct TotalActivityView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    private func appRow(app: AppUsageData, rank: Int) -> some View {
-        let isExpanded = expandedAppID == app.id
+    private func categoryRow(category: CategoryUsageData, rank: Int) -> some View {
+        let isExpanded = expandedAppID == category.id
 
         return VStack(spacing: 0) {
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
-                    expandedAppID = isExpanded ? nil : app.id
+                    expandedAppID = isExpanded ? nil : category.id
                 }
             } label: {
                 HStack(spacing: 12) {
-                    appIcon(name: app.displayName, rank: rank)
+                    categoryIcon(name: category.categoryName, rank: rank)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(app.displayName)
+                        Text(category.categoryName)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(BrainRotTheme.textPrimary)
                             .lineLimit(1)
 
                         HStack(spacing: 4) {
-                            Image(systemName: "hand.tap")
+                            Image(systemName: "app.fill")
                                 .font(.system(size: 9))
-                            Text("\(app.numberOfPickups) pickups")
+                            Text("\(category.apps.count) apps")
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(BrainRotTheme.textSecondary)
@@ -241,9 +240,9 @@ struct TotalActivityView: View {
 
                     Spacer()
 
-                    Text(app.formattedDuration)
+                    Text(category.formattedDuration)
                         .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(appColor(for: app))
+                        .foregroundColor(categoryColor(rank: rank))
 
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 11, weight: .semibold))
@@ -256,21 +255,30 @@ struct TotalActivityView: View {
             .buttonStyle(.plain)
 
             if isExpanded {
-                expandedDetail(app: app)
+                categoryExpandedDetail(category: category, rank: rank)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
 
-    private func expandedDetail(app: AppUsageData) -> some View {
+    private func categoryExpandedDetail(category: CategoryUsageData, rank: Int) -> some View {
         let percentage = currentDay.duration > 0
-            ? (app.duration / currentDay.duration) * 100
+            ? (category.duration / currentDay.duration) * 100
             : 0
-        let avgSession = app.numberOfPickups > 0
-            ? app.duration / Double(app.numberOfPickups)
-            : app.duration
+        let avgSession = category.pickups > 0
+            ? category.duration / Double(category.pickups)
+            : category.duration
+        let color = categoryColor(rank: rank)
 
         return VStack(spacing: 10) {
+            // Stats row
+            HStack(spacing: 0) {
+                miniStat(icon: "clock.fill", title: "Duration", value: category.formattedDuration)
+                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(category.pickups)")
+                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+            }
+
+            // Percentage bar
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
                     Text("Screen Time Share")
@@ -279,7 +287,7 @@ struct TotalActivityView: View {
                     Spacer()
                     Text(String(format: "%.1f%%", percentage))
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(appColor(for: app))
+                        .foregroundColor(color)
                 }
 
                 GeometryReader { geo in
@@ -288,23 +296,48 @@ struct TotalActivityView: View {
                             .fill(BrainRotTheme.cardBorder)
                             .frame(height: 6)
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(appColor(for: app))
+                            .fill(color)
                             .frame(width: geo.size.width * min(percentage / 100, 1.0), height: 6)
                     }
                 }
                 .frame(height: 6)
             }
 
-            HStack(spacing: 0) {
-                miniStat(icon: "clock.fill", title: "Duration", value: app.formattedDuration)
-                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(app.numberOfPickups)")
-                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+            // App list within category
+            if !category.apps.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Apps")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                        .padding(.bottom, 6)
+
+                    ForEach(category.apps) { app in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(color.opacity(0.3))
+                                .frame(width: 6, height: 6)
+
+                            Text(app.displayName)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                                .lineLimit(1)
+
+                            Spacer()
+
+                            Text(app.formattedDuration)
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                        .padding(.vertical, 3)
+                    }
+                }
+                .padding(.top, 4)
             }
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 12)
         .padding(.top, 2)
-        .background(appColor(for: app).opacity(0.04))
+        .background(color.opacity(0.04))
     }
 
     private func miniStat(icon: String, title: String, value: String) -> some View {
@@ -322,10 +355,9 @@ struct TotalActivityView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func appIcon(name: String, rank: Int) -> some View {
-        let letter = String(name.prefix(1)).uppercased()
-        let colors: [Color] = [BrainRotTheme.neonPink, BrainRotTheme.neonPurple, BrainRotTheme.neonOrange, BrainRotTheme.neonBlue, BrainRotTheme.neonGreen]
-        let color = rank <= colors.count ? colors[rank - 1] : BrainRotTheme.textSecondary
+    private func categoryIcon(name: String, rank: Int) -> some View {
+        let icon = categorySystemIcon(name)
+        let color = categoryColor(rank: rank)
 
         return ZStack {
             Circle()
@@ -335,13 +367,33 @@ struct TotalActivityView: View {
                     endPoint: .bottomTrailing
                 ))
                 .frame(width: 36, height: 36)
-            Text(letter)
-                .font(.system(size: 16, weight: .bold, design: .rounded))
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .bold))
                 .foregroundColor(.white)
         }
     }
 
-    private func appColor(for app: AppUsageData) -> Color {
-        BrainRotTheme.scoreColor(for: BrainRotCalculator.score(totalMinutes: app.duration / 60.0))
+    private func categorySystemIcon(_ name: String) -> String {
+        let lower = name.lowercased()
+        if lower.contains("social") { return "bubble.left.and.bubble.right.fill" }
+        if lower.contains("entertainment") || lower.contains("video") { return "play.tv.fill" }
+        if lower.contains("game") { return "gamecontroller.fill" }
+        if lower.contains("productivity") { return "briefcase.fill" }
+        if lower.contains("education") { return "graduationcap.fill" }
+        if lower.contains("health") || lower.contains("fitness") { return "heart.fill" }
+        if lower.contains("shopping") { return "cart.fill" }
+        if lower.contains("news") || lower.contains("reading") { return "newspaper.fill" }
+        if lower.contains("photo") || lower.contains("creative") { return "camera.fill" }
+        if lower.contains("music") { return "music.note" }
+        if lower.contains("travel") || lower.contains("navigation") { return "map.fill" }
+        if lower.contains("finance") || lower.contains("business") { return "chart.line.uptrend.xyaxis" }
+        if lower.contains("utility") || lower.contains("utilities") { return "wrench.fill" }
+        if lower.contains("communication") || lower.contains("message") { return "message.fill" }
+        return "square.grid.2x2.fill"
+    }
+
+    private func categoryColor(rank: Int) -> Color {
+        let colors: [Color] = [BrainRotTheme.neonPink, BrainRotTheme.neonPurple, BrainRotTheme.neonOrange, BrainRotTheme.neonBlue, BrainRotTheme.neonGreen]
+        return rank <= colors.count ? colors[rank - 1] : BrainRotTheme.textSecondary
     }
 }

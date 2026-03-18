@@ -20,8 +20,8 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            Tab("Challenges", systemImage: "flag.checkered", value: "Challenges") {
-                ChallengesView()
+            Tab("Shield", systemImage: "shield.fill", value: "Shield") {
+                BlockView()
             }
             Tab("Brain Health", systemImage: "chart.bar.fill", value: "BrainHealth") {
                 BrainHealthView()
