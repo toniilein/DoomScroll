@@ -7,8 +7,12 @@ import DeviceActivity
 struct DashboardView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @State private var selectedDayOffset = 0 // 0 = today, -1 = yesterday, etc.
+    @State private var weekOffset = 0 // 0 = current week, -1 = last week, etc.
     @State private var showShareSheet = false
     @State private var shareImage: UIImage?
+    @State private var pollTimer: Timer?
+
+    private let shared = UserDefaults(suiteName: "group.pookie1.shared")
 
     private var selectedDate: Date {
         Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now)) ?? .now
@@ -50,9 +54,41 @@ struct DashboardView: View {
                     }
                 }
             }
+            .onAppear {
+                // Write current week offset so extension knows which week to render
+                shared?.set(weekOffset, forKey: "dayPillsWeekOffset")
+                shared?.set(selectedDayOffset, forKey: "selectedDayOffset")
+                shared?.synchronize()
+                startPolling()
+            }
+            .onDisappear {
+                pollTimer?.invalidate()
+                pollTimer = nil
+            }
+            .onChange(of: weekOffset) { _, newValue in
+                shared?.set(newValue, forKey: "dayPillsWeekOffset")
+                shared?.synchronize()
+            }
             .sheet(isPresented: $showShareSheet) {
                 if let image = shareImage {
                     ShareSheet(items: [image])
+                }
+            }
+        }
+    }
+
+    // MARK: - Polling for selection changes from extension
+
+    private func startPolling() {
+        pollTimer?.invalidate()
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
+            shared?.synchronize()
+            let extOffset = shared?.integer(forKey: "selectedDayOffset") ?? 0
+            if extOffset != selectedDayOffset {
+                DispatchQueue.main.async {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedDayOffset = extOffset
+                    }
                 }
             }
         }
@@ -76,67 +112,58 @@ struct DashboardView: View {
     // MARK: - Week Day Selector
 
     private var weekDaySelector: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 4) {
-                    ForEach(-29...0, id: \.self) { offset in
-                        let date = Calendar.current.date(byAdding: .day, value: offset, to: Calendar.current.startOfDay(for: .now)) ?? .now
-                        let isSelected = offset == selectedDayOffset
-                        let isToday = offset == 0
-
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedDayOffset = offset
-                            }
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(dayLabel(for: date))
-                                    .font(.system(size: 11, weight: isSelected ? .bold : .regular))
-                                    .foregroundColor(isSelected ? .white : BrainRotTheme.textSecondary)
-
-                                Text(dayNumber(for: date))
-                                    .font(.system(size: 15, weight: isSelected ? .black : .medium, design: .rounded))
-                                    .foregroundColor(isSelected ? .white : BrainRotTheme.textPrimary)
-
-                                if isToday {
-                                    Circle()
-                                        .fill(isSelected ? Color.white : BrainRotTheme.neonPink)
-                                        .frame(width: 4, height: 4)
-                                } else {
-                                    Circle()
-                                        .fill(Color.clear)
-                                        .frame(width: 4, height: 4)
-                                }
-                            }
-                            .frame(width: 44)
-                            .padding(.vertical, 8)
-                            .background(
-                                isSelected
-                                    ? AnyShapeStyle(BrainRotTheme.accentGradient)
-                                    : AnyShapeStyle(BrainRotTheme.cardBackground)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .id(offset)
+        VStack(spacing: 6) {
+            // Week navigation
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        weekOffset -= 1
                     }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                        .frame(width: 32, height: 32)
                 }
+
+                Spacer()
+
+                Text(weekLabel)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+
+                Spacer()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        weekOffset += 1
+                    }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(weekOffset < 0 ? BrainRotTheme.textSecondary : BrainRotTheme.textSecondary.opacity(0.3))
+                        .frame(width: 32, height: 32)
+                }
+                .disabled(weekOffset >= 0)
             }
-            .onAppear {
-                proxy.scrollTo(selectedDayOffset, anchor: .trailing)
-            }
+
+            // Day pills rendered by the extension (with correct octopus colors)
+            #if !targetEnvironment(simulator)
+            DeviceActivityReport(.dayPills, filter: screenTimeManager.weekFilter(weekOffset: weekOffset))
+                .frame(height: 80)
+            #endif
         }
     }
 
-    private func dayLabel(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
-        return String(formatter.string(from: date).prefix(3))
-    }
-
-    private func dayNumber(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d"
-        return formatter.string(from: date)
+    private var weekLabel: String {
+        if weekOffset == 0 { return "This Week" }
+        if weekOffset == -1 { return "Last Week" }
+        let today = Calendar.current.startOfDay(for: .now)
+        let weekStart = Calendar.current.date(byAdding: .day, value: weekOffset * 7 - 6, to: today) ?? today
+        let weekEnd = Calendar.current.date(byAdding: .day, value: weekOffset * 7, to: today) ?? today
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        return "\(fmt.string(from: weekStart)) \u{2013} \(fmt.string(from: weekEnd))"
     }
 
     // MARK: - States

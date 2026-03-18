@@ -18,5 +18,8 @@ struct DoomScrollReportExtension: DeviceActivityReportExtension {
         AppAnalyticsReport { analyticsData in
             AppAnalyticsView(data: analyticsData)
         }
+        DayPillsReport { pillsData in
+            DayPillsView(pillsData: pillsData)
+        }
     }
 }
