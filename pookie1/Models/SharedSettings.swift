@@ -170,6 +170,27 @@ enum SharedSettings {
         achievementHistory = history
     }
 
+    // MARK: - Daily Score History (per-day score for mini octopus)
+
+    /// Get score for a specific date key (format: "yyyy-MM-dd")
+    static func scoreForDay(_ dateKey: String) -> Int? {
+        // Force re-read from disk (extension writes cross-process)
+        sharedDefaults.synchronize()
+        let key = "score_" + dateKey
+        if sharedDefaults.object(forKey: key) != nil {
+            return sharedDefaults.integer(forKey: key)
+        }
+        return nil
+    }
+
+    /// Save score for today
+    static func recordDailyScore(_ score: Int) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Calendar.current.startOfDay(for: .now))
+        sharedDefaults.set(score, forKey: "score_" + today)
+    }
+
     static func formatLimit(_ minutes: Double) -> String {
         let hours = Int(minutes) / 60
         let mins = Int(minutes) % 60

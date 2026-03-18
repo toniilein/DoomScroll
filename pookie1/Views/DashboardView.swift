@@ -11,6 +11,7 @@ struct DashboardView: View {
     @State private var showShareSheet = false
     @State private var shareImage: UIImage?
     @State private var pollTimer: Timer?
+    @State private var refreshTrigger = 0  // bump to force re-render of day scores
 
     private let shared = UserDefaults(suiteName: "group.pookie1.shared")
 
@@ -60,6 +61,13 @@ struct DashboardView: View {
                 shared?.set(selectedDayOffset, forKey: "selectedDayOffset")
                 shared?.synchronize()
                 startPolling()
+                // Extension saves today's score when TotalActivityReport renders
+                // Refresh pills at 1s, 3s, 5s to catch it
+                for delay in [1.0, 3.0, 5.0] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                        refreshTrigger += 1
+                    }
+                }
             }
             .onDisappear {
                 pollTimer?.invalidate()
@@ -68,6 +76,14 @@ struct DashboardView: View {
             .onChange(of: weekOffset) { _, newValue in
                 shared?.set(newValue, forKey: "dayPillsWeekOffset")
                 shared?.synchronize()
+            }
+            .onChange(of: selectedDayOffset) { _, _ in
+                // After selecting a day, extension saves its score
+                for delay in [1.5, 3.0] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                        refreshTrigger += 1
+                    }
+                }
             }
             .sheet(isPresented: $showShareSheet) {
                 if let image = shareImage {
@@ -110,6 +126,18 @@ struct DashboardView: View {
     }
 
     // MARK: - Week Day Selector
+
+    private var weekDays: [(date: Date, offset: Int)] {
+        let today = Calendar.current.startOfDay(for: .now)
+        let weekStart = weekOffset * 7
+        return (0..<7).compactMap { i in
+            let dayOffset = weekStart - (6 - i) // most recent day on the right
+            let date = Calendar.current.date(byAdding: .day, value: dayOffset, to: today) ?? today
+            // Don't show future days
+            if dayOffset > 0 { return nil }
+            return (date, dayOffset)
+        }
+    }
 
     private var weekDaySelector: some View {
         VStack(spacing: 6) {
@@ -158,12 +186,92 @@ struct DashboardView: View {
     private var weekLabel: String {
         if weekOffset == 0 { return "This Week" }
         if weekOffset == -1 { return "Last Week" }
+        // Show date range
         let today = Calendar.current.startOfDay(for: .now)
         let weekStart = Calendar.current.date(byAdding: .day, value: weekOffset * 7 - 6, to: today) ?? today
         let weekEnd = Calendar.current.date(byAdding: .day, value: weekOffset * 7, to: today) ?? today
         let fmt = DateFormatter()
         fmt.dateFormat = "MMM d"
         return "\(fmt.string(from: weekStart)) \u{2013} \(fmt.string(from: weekEnd))"
+    }
+
+    private func dayPill(date: Date, offset: Int, isSelected: Bool, isToday: Bool) -> some View {
+        let _ = refreshTrigger
+        let dateKey = dateKeyString(for: date)
+        let storedScore = SharedSettings.scoreForDay(dateKey)
+        // Always show a colored octopus — use stored score, or today's live score as fallback
+        let dayScore: Int = storedScore ?? SharedSettings.lastScore
+        let mood = OctopusMood.from(score: dayScore)
+
+        return VStack(spacing: 2) {
+            Text(dayLabel(for: date))
+                .font(.system(size: 9, weight: isSelected ? .bold : .regular))
+                .foregroundColor(isSelected ? .white : BrainRotTheme.textSecondary)
+
+            // Mini octopus
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [mood.bodyColor, mood.bodyColorDark],
+                            center: .init(x: 0.4, y: 0.35),
+                            startRadius: 2, endRadius: 10
+                        )
+                    )
+                    .frame(width: 24, height: 24)
+
+                // Tiny eyes
+                HStack(spacing: 6) {
+                    Circle().fill(Color.white).frame(width: 4.5, height: 4.5)
+                    Circle().fill(Color.white).frame(width: 4.5, height: 4.5)
+                }
+                .offset(y: -1)
+            }
+
+            Text(dayNumber(for: date))
+                .font(.system(size: 10, weight: isSelected ? .black : .medium, design: .rounded))
+                .foregroundColor(isSelected ? .white : BrainRotTheme.textSecondary)
+        }
+        .frame(width: 44)
+        .padding(.vertical, 6)
+        .background(
+            isSelected
+                ? AnyShapeStyle(
+                    LinearGradient(
+                        colors: [mood.bodyColor, mood.bodyColorDark],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                  )
+                : AnyShapeStyle(
+                    LinearGradient(
+                        colors: [mood.bodyColor.opacity(0.35), mood.bodyColorDark.opacity(0.2)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                  )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isSelected ? mood.bodyColorDark.opacity(0.6) : Color.clear, lineWidth: 1.5)
+        )
+    }
+
+    private func dateKeyString(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    private func dayLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return String(formatter.string(from: date).prefix(3))
+    }
+
+    private func dayNumber(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
     }
 
     // MARK: - States

@@ -32,6 +32,18 @@ struct WeeklyTrendReport: DeviceActivityReportScene {
             }
         }
 
+        // Save per-day scores for mini octopus day selector
+        // This saves scores for ALL segments the extension received (any date range)
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        for (date, duration) in dayDurations where duration > 0 {
+            let dayKey = "score_" + dateFormatter.string(from: date)
+            let dayScore = BrainRotCalculator.score(totalMinutes: duration / 60.0)
+            shared?.set(dayScore, forKey: dayKey)
+        }
+        shared?.synchronize()
+
         // Build daily scores sorted by date
         var dailyScores: [DailyScore] = []
         var weeklyTotal: TimeInterval = 0

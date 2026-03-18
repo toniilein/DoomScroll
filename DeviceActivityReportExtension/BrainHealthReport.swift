@@ -177,9 +177,16 @@ struct BrainHealthReport: DeviceActivityReportScene {
         shared?.set(streakDays, forKey: "streakDays")
         shared?.set(Date(), forKey: "lastChallengeDataUpdate")
 
+        // Record daily score for mini octopus in day selector (simple key per day)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let todayKey = dateFormatter.string(from: Calendar.current.startOfDay(for: .now))
+        shared?.set(score, forKey: "score_" + todayKey)
+
         // Write unlocked achievement IDs
         let achievementIDs = smartKPIs.achievements.map { $0.id }
         shared?.set(achievementIDs, forKey: "unlockedAchievements")
+        shared?.synchronize()
 
         return BrainHealthData(
             totalDuration: weeklyDuration,

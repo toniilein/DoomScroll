@@ -236,6 +236,34 @@ class ScreenTimeManager: ObservableObject {
         }
     }
 
+    func weekPreloadFilter(weekOffset: Int) -> DeviceActivityFilter {
+        let today = Calendar.current.startOfDay(for: .now)
+        let weekEnd = Calendar.current.date(byAdding: .day, value: weekOffset * 7, to: today) ?? today
+        let weekStart = Calendar.current.date(byAdding: .day, value: -6, to: weekEnd) ?? weekEnd
+        // Clamp end to today
+        let clampedEnd = min(weekEnd, today)
+        let interval = DateInterval(
+            start: weekStart,
+            end: Calendar.current.date(byAdding: .day, value: 1, to: clampedEnd) ?? clampedEnd
+        )
+        let hasTokens = !activitySelection.applicationTokens.isEmpty || !activitySelection.categoryTokens.isEmpty
+        if hasTokens {
+            return DeviceActivityFilter(
+                segment: .daily(during: interval),
+                users: .all,
+                devices: .init([.iPhone, .iPad]),
+                applications: activitySelection.applicationTokens,
+                categories: activitySelection.categoryTokens
+            )
+        } else {
+            return DeviceActivityFilter(
+                segment: .daily(during: interval),
+                users: .all,
+                devices: .init([.iPhone, .iPad])
+            )
+        }
+    }
+
     var currentFilter: DeviceActivityFilter {
         filterForDate(.now)
     }

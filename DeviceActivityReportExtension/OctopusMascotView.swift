@@ -210,6 +210,7 @@ struct OctopusMascotView: View {
                 }
                 .offset(y: bodyBob)
                 .onTapGesture { showTierSheet = true }
+
             }
             .frame(height: 220)
 
@@ -246,10 +247,8 @@ struct OctopusMascotView: View {
                 VStack(spacing: 12) {
                     ForEach(Array(allTiers.enumerated()), id: \.offset) { _, tier in
                         let isCurrent = score >= tier.min && score <= tier.max
-                        let isUnlocked = score <= tier.max // better tiers are "unlocked" if your score is low enough
-
                         HStack(spacing: 14) {
-                            // Mini octopus circle
+                            // Mini octopus with face
                             ZStack {
                                 Circle()
                                     .fill(
@@ -262,11 +261,29 @@ struct OctopusMascotView: View {
                                     )
                                     .frame(width: 50, height: 50)
 
-                                Text(tier.emoji)
-                                    .font(.system(size: 22))
+                                // Highlight
+                                Ellipse()
+                                    .fill(
+                                        RadialGradient(
+                                            colors: [Color.white.opacity(0.4), Color.clear],
+                                            center: .init(x: 0.4, y: 0.3),
+                                            startRadius: 0, endRadius: 15
+                                        )
+                                    )
+                                    .frame(width: 35, height: 25)
+                                    .offset(x: -4, y: -8)
+
+                                // Eyes
+                                HStack(spacing: 10) {
+                                    miniEye(mood: tier.mood, size: 10)
+                                    miniEye(mood: tier.mood, size: 10)
+                                }
+                                .offset(y: -2)
+
+                                // Mouth
+                                miniMouth(mood: tier.mood)
+                                    .offset(y: 10)
                             }
-                            .opacity(isUnlocked ? 1.0 : 0.4)
-                            .grayscale(isUnlocked ? 0 : 0.8)
 
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack {
@@ -284,7 +301,9 @@ struct OctopusMascotView: View {
                                     }
                                 }
 
-                                Text("Score \(tier.min)\u{2013}\(tier.max)")
+                                let minTime = BrainRotCalculator.formatDuration(BrainRotCalculator.minutesForScore(tier.min) * 60)
+                                let maxTime = BrainRotCalculator.formatDuration(BrainRotCalculator.minutesForScore(tier.max) * 60)
+                                Text("\(minTime) \u{2013} \(maxTime)")
                                     .font(.system(size: 12, weight: .medium, design: .rounded))
                                     .foregroundColor(BrainRotTheme.textSecondary)
                             }
@@ -295,10 +314,6 @@ struct OctopusMascotView: View {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 20))
                                     .foregroundColor(tier.mood.bodyColorDark)
-                            } else if !isUnlocked {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
                             }
                         }
                         .padding(14)
@@ -313,7 +328,7 @@ struct OctopusMascotView: View {
                 .padding()
             }
             .background(BrainRotTheme.background)
-            .navigationTitle("Kraken Tiers")
+            .navigationTitle("Octopus Tiers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -887,6 +902,45 @@ struct OctopusMascotView: View {
         }
     }
 
+    // MARK: - Mini Octopus Parts (for tier gallery)
+
+    private func miniEye(mood: OctopusMood, size: CGFloat) -> some View {
+        ZStack {
+            Circle()
+                .fill(Color.white)
+                .frame(width: size, height: size)
+            Circle()
+                .fill(Color.black)
+                .frame(width: size * 0.5, height: size * 0.5)
+                .offset(y: mood == .zombie ? size * 0.1 : 0)
+        }
+    }
+
+    private func miniMouth(mood: OctopusMood) -> some View {
+        Group {
+            switch mood {
+            case .ecstatic:
+                // Big smile
+                Capsule().fill(Color.white.opacity(0.9)).frame(width: 14, height: 5)
+            case .happy:
+                // Small smile
+                Capsule().fill(Color.white.opacity(0.7)).frame(width: 10, height: 4)
+            case .neutral:
+                // Flat line
+                RoundedRectangle(cornerRadius: 1).fill(Color.white.opacity(0.5)).frame(width: 8, height: 2)
+            case .sad:
+                // Frown
+                Capsule().fill(Color.white.opacity(0.5)).frame(width: 8, height: 3)
+            case .distressed:
+                // Open mouth
+                Circle().fill(Color.white.opacity(0.6)).frame(width: 8, height: 8)
+            case .zombie:
+                // X mouth
+                Text("×").font(.system(size: 10, weight: .bold)).foregroundColor(.white.opacity(0.5))
+            }
+        }
+    }
+
     // MARK: - Animations
 
     private func startAnimations() {
@@ -920,3 +974,4 @@ struct OctopusMascotView: View {
         }
     }
 }
+
