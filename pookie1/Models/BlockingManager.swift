@@ -23,6 +23,8 @@ class BlockingManager: ObservableObject {
         routines = SharedSettings.blockRoutines
         usageLimits = SharedSettings.usageLimits
         isQuickBlocking = UserDefaults.standard.bool(forKey: "quickBlockActive")
+        // Ensure limits file exists for extension on launch
+        writeUsageLimitsFile()
     }
 
     // MARK: - Emergency Unblock All

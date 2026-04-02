@@ -1,6 +1,5 @@
 import DeviceActivity
 import ExtensionKit
-import FamilyControls
 import ManagedSettings
 import SwiftUI
 
@@ -168,66 +167,10 @@ struct TotalActivityReport: DeviceActivityReportScene {
         }
         shared?.synchronize()
 
-        // Enforce usage limits from extension
-        if let todayData = days.last, todayData.hasData {
-            var catDurations: [String: TimeInterval] = [:]
-            for cat in todayData.categories {
-                catDurations[cat.categoryName] = cat.duration
-            }
-            Self.enforceUsageLimits(
-                categoryDurations: catDurations,
-                totalMinutes: todayData.duration / 60.0,
-                shared: shared
-            )
-        }
-
         return TotalActivityData(
             days: days,
             selectedDayIndex: selectedIndex
         )
     }
 
-    private static func enforceUsageLimits(
-        categoryDurations: [String: TimeInterval],
-        totalMinutes: Double,
-        shared: UserDefaults?
-    ) {
-        guard let data = shared?.data(forKey: "usageLimits"),
-              let limits = try? JSONDecoder().decode([LimitData].self, from: data) else { return }
-
-        for limit in limits {
-            let store = ManagedSettingsStore(named: .init("limit_\(limit.id.uuidString)"))
-
-            guard limit.isEnabled else {
-                store.clearAllSettings()
-                continue
-            }
-
-            let lower = limit.name.lowercased()
-            var usedMinutes = totalMinutes
-            for (catName, catDuration) in categoryDurations {
-                if catName.lowercased().contains(lower) || lower.contains(catName.lowercased()) {
-                    usedMinutes = catDuration / 60.0
-                    break
-                }
-            }
-
-            if usedMinutes >= Double(limit.limitMinutes) {
-                guard let selData = limit.appSelectionData,
-                      let sel = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData) else { continue }
-                if !sel.applicationTokens.isEmpty { store.shield.applications = sel.applicationTokens }
-                if !sel.categoryTokens.isEmpty { store.shield.applicationCategories = .specific(sel.categoryTokens) }
-            } else {
-                store.clearAllSettings()
-            }
-        }
-    }
-}
-
-private struct LimitData: Codable, Identifiable {
-    var id: UUID
-    var name: String
-    var appSelectionData: Data?
-    var limitMinutes: Int
-    var isEnabled: Bool
 }
