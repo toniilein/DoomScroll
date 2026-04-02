@@ -1,4 +1,5 @@
 import DeviceActivity
+import ExtensionKit
 import ManagedSettings
 import SwiftUI
 
@@ -42,14 +43,17 @@ struct DayPillsReport: DeviceActivityReportScene {
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         let weekOffset = shared?.integer(forKey: "dayPillsWeekOffset") ?? 0
 
-        // Also save scores for each day while we have the data
+        // Save scores AND durations per day so the main app can render pills
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         for (date, duration) in dayDurations where duration > 0 {
-            let dayKey = "score_" + dateFormatter.string(from: date)
+            let key = dateFormatter.string(from: date)
             let dayScore = BrainRotCalculator.score(totalMinutes: duration / 60.0)
-            shared?.set(dayScore, forKey: dayKey)
+            shared?.set(dayScore, forKey: "score_" + key)
+            shared?.set(duration, forKey: "duration_" + key)
         }
+        // Mark that pill data is ready so the main app knows to refresh
+        shared?.set(Date().timeIntervalSince1970, forKey: "pillDataTimestamp")
         shared?.synchronize()
 
         // Build day pills for the requested week

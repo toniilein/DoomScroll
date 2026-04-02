@@ -6,17 +6,8 @@ import DeviceActivity
 
 struct DashboardView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
-    @State private var selectedDayOffset = 0 // 0 = today, -1 = yesterday, etc.
-    @State private var weekOffset = 0 // 0 = current week, -1 = last week, etc.
     @State private var showShareSheet = false
     @State private var shareImage: UIImage?
-    @State private var pollTimer: Timer?
-
-    private let shared = UserDefaults(suiteName: "group.pookie1.shared")
-
-    private var selectedDate: Date {
-        Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now)) ?? .now
-    }
 
     var body: some View {
         NavigationStack {
@@ -29,20 +20,31 @@ struct DashboardView: View {
                             .padding(.top)
                     }
                 } else {
-                    VStack(spacing: 0) {
-                        weekDaySelector
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
+                    #if !targetEnvironment(simulator)
+                    ZStack {
+                        // Loading placeholder while extension processes
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .tint(BrainRotTheme.neonPink)
+                            Text("Loading...")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
 
-                        #if !targetEnvironment(simulator)
-                        DeviceActivityReport(.totalActivity, filter: screenTimeManager.filterForDate(selectedDate))
+                        DeviceActivityReport(.totalActivity, filter: screenTimeManager.weekFilter(weekOffset: 0))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        #endif
                     }
+                    #endif
                 }
             }
             .navigationTitle("Overview")
             .toolbarColorScheme(.light, for: .navigationBar)
+            .onAppear {
+                // Reset to today so Overview always opens on the current day
+                let shared = UserDefaults(suiteName: "group.pookie1.shared")
+                shared?.set(0, forKey: "selectedDayOffset")
+                shared?.synchronize()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -54,41 +56,9 @@ struct DashboardView: View {
                     }
                 }
             }
-            .onAppear {
-                // Write current week offset so extension knows which week to render
-                shared?.set(weekOffset, forKey: "dayPillsWeekOffset")
-                shared?.set(selectedDayOffset, forKey: "selectedDayOffset")
-                shared?.synchronize()
-                startPolling()
-            }
-            .onDisappear {
-                pollTimer?.invalidate()
-                pollTimer = nil
-            }
-            .onChange(of: weekOffset) { _, newValue in
-                shared?.set(newValue, forKey: "dayPillsWeekOffset")
-                shared?.synchronize()
-            }
             .sheet(isPresented: $showShareSheet) {
                 if let image = shareImage {
                     ShareSheet(items: [image])
-                }
-            }
-        }
-    }
-
-    // MARK: - Polling for selection changes from extension
-
-    private func startPolling() {
-        pollTimer?.invalidate()
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
-            shared?.synchronize()
-            let extOffset = shared?.integer(forKey: "selectedDayOffset") ?? 0
-            if extOffset != selectedDayOffset {
-                DispatchQueue.main.async {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedDayOffset = extOffset
-                    }
                 }
             }
         }
@@ -107,63 +77,6 @@ struct DashboardView: View {
             shareImage = image
             showShareSheet = true
         }
-    }
-
-    // MARK: - Week Day Selector
-
-    private var weekDaySelector: some View {
-        VStack(spacing: 6) {
-            // Week navigation
-            HStack {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        weekOffset -= 1
-                    }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                        .frame(width: 32, height: 32)
-                }
-
-                Spacer()
-
-                Text(weekLabel)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
-
-                Spacer()
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        weekOffset += 1
-                    }
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(weekOffset < 0 ? BrainRotTheme.textSecondary : BrainRotTheme.textSecondary.opacity(0.3))
-                        .frame(width: 32, height: 32)
-                }
-                .disabled(weekOffset >= 0)
-            }
-
-            // Day pills rendered by the extension (with correct octopus colors)
-            #if !targetEnvironment(simulator)
-            DeviceActivityReport(.dayPills, filter: screenTimeManager.weekFilter(weekOffset: weekOffset))
-                .frame(height: 80)
-            #endif
-        }
-    }
-
-    private var weekLabel: String {
-        if weekOffset == 0 { return "This Week" }
-        if weekOffset == -1 { return "Last Week" }
-        let today = Calendar.current.startOfDay(for: .now)
-        let weekStart = Calendar.current.date(byAdding: .day, value: weekOffset * 7 - 6, to: today) ?? today
-        let weekEnd = Calendar.current.date(byAdding: .day, value: weekOffset * 7, to: today) ?? today
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMM d"
-        return "\(fmt.string(from: weekStart)) \u{2013} \(fmt.string(from: weekEnd))"
     }
 
     // MARK: - States

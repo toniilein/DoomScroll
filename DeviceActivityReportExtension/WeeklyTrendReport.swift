@@ -105,6 +105,25 @@ struct WeeklyTrendReport: DeviceActivityReportScene {
             }
         }
 
+        // Save per-day scores + durations so the main app day pills can read them
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        for i in 0..<7 {
+            if let date = calendar.date(byAdding: .day, value: -6 + i, to: today) {
+                let startOfDate = calendar.startOfDay(for: date)
+                let duration = dayDurations[startOfDate] ?? 0
+                if duration > 0 {
+                    let key = dateFormatter.string(from: startOfDate)
+                    let dayScore = BrainRotCalculator.score(totalMinutes: duration / 60.0)
+                    shared?.set(dayScore, forKey: "score_" + key)
+                    shared?.set(duration, forKey: "duration_" + key)
+                }
+            }
+        }
+        shared?.set(Date().timeIntervalSince1970, forKey: "pillDataTimestamp")
+        shared?.synchronize()
+
         return WeeklyTrendData(
             dailyScores: dailyScores,
             averageScore: avgScore,
