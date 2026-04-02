@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 #if !targetEnvironment(simulator)
 import FamilyControls
 import DeviceActivity
@@ -13,10 +14,13 @@ struct BlockView: View {
     @State private var blockPulse = false
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
+    @State private var usageRefreshTick = 0
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
     #endif
+
+    private let refreshTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
     var body: some View {
         NavigationStack {
@@ -95,6 +99,9 @@ struct BlockView: View {
                         editingRoutine = nil
                     } : nil
                 )
+            }
+            .onReceive(refreshTimer) { _ in
+                usageRefreshTick += 1
             }
             #if !targetEnvironment(simulator)
             .familyActivityPicker(
@@ -354,9 +361,13 @@ struct BlockView: View {
         .buttonStyle(.plain)
     }
 
-    // Read per-limit usage from shared file (written by extension's LimitUsageReport)
+    // Read per-limit usage from UserDefaults simple Doubles (written by extension)
     private func usageForLimit(_ limit: UsageLimit) -> (formattedUsage: String, exceeded: Bool, progress: Double) {
-        let usedSeconds = readLimitUsageSeconds(for: limit.id)
+        // Reference tick to trigger re-read on timer
+        _ = usageRefreshTick
+
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let usedSeconds = shared?.double(forKey: "limitSec_\(limit.id.uuidString)") ?? 0
         let usedMinutes = usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(limit.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
@@ -369,18 +380,6 @@ struct BlockView: View {
         else { formatted = "\(m)m" }
 
         return (formatted, exceeded, progress)
-    }
-
-    /// Reads limitUsage.json — keys are limit UUID strings, values are seconds
-    private func readLimitUsageSeconds(for limitId: UUID) -> Double {
-        guard let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("limitUsage.json"),
-              let data = try? Data(contentsOf: url),
-              let dict = try? JSONDecoder().decode([String: Double].self, from: data) else {
-            return 0
-        }
-        return dict[limitId.uuidString] ?? 0
     }
 
     /// Writes usageLimits.json so the extension can read limit configs
