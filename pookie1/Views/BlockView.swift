@@ -354,10 +354,9 @@ struct BlockView: View {
         .buttonStyle(.plain)
     }
 
-    // Read per-limit usage from shared UserDefaults (written by extension)
+    // Read per-limit usage from shared file (written by extension's LimitUsageReport)
     private func usageForLimit(_ limit: UsageLimit) -> (formattedUsage: String, exceeded: Bool, progress: Double) {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let usedSeconds = shared?.double(forKey: "limit_\(limit.id.uuidString)_usedSeconds") ?? 0
+        let usedSeconds = readLimitUsageSeconds(for: limit.id)
         let usedMinutes = usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(limit.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
@@ -372,18 +371,45 @@ struct BlockView: View {
         return (formatted, exceeded, progress)
     }
 
-    private func syncAllLimitConfigs() {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let allIds = blockingManager.usageLimits.map { $0.id.uuidString }
-        shared?.set(allIds, forKey: "allLimitIds")
-
-        for limit in blockingManager.usageLimits {
-            let id = limit.id.uuidString
-            shared?.set(limit.limitMinutes, forKey: "limit_\(id)_minutes")
-            shared?.set(limit.isEnabled, forKey: "limit_\(id)_enabled")
-            shared?.set(limit.appSelectionData, forKey: "limit_\(id)_selectionData")
+    /// Reads limitUsage.json — keys are limit UUID strings, values are seconds
+    private func readLimitUsageSeconds(for limitId: UUID) -> Double {
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("limitUsage.json"),
+              let data = try? Data(contentsOf: url),
+              let dict = try? JSONDecoder().decode([String: Double].self, from: data) else {
+            return 0
         }
-        shared?.synchronize()
+        return dict[limitId.uuidString] ?? 0
+    }
+
+    /// Writes usageLimits.json so the extension can read limit configs
+    private func syncAllLimitConfigs() {
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("usageLimits.json") else { return }
+
+        struct CodableLimit: Codable {
+            let id: UUID
+            let name: String
+            let appSelectionData: Data?
+            let limitMinutes: Int
+            let isEnabled: Bool
+        }
+
+        let codableLimits = blockingManager.usageLimits.map { limit in
+            CodableLimit(
+                id: limit.id,
+                name: limit.name,
+                appSelectionData: limit.appSelectionData,
+                limitMinutes: limit.limitMinutes,
+                isEnabled: limit.isEnabled
+            )
+        }
+
+        if let jsonData = try? JSONEncoder().encode(codableLimits) {
+            try? jsonData.write(to: url, options: .atomic)
+        }
     }
 
     #if !targetEnvironment(simulator)

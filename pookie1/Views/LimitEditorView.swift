@@ -316,41 +316,37 @@ struct LimitEditorView: View {
     }
 
     private func loadCategoryUsage() -> [CategoryUsage] {
-        // Read category names — try simple string first, then stringArray fallback
+        // Primary: read from categoryUsage.json file (written by LimitUsageReport extension)
+        if let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("categoryUsage.json"),
+           let data = try? Data(contentsOf: url),
+           let dict = try? JSONDecoder().decode([String: Double].self, from: data) {
+            let results = dict.filter { $0.value > 0 }
+                .map { CategoryUsage(name: $0.key, minutes: $0.value) } // file stores minutes
+                .sorted { $0.minutes > $1.minutes }
+            if !results.isEmpty { return results }
+        }
+
+        // Fallback: read from UserDefaults catMin_ keys (written by TotalActivityReport)
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         shared?.synchronize()
 
         var names: [String] = []
-
-        // Method 1: single joined string (most reliable cross-process)
         if let namesStr = shared?.string(forKey: "todayCategoryNamesStr"), !namesStr.isEmpty {
             names = namesStr.components(separatedBy: "|||").filter { !$0.isEmpty }
         }
-
-        // Method 2: stringArray (sometimes works)
         if names.isEmpty, let arr = shared?.stringArray(forKey: "todayCategoryNames") {
             names = arr
         }
 
-        // Method 3: try all common iOS category names as fallback
-        if names.isEmpty {
-            names = [
-                "Social", "Entertainment", "Games", "Productivity & Finance",
-                "Utilities", "Information & Reading", "Health & Fitness",
-                "Creativity", "Shopping & Food", "Travel", "Education",
-                "Music", "Photo & Video", "News", "Other"
-            ]
-        }
-
         var results: [CategoryUsage] = []
         for catName in names {
-            // catMin_ keys are simple Doubles — reliable cross-process
             let mins = shared?.double(forKey: "catMin_\(catName)") ?? 0
             if mins > 0 {
                 results.append(CategoryUsage(name: catName, minutes: mins))
             }
         }
-
         return results.sorted { $0.minutes > $1.minutes }
     }
 
