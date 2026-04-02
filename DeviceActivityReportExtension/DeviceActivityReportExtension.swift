@@ -27,5 +27,8 @@ struct DoomScrollReportExtension: DeviceActivityReportExtension {
         LimitUsageReport { limitData in
             LimitUsageView(data: limitData)
         }
+        LimitUsageDetailReport { detailData in
+            LimitUsageDetailView(data: detailData)
+        }
     }
 }

@@ -155,6 +155,8 @@ struct TotalActivityReport: DeviceActivityReportScene {
                 categoryNames.append(cat.categoryName)
             }
             shared?.set(categoryNames, forKey: "todayCategoryNames")
+            // Also write as a simple string for reliable cross-process read
+            shared?.set(categoryNames.joined(separator: "|||"), forKey: "todayCategoryNamesStr")
 
             // Save per-app durations as individual simple keys
             var appNames: [String] = []

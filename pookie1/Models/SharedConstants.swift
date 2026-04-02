@@ -18,5 +18,6 @@ extension DeviceActivityReport.Context {
     static let dayPills = Self("Day Pills")
     static let usageSummary = Self("Usage Summary")
     static let limitUsage = Self("Limit Usage")
+    static let limitUsageDetail = Self("Limit Usage Detail")
 }
 #endif

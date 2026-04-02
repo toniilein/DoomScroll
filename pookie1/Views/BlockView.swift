@@ -12,6 +12,7 @@ struct BlockView: View {
     @State private var editingLimit: UsageLimit?
     @State private var blockPulse = false
     @State private var showQuickBlockPicker = false
+    @State private var showUnblockConfirm = false
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -34,8 +35,6 @@ struct BlockView: View {
 
                         routinesSection
 
-                        addRoutineButton
-
                         Spacer().frame(height: 40)
                     }
                     .padding()
@@ -46,7 +45,7 @@ struct BlockView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        blockingManager.unblockEverything()
+                        showUnblockConfirm = true
                     } label: {
                         Text("Unblock All")
                             .font(.system(size: 13, weight: .bold, design: .rounded))
@@ -54,8 +53,17 @@ struct BlockView: View {
                     }
                 }
             }
+            .alert("Unblock All Apps?", isPresented: $showUnblockConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Unblock All", role: .destructive) {
+                    blockingManager.unblockEverything()
+                }
+            } message: {
+                Text("This will disable all shields, routines, and usage limits.")
+            }
             .onAppear {
                 blockingManager.syncAllSchedules()
+                syncAllLimitConfigs()
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
@@ -242,6 +250,12 @@ struct BlockView: View {
             }
             .padding(.horizontal, 4)
 
+            // Single report processes ALL limits at once — writes per-limit usage to UserDefaults
+            #if !targetEnvironment(simulator)
+            DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
+                .frame(minHeight: 2)
+            #endif
+
             if blockingManager.usageLimits.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "hourglass").font(.system(size: 20)).foregroundColor(BrainRotTheme.textSecondary.opacity(0.4))
@@ -257,101 +271,130 @@ struct BlockView: View {
                     limitCard(limit)
                 }
             }
-
-            // Overall usage summary
-            #if !targetEnvironment(simulator)
-            DeviceActivityReport(.usageSummary, filter: screenTimeManager.filterForDate(.now))
-                .frame(minHeight: 60)
-            #endif
         }
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        VStack(spacing: 10) {
-            // Header: icon + name + toggle
-            HStack(spacing: 12) {
-                Button { editingLimit = limit } label: {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
-                                .frame(width: 42, height: 42)
-                            Image(systemName: "hourglass")
-                                .font(.system(size: 18))
-                                .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
-                        }
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(limit.name)
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                            HStack(spacing: 6) {
-                                Text("Limit: \(limit.formattedLimit)")
-                                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                                    .foregroundColor(BrainRotTheme.neonOrange)
-                                Text(limit.selectionSummary)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(BrainRotTheme.textSecondary)
-                                    .lineLimit(1)
+        let usage = usageForLimit(limit)
+
+        return Button { editingLimit = limit } label: {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
+                            .frame(width: 40, height: 40)
+                        Image(systemName: limitIcon(limit.name))
+                            .font(.system(size: 17))
+                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(limit.name)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+
+                        HStack(spacing: 4) {
+                            Text(usage.formattedUsage)
+                                .font(.system(size: 13, weight: .black, design: .rounded))
+                                .foregroundColor(usage.exceeded ? .red : BrainRotTheme.neonOrange)
+
+                            Text("/ \(limit.formattedLimit)")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+
+                            if usage.exceeded {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 8))
+                                    Text("Exceeded")
+                                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(.red)
+                                .padding(.leading, 2)
                             }
                         }
                     }
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
+                        get: { limit.isEnabled },
+                        set: { _ in
+                            blockingManager.toggleUsageLimit(limit)
+                            // Re-sync so extension picks up the change
+                            syncAllLimitConfigs()
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(BrainRotTheme.neonOrange)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
                 }
-                .buttonStyle(.plain)
 
-                Spacer()
+                // Native progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(BrainRotTheme.cardBorder)
 
-                Toggle("", isOn: Binding(
-                    get: { limit.isEnabled },
-                    set: { _ in blockingManager.toggleUsageLimit(limit) }
-                ))
-                .labelsHidden()
-                .tint(BrainRotTheme.neonOrange)
-            }
-
-            // Live usage from extension — filter scoped to this limit's selected apps
-            #if !targetEnvironment(simulator)
-            if limit.isEnabled {
-                DeviceActivityReport(.limitUsage, filter: filterForLimit(limit))
-                    .frame(height: 36)
-                    .onAppear {
-                        // Tell extension which limit this report is for + its config
-                        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-                        shared?.set(limit.id.uuidString, forKey: "activeLimitId")
-                        shared?.set(limit.limitMinutes, forKey: "activeLimitMinutes")
-                        shared?.set(limit.isEnabled, forKey: "activeLimitEnabled")
-                        // Store the selection data so extension can apply shield with correct tokens
-                        shared?.set(limit.appSelectionData, forKey: "activeLimitSelectionData")
-                        shared?.synchronize()
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(usage.exceeded ? Color.red : BrainRotTheme.neonOrange)
+                            .frame(width: geo.size.width * usage.progress)
                     }
+                }
+                .frame(height: 4)
             }
-            #endif
+            .padding(14)
+            .background(BrainRotTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
         }
-        .padding(14)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .buttonStyle(.plain)
+    }
+
+    // Read per-limit usage from shared UserDefaults (written by extension)
+    private func usageForLimit(_ limit: UsageLimit) -> (formattedUsage: String, exceeded: Bool, progress: Double) {
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let usedSeconds = shared?.double(forKey: "limit_\(limit.id.uuidString)_usedSeconds") ?? 0
+        let usedMinutes = usedSeconds / 60.0
+        let exceeded = usedMinutes >= Double(limit.limitMinutes)
+        let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
+
+        let h = Int(usedMinutes) / 60
+        let m = Int(usedMinutes) % 60
+        let formatted: String
+        if h > 0 && m > 0 { formatted = "\(h)h \(m)m" }
+        else if h > 0 { formatted = "\(h)h" }
+        else { formatted = "\(m)m" }
+
+        return (formatted, exceeded, progress)
+    }
+
+    private func syncAllLimitConfigs() {
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let allIds = blockingManager.usageLimits.map { $0.id.uuidString }
+        shared?.set(allIds, forKey: "allLimitIds")
+
+        for limit in blockingManager.usageLimits {
+            let id = limit.id.uuidString
+            shared?.set(limit.limitMinutes, forKey: "limit_\(id)_minutes")
+            shared?.set(limit.isEnabled, forKey: "limit_\(id)_enabled")
+            shared?.set(limit.appSelectionData, forKey: "limit_\(id)_selectionData")
+        }
+        shared?.synchronize()
     }
 
     #if !targetEnvironment(simulator)
-    private func filterForLimit(_ limit: UsageLimit) -> DeviceActivityFilter {
-        let selection = limit.decodedSelection
+    private var todayAllAppsFilter: DeviceActivityFilter {
         let interval = Calendar.current.dateInterval(of: .day, for: .now)
             ?? DateInterval(start: .now, duration: 86400)
-
-        if !selection.applicationTokens.isEmpty || !selection.categoryTokens.isEmpty {
-            return DeviceActivityFilter(
-                segment: .daily(during: interval),
-                users: .all,
-                devices: .init([.iPhone, .iPad]),
-                applications: selection.applicationTokens,
-                categories: selection.categoryTokens
-            )
-        } else {
-            return DeviceActivityFilter(
-                segment: .daily(during: interval),
-                users: .all,
-                devices: .init([.iPhone, .iPad])
-            )
-        }
+        return DeviceActivityFilter(
+            segment: .daily(during: interval),
+            users: .all,
+            devices: .init([.iPhone, .iPad])
+        )
     }
     #endif
 
@@ -359,10 +402,21 @@ struct BlockView: View {
 
     private var routinesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Routines")
-                .font(.system(size: 14, weight: .black, design: .rounded))
-                .foregroundColor(BrainRotTheme.textSecondary)
-                .padding(.leading, 4)
+            HStack {
+                Text("Routines")
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+                Spacer()
+                Button {
+                    editingRoutine = nil
+                    showEditor = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(BrainRotTheme.neonPink)
+                }
+            }
+            .padding(.horizontal, 4)
             ForEach(blockingManager.routines) { routine in
                 routineCard(routine)
             }
@@ -404,26 +458,30 @@ struct BlockView: View {
         .buttonStyle(.plain)
     }
 
+    private func limitIcon(_ name: String) -> String {
+        let l = name.lowercased()
+        if l.contains("social") { return "person.2.fill" }
+        if l.contains("game") || l.contains("gaming") { return "gamecontroller.fill" }
+        if l.contains("entertainment") || l.contains("video") || l.contains("stream") { return "play.tv.fill" }
+        if l.contains("news") || l.contains("read") { return "newspaper.fill" }
+        if l.contains("shop") || l.contains("buy") { return "cart.fill" }
+        if l.contains("product") || l.contains("work") { return "briefcase.fill" }
+        if l.contains("message") || l.contains("chat") { return "message.fill" }
+        if l.contains("music") || l.contains("audio") { return "music.note" }
+        if l.contains("photo") || l.contains("camera") { return "camera.fill" }
+        return "hourglass"
+    }
+
     private func routineIcon(_ name: String) -> String {
         let l = name.lowercased()
         if l.contains("morning") { return "\u{1F305}" }
         if l.contains("work") || l.contains("focus") { return "\u{1F4BC}" }
         if l.contains("night") || l.contains("evening") || l.contains("wind") { return "\u{1F319}" }
+        if l.contains("bed") || l.contains("sleep") { return "\u{1F634}" }
         if l.contains("study") { return "\u{1F4DA}" }
+        if l.contains("gym") || l.contains("exercise") || l.contains("fitness") { return "\u{1F3CB}\u{FE0F}" }
+        if l.contains("meal") || l.contains("lunch") || l.contains("dinner") { return "\u{1F37D}\u{FE0F}" }
         return "\u{1F6E1}\u{FE0F}"
-    }
-
-    private var addRoutineButton: some View {
-        Button {
-            editingRoutine = nil
-            showEditor = true
-        } label: {
-            HStack { Image(systemName: "plus.circle.fill"); Text("Add Routine") }
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 14)
-                .background(BrainRotTheme.accentGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
     }
 
     private func formatEndTime(_ r: BlockRoutine) -> String {

@@ -12,6 +12,9 @@ struct ChallengesView: View {
     @State private var questProgress: [CGFloat] = [0, 0, 0]
     @State private var bubbleBounce: CGFloat = 0
     @State private var calendarMonthOffset: Int = 0
+    @State private var selectedCalendarDay: String? = nil
+    @State private var questHistoryData: [String: [Bool]] = SharedSettings.questHistory
+    @State private var achievementHistoryData: [String: [String]] = SharedSettings.achievementHistory
 
     private var streakTier: StreakTier { .from(days: streakDays) }
 
@@ -49,7 +52,28 @@ struct ChallengesView: View {
         streakDays = SharedSettings.streakDays
         bestStreak = SharedSettings.bestStreak
         streakHistory = SharedSettings.streakHistory
+        questHistoryData = SharedSettings.questHistory
+        achievementHistoryData = SharedSettings.achievementHistory
         SharedSettings.recordStreakDay()
+
+        // Save today's quest completion state
+        let quests = dailyQuests
+        SharedSettings.recordQuestResults(quests.map { $0.isComplete })
+        questHistoryData = SharedSettings.questHistory
+
+        // Save today's achievements
+        var todayAchievements: [String] = []
+        if score < 20 { todayAchievements.append("GRASS TOUCHER") }
+        if score == 0 { todayAchievements.append("ZEN MASTER") }
+        if score > 90 { todayAchievements.append("TERMINAL BRAINROT") }
+        if pickups > 50 { todayAchievements.append("PHONE ADDICT") }
+        if pickups > 80 { todayAchievements.append("PICKUP ARTIST") }
+        if screenTimeMinutes > 180 { todayAchievements.append("MARATHON SCROLLER") }
+        if streakDays >= 7 { todayAchievements.append("WEEK WARRIOR") }
+        if streakDays >= 30 { todayAchievements.append("MONTHLY MASTER") }
+        if streakDays >= 60 { todayAchievements.append("DIAMOND HANDS") }
+        SharedSettings.recordAchievements(todayAchievements)
+        achievementHistoryData = SharedSettings.achievementHistory
     }
 
     private func startAnimations() {
@@ -376,11 +400,30 @@ struct ChallengesView: View {
         return formatter.string(from: date)
     }
 
+    private var calendarData: (firstOfMonth: Date, daysInMonth: Int, firstWeekday: Int) {
+        let cal = Calendar.current
+        let viewDate = cal.date(byAdding: .month, value: calendarMonthOffset, to: .now)!
+        let comps = cal.dateComponents([.year, .month], from: viewDate)
+        let firstOfMonth = cal.date(from: comps)!
+        let daysInMonth = cal.range(of: .day, in: .month, for: firstOfMonth)!.count
+        let firstWeekday = (cal.component(.weekday, from: firstOfMonth) + 5) % 7
+        return (firstOfMonth, daysInMonth, firstWeekday)
+    }
+
     private var streakCalendar: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let data = calendarData
+        let cal = Calendar.current
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+        // Total cells = padding + days, always pad to full rows (6 rows max = 42)
+        let totalCells = data.firstWeekday + data.daysInMonth
+        let rows = (totalCells + 6) / 7
+        let gridCells = rows * 7
+
+        return VStack(alignment: .leading, spacing: 10) {
             // Header with month navigation
             HStack {
                 Button {
+                    selectedCalendarDay = nil
                     withAnimation(.easeInOut(duration: 0.2)) {
                         calendarMonthOffset = max(-2, calendarMonthOffset - 1)
                     }
@@ -405,6 +448,7 @@ struct ChallengesView: View {
                 Spacer()
 
                 Button {
+                    selectedCalendarDay = nil
                     withAnimation(.easeInOut(duration: 0.2)) {
                         calendarMonthOffset = min(0, calendarMonthOffset + 1)
                     }
@@ -416,13 +460,9 @@ struct ChallengesView: View {
                 .disabled(calendarMonthOffset >= 0)
             }
 
-            let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-            let dayLabels = [
-                (0, "M"), (1, "T"), (2, "W"), (3, "T"), (4, "F"), (5, "S"), (6, "S")
-            ]
-
+            // Day labels
             HStack(spacing: 4) {
-                ForEach(dayLabels, id: \.0) { _, label in
+                ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(BrainRotTheme.textSecondary)
@@ -430,62 +470,75 @@ struct ChallengesView: View {
                 }
             }
 
-            let cal = Calendar.current
-            // First day of the displayed month
-            let viewDate = cal.date(byAdding: .month, value: calendarMonthOffset, to: .now)!
-            let comps = cal.dateComponents([.year, .month], from: viewDate)
-            let firstOfMonth = cal.date(from: comps)!
-            let daysInMonth = cal.range(of: .day, in: .month, for: firstOfMonth)!.count
-            let firstWeekday = (cal.component(.weekday, from: firstOfMonth) + 5) % 7
-
+            // Fixed-size grid: always same number of rows to prevent jumping
             LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(0..<firstWeekday, id: \.self) { idx in
-                    Color.clear.frame(height: 30).id("pad-\(idx)")
-                }
+                ForEach(0..<gridCells, id: \.self) { cellIndex in
+                    let dayIdx = cellIndex - data.firstWeekday
 
-                ForEach(0..<daysInMonth, id: \.self) { dayIdx in
-                    let date = cal.date(byAdding: .day, value: dayIdx, to: firstOfMonth)!
-                    let dateStr = formatDateISO(date)
-                    let isStreakDay = streakHistory.contains(dateStr)
-                    let isToday = cal.isDateInToday(date)
-                    let isFuture = date > .now
+                    if dayIdx < 0 || dayIdx >= data.daysInMonth {
+                        // Empty padding cell
+                        Color.clear.frame(height: 30)
+                    } else {
+                        let date = cal.date(byAdding: .day, value: dayIdx, to: data.firstOfMonth)!
+                        let dateStr = formatDateISO(date)
+                        let isStreakDay = streakHistory.contains(dateStr)
+                        let isToday = cal.isDateInToday(date)
+                        let isFuture = date > .now
+                        let isSelected = selectedCalendarDay == dateStr
 
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(
-                                isFuture ? Color.clear :
-                                isStreakDay ? streakTier.color.opacity(0.8) :
-                                isToday ? BrainRotTheme.neonPink.opacity(0.15) :
-                                BrainRotTheme.cardBorder.opacity(0.5)
-                            )
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(
+                                    isFuture ? Color.clear :
+                                    isStreakDay ? streakTier.color.opacity(0.8) :
+                                    isToday ? BrainRotTheme.neonPink.opacity(0.15) :
+                                    BrainRotTheme.cardBorder.opacity(0.5)
+                                )
 
-                        if isStreakDay {
-                            Text("\u{1F525}").font(.system(size: 13))
-                        } else if isToday {
-                            Text("\(dayIdx + 1)")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.neonPink)
-                        } else if !isFuture {
-                            Text("\(dayIdx + 1)")
-                                .font(.system(size: 10, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
+                            if isStreakDay {
+                                Text("\u{1F525}").font(.system(size: 13))
+                            } else if isToday {
+                                Text("\(dayIdx + 1)")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .foregroundColor(BrainRotTheme.neonPink)
+                            } else if !isFuture {
+                                Text("\(dayIdx + 1)")
+                                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                                    .foregroundColor(BrainRotTheme.textSecondary)
+                            }
+                        }
+                        .frame(height: 30)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(
+                                    isSelected ? BrainRotTheme.neonPurple.opacity(0.8) :
+                                    isToday ? BrainRotTheme.neonPink.opacity(0.5) : Color.clear,
+                                    lineWidth: isSelected ? 2 : 1.5
+                                )
+                        )
+                        .onTapGesture {
+                            guard !isFuture else { return }
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedCalendarDay = selectedCalendarDay == dateStr ? nil : dateStr
+                            }
                         }
                     }
-                    .frame(height: 30)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(isToday ? BrainRotTheme.neonPink.opacity(0.5) : Color.clear, lineWidth: 1.5)
-                    )
                 }
             }
 
+            // Selected day quest results
+            if let selected = selectedCalendarDay {
+                selectedDayDetail(dateStr: selected)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
             // Month summary
-            let monthStreakDays = (0..<daysInMonth).filter { dayIdx in
-                let date = cal.date(byAdding: .day, value: dayIdx, to: firstOfMonth)!
+            let monthStreakDays = (0..<data.daysInMonth).filter { dayIdx in
+                let date = cal.date(byAdding: .day, value: dayIdx, to: data.firstOfMonth)!
                 return streakHistory.contains(formatDateISO(date))
             }.count
 
-            if monthStreakDays > 0 {
+            if monthStreakDays > 0 && selectedCalendarDay == nil {
                 HStack(spacing: 4) {
                     Text("\u{1F525}")
                         .font(.system(size: 11))
@@ -503,6 +556,116 @@ struct ChallengesView: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
         )
+    }
+
+    // MARK: - Day Detail Popup
+
+    private func selectedDayDetail(dateStr: String) -> some View {
+        let questNames = [
+            ("\u{1F3AF}", "Slay the Score"),
+            ("\u{23F1}\u{FE0F}", "Time Bandit"),
+            ("\u{1F4F1}", "Hands Off!")
+        ]
+        let results = questHistoryData[dateStr]
+        let achievements = achievementHistoryData[dateStr] ?? []
+        let isStreakDay = streakHistory.contains(dateStr)
+
+        // Format date nicely
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let date = formatter.date(from: dateStr)
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateFormat = "MMM d, yyyy"
+        let displayDate = date.map { displayFormatter.string(from: $0) } ?? dateStr
+
+        // Achievement lookup
+        let achievementLookup: [(id: String, emoji: String, name: String)] = [
+            ("GRASS TOUCHER", "\u{1F33F}", "Grass Toucher"),
+            ("ZEN MASTER", "\u{1F9D8}", "Zen Master"),
+            ("TERMINAL BRAINROT", "\u{1F9E0}\u{1F480}", "Terminal Brainrot"),
+            ("PHONE ADDICT", "\u{1F4F1}", "Phone Addict"),
+            ("PICKUP ARTIST", "\u{1F3AF}", "Pickup Artist"),
+            ("MARATHON SCROLLER", "\u{23F1}\u{FE0F}", "Marathon Scroller"),
+            ("WEEK WARRIOR", "\u{1F525}", "Week Warrior"),
+            ("MONTHLY MASTER", "\u{1F451}", "Monthly Master"),
+            ("DIAMOND HANDS", "\u{1F48E}", "Diamond Hands"),
+        ]
+
+        return VStack(alignment: .leading, spacing: 10) {
+            // Header
+            HStack {
+                Text(displayDate)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+                if isStreakDay {
+                    HStack(spacing: 3) {
+                        Text("\u{1F525}")
+                            .font(.system(size: 11))
+                        Text("Streak Day")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(streakTier.color)
+                    }
+                } else {
+                    Text("Missed")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+            }
+
+            // Quests
+            if let results = results {
+                ForEach(Array(zip(questNames.indices, questNames)), id: \.0) { idx, quest in
+                    let passed = idx < results.count ? results[idx] : false
+                    HStack(spacing: 8) {
+                        Text(quest.0).font(.system(size: 14))
+                        Text(quest.1)
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                        Spacer()
+                        Text(passed ? "DONE" : "MISSED")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundColor(passed ? BrainRotTheme.neonGreen : BrainRotTheme.neonPink)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background((passed ? BrainRotTheme.neonGreen : BrainRotTheme.neonPink).opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                }
+            } else {
+                Text("No quest data for this day")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+
+            // Achievements
+            if !achievements.isEmpty {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Achievements")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundColor(BrainRotTheme.goldColor)
+
+                    let earned = achievementLookup.filter { achievements.contains($0.id) }
+                    ForEach(Array(earned.enumerated()), id: \.offset) { _, ach in
+                        HStack(spacing: 8) {
+                            Text(ach.emoji).font(.system(size: 16))
+                            Text(ach.name)
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Spacer()
+                            Image(systemName: "trophy.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(BrainRotTheme.goldColor)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(BrainRotTheme.cardBorder.opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

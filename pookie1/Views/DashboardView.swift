@@ -21,8 +21,19 @@ struct DashboardView: View {
                     }
                 } else {
                     #if !targetEnvironment(simulator)
-                    DeviceActivityReport(.totalActivity, filter: screenTimeManager.weekFilter(weekOffset: 0))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ZStack {
+                        // Loading placeholder while extension processes
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .tint(BrainRotTheme.neonPink)
+                            Text("Loading...")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+
+                        DeviceActivityReport(.totalActivity, filter: screenTimeManager.weekFilter(weekOffset: 0))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                     #endif
                 }
             }

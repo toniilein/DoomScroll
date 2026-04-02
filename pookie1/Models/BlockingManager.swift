@@ -179,6 +179,9 @@ class BlockingManager: ObservableObject {
         SharedSettings.saveUsageLimit(limit)
         usageLimits = SharedSettings.usageLimits
 
+        // Write per-limit config so extension can read it
+        syncLimitToSharedDefaults(limit)
+
         if limit.isEnabled {
             startLimitMonitoring(limit)
         } else {
@@ -187,23 +190,46 @@ class BlockingManager: ObservableObject {
         }
     }
 
+    private func syncLimitToSharedDefaults(_ limit: UsageLimit) {
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let id = limit.id.uuidString
+
+        shared?.set(limit.limitMinutes, forKey: "limit_\(id)_minutes")
+        shared?.set(limit.isEnabled, forKey: "limit_\(id)_enabled")
+        shared?.set(limit.appSelectionData, forKey: "limit_\(id)_selectionData")
+
+        // Update master list of limit IDs
+        var allIds = shared?.stringArray(forKey: "allLimitIds") ?? []
+        if !allIds.contains(id) {
+            allIds.append(id)
+            shared?.set(allIds, forKey: "allLimitIds")
+        }
+
+        shared?.synchronize()
+    }
+
     func deleteUsageLimit(_ limit: UsageLimit) {
         stopLimitMonitoring(limit)
         removeLimitShield(limit)
         SharedSettings.deleteUsageLimit(id: limit.id)
         usageLimits = SharedSettings.usageLimits
+
+        // Clean up per-limit shared defaults
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let id = limit.id.uuidString
+        shared?.removeObject(forKey: "limit_\(id)_minutes")
+        shared?.removeObject(forKey: "limit_\(id)_enabled")
+        shared?.removeObject(forKey: "limit_\(id)_selectionData")
+        var allIds = shared?.stringArray(forKey: "allLimitIds") ?? []
+        allIds.removeAll { $0 == id }
+        shared?.set(allIds, forKey: "allLimitIds")
+        shared?.synchronize()
     }
 
     func toggleUsageLimit(_ limit: UsageLimit) {
         var updated = limit
         updated.isEnabled.toggle()
         saveUsageLimit(updated)
-
-        // Also update the shared state so the extension sees it immediately
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        shared?.set(updated.id.uuidString, forKey: "activeLimitId")
-        shared?.set(updated.isEnabled, forKey: "activeLimitEnabled")
-        shared?.synchronize()
     }
 
     private func startLimitMonitoring(_ limit: UsageLimit) {
