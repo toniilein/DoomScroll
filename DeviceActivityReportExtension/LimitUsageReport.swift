@@ -119,8 +119,14 @@ struct LimitUsageReport: DeviceActivityReportScene {
             }
         }
 
-        // Write per-limit usage to shared file
+        // Write per-limit usage to shared file + UserDefaults simple Doubles
         Self.writeLimitUsageFile(limitResults)
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        for (idStr, seconds) in limitResults {
+            shared?.set(seconds, forKey: "limitSec_\(idStr)")
+        }
+        shared?.set(Date().timeIntervalSince1970, forKey: "limitUsageUpdatedAt")
+        shared?.synchronize()
 
         return LimitUsageData(
             exceededCount: exceededCount,
