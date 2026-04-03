@@ -9,6 +9,7 @@ struct LimitUsageData: Sendable {
     let exceededCount: Int
     let activeCount: Int
     let totalCount: Int
+    let debugInfo: String
 }
 
 // Must match what the main app writes to usageLimits.json
@@ -29,8 +30,11 @@ struct LimitUsageReport: DeviceActivityReportScene {
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> LimitUsageData {
+        var debug: [String] = []
+
         // Read limits from shared FILE (not UserDefaults — Data/arrays fail cross-process)
         let limits = Self.readLimitsFromFile()
+        debug.append("file:\(limits.count) limits")
 
         // Decode FamilyActivitySelection for each limit
         struct LimitConfig {
@@ -42,10 +46,19 @@ struct LimitUsageReport: DeviceActivityReportScene {
 
         var limitConfigs: [LimitConfig] = []
         for limit in limits {
-            guard limit.limitMinutes > 0,
-                  let selData = limit.appSelectionData,
-                  let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData)
-            else { continue }
+            guard limit.limitMinutes > 0 else {
+                debug.append("skip \(limit.name): 0min")
+                continue
+            }
+            guard let selData = limit.appSelectionData else {
+                debug.append("skip \(limit.name): no selData")
+                continue
+            }
+            guard let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData) else {
+                debug.append("skip \(limit.name): decode fail (\(selData.count)b)")
+                continue
+            }
+            debug.append("\(limit.name): \(selection.applicationTokens.count)apps \(selection.categoryTokens.count)cats")
             limitConfigs.append(LimitConfig(
                 id: limit.id.uuidString,
                 minutes: limit.limitMinutes,
@@ -77,6 +90,8 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 }
             }
         }
+
+        debug.append("apps:\(appTokenDurations.count) cats:\(catNameDurations.count)")
 
         // Write per-category usage to shared file (for limit editor)
         Self.writeCategoryUsageFile(catNameDurations)
@@ -110,6 +125,8 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 limitDuration += appTokenDurations[appToken] ?? 0
             }
 
+            debug.append("L\(config.id.prefix(4)): matched\(matchedApps.count) dur\(Int(limitDuration))s")
+
             // Write simple Double to UserDefaults (same direction as catMin_ — proven)
             shared?.set(limitDuration, forKey: "limit_\(config.id)_usedSeconds")
 
@@ -133,10 +150,17 @@ struct LimitUsageReport: DeviceActivityReportScene {
 
         shared?.synchronize()
 
+        let debugStr = debug.joined(separator: " | ")
+
+        // Also write debug to UserDefaults so main app can read it
+        shared?.set(debugStr, forKey: "limitDebug")
+        shared?.synchronize()
+
         return LimitUsageData(
             exceededCount: exceededCount,
             activeCount: activeCount,
-            totalCount: limitConfigs.count
+            totalCount: limitConfigs.count,
+            debugInfo: debugStr
         )
     }
 
