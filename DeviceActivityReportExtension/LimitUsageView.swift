@@ -6,17 +6,6 @@ struct LimitUsageView: View {
     let data: LimitUsageData
 
     var body: some View {
-        VStack(spacing: 4) {
-        // Debug info — remove after fixing
-        Text(data.debugInfo)
-            .font(.system(size: 10, weight: .medium, design: .monospaced))
-            .foregroundColor(.orange)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(8)
-            .background(Color.black.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-
         if data.exceededCount > 0 {
             HStack(spacing: 4) {
                 Image(systemName: "exclamationmark.triangle.fill")
@@ -38,7 +27,6 @@ struct LimitUsageView: View {
         } else {
             Color.clear.frame(height: 2)
         }
-        } // VStack
     }
 }
 
@@ -49,7 +37,6 @@ struct LimitUsageDetailView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            // Usage summary
             HStack {
                 Text(data.formattedDuration)
                     .font(.system(size: 20, weight: .black, design: .rounded))
@@ -72,12 +59,10 @@ struct LimitUsageDetailView: View {
                 }
             }
 
-            // Progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(BrainRotTheme.cardBorder)
-
                     RoundedRectangle(cornerRadius: 3)
                         .fill(
                             LinearGradient(
@@ -92,7 +77,6 @@ struct LimitUsageDetailView: View {
             }
             .frame(height: 6)
 
-            // Category breakdown — only show categories with actual usage
             let activeCats = data.categories.filter { $0.duration > 0 }
             if !activeCats.isEmpty {
                 VStack(spacing: 4) {

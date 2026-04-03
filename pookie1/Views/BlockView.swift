@@ -265,6 +265,15 @@ struct BlockView: View {
                 .frame(minHeight: 80)
             #endif
 
+            // DEBUG: show what the app reads from limitUsage.json
+            Text(debugLimitFileContents())
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundColor(.blue)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(6)
+                .background(Color.blue.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
             if blockingManager.usageLimits.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "hourglass").font(.system(size: 20)).foregroundColor(BrainRotTheme.textSecondary.opacity(0.4))
@@ -379,6 +388,25 @@ struct BlockView: View {
         else { formatted = "\(m)m" }
 
         return (formatted, exceeded, progress)
+    }
+
+    private func debugLimitFileContents() -> String {
+        _ = usageRefreshTick
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("limitUsage.json") else {
+            return "APP: no container URL"
+        }
+        let exists = FileManager.default.fileExists(atPath: url.path)
+        guard exists else { return "APP: limitUsage.json NOT FOUND" }
+        guard let data = try? Data(contentsOf: url) else {
+            return "APP: file exists but can't read"
+        }
+        guard let dict = try? JSONDecoder().decode([String: Double].self, from: data) else {
+            return "APP: file \(data.count)b but decode fail: \(String(data: data, encoding: .utf8) ?? "?")"
+        }
+        let items = dict.map { "\($0.key.prefix(4))=\(Int($0.value))s" }.joined(separator: ", ")
+        return "APP: \(dict.count) entries — \(items)"
     }
 
     /// Reads limitUsage.json written by extension — returns seconds for a given limit UUID
