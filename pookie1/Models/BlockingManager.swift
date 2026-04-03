@@ -190,22 +190,32 @@ class BlockingManager: ObservableObject {
         }
     }
 
+    /// Writes ALL limits to usageLimits.json so extension can read configs via file I/O.
     private func syncLimitToSharedDefaults(_ limit: UsageLimit) {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let id = limit.id.uuidString
+        writeLimitsFile()
+    }
 
-        shared?.set(limit.limitMinutes, forKey: "limit_\(id)_minutes")
-        shared?.set(limit.isEnabled, forKey: "limit_\(id)_enabled")
-        shared?.set(limit.appSelectionData, forKey: "limit_\(id)_selectionData")
+    private func writeLimitsFile() {
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("usageLimits.json") else { return }
 
-        // Update master list of limit IDs
-        var allIds = shared?.stringArray(forKey: "allLimitIds") ?? []
-        if !allIds.contains(id) {
-            allIds.append(id)
-            shared?.set(allIds, forKey: "allLimitIds")
+        struct CodableLimit: Codable {
+            let id: UUID
+            let name: String
+            let appSelectionData: Data?
+            let limitMinutes: Int
+            let isEnabled: Bool
         }
 
-        shared?.synchronize()
+        let codable = usageLimits.map {
+            CodableLimit(id: $0.id, name: $0.name, appSelectionData: $0.appSelectionData,
+                         limitMinutes: $0.limitMinutes, isEnabled: $0.isEnabled)
+        }
+
+        if let jsonData = try? JSONEncoder().encode(codable) {
+            try? jsonData.write(to: url, options: .atomic)
+        }
     }
 
     func deleteUsageLimit(_ limit: UsageLimit) {
@@ -214,16 +224,12 @@ class BlockingManager: ObservableObject {
         SharedSettings.deleteUsageLimit(id: limit.id)
         usageLimits = SharedSettings.usageLimits
 
-        // Clean up per-limit shared defaults
+        // Re-write the limits file without the deleted limit
+        writeLimitsFile()
+
+        // Clean up usage data for this limit
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let id = limit.id.uuidString
-        shared?.removeObject(forKey: "limit_\(id)_minutes")
-        shared?.removeObject(forKey: "limit_\(id)_enabled")
-        shared?.removeObject(forKey: "limit_\(id)_selectionData")
-        shared?.removeObject(forKey: "limit_\(id)_usedSeconds")
-        var allIds = shared?.stringArray(forKey: "allLimitIds") ?? []
-        allIds.removeAll { $0 == id }
-        shared?.set(allIds, forKey: "allLimitIds")
+        shared?.removeObject(forKey: "limit_\(limit.id.uuidString)_usedSeconds")
         shared?.synchronize()
     }
 

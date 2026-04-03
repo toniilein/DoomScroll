@@ -382,18 +382,29 @@ struct BlockView: View {
         return (formatted, exceeded, progress)
     }
 
+    /// Writes usageLimits.json to app group container so the extension can read configs.
+    /// Uses file I/O (not UserDefaults) because Data/arrays are unreliable cross-process.
     private func syncAllLimitConfigs() {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let allIds = blockingManager.usageLimits.map { $0.id.uuidString }
-        shared?.set(allIds, forKey: "allLimitIds")
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("usageLimits.json") else { return }
 
-        for limit in blockingManager.usageLimits {
-            let id = limit.id.uuidString
-            shared?.set(limit.limitMinutes, forKey: "limit_\(id)_minutes")
-            shared?.set(limit.isEnabled, forKey: "limit_\(id)_enabled")
-            shared?.set(limit.appSelectionData, forKey: "limit_\(id)_selectionData")
+        struct CodableLimit: Codable {
+            let id: UUID
+            let name: String
+            let appSelectionData: Data?
+            let limitMinutes: Int
+            let isEnabled: Bool
         }
-        shared?.synchronize()
+
+        let codable = blockingManager.usageLimits.map {
+            CodableLimit(id: $0.id, name: $0.name, appSelectionData: $0.appSelectionData,
+                         limitMinutes: $0.limitMinutes, isEnabled: $0.isEnabled)
+        }
+
+        if let jsonData = try? JSONEncoder().encode(codable) {
+            try? jsonData.write(to: url, options: .atomic)
+        }
     }
 
     #if !targetEnvironment(simulator)
