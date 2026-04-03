@@ -96,10 +96,11 @@ struct LimitUsageReport: DeviceActivityReportScene {
         // Write per-category usage to shared file (for limit editor)
         Self.writeCategoryUsageFile(catNameDurations)
 
-        // Compute per-limit usage, write results as simple Doubles (extension→app works)
+        // Compute per-limit usage
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         var exceededCount = 0
         var activeCount = 0
+        var limitUsageResults: [String: Double] = [:]
 
         for config in limitConfigs {
             if config.enabled { activeCount += 1 }
@@ -127,8 +128,9 @@ struct LimitUsageReport: DeviceActivityReportScene {
 
             debug.append("L\(config.id.prefix(4)): matched\(matchedApps.count) dur\(Int(limitDuration))s")
 
-            // Write simple Double to UserDefaults (same direction as catMin_ — proven)
+            // Write to both UserDefaults and accumulate for file
             shared?.set(limitDuration, forKey: "limit_\(config.id)_usedSeconds")
+            limitUsageResults[config.id] = limitDuration
 
             let usedMinutes = limitDuration / 60.0
             let exceeded = usedMinutes >= Double(config.minutes)
@@ -150,10 +152,10 @@ struct LimitUsageReport: DeviceActivityReportScene {
 
         shared?.synchronize()
 
-        let debugStr = debug.joined(separator: " | ")
+        // Write usage results to file (proven reliable cross-process)
+        Self.writeLimitUsageFile(limitUsageResults)
 
-        // Also write debug to UserDefaults so main app can read it
-        shared?.set(debugStr, forKey: "limitDebug")
+        let debugStr = debug.joined(separator: " | ")
         shared?.synchronize()
 
         return LimitUsageData(
@@ -178,6 +180,14 @@ struct LimitUsageReport: DeviceActivityReportScene {
             return []
         }
         return limits
+    }
+
+    /// Writes limitUsage.json — {UUID: seconds} for the main app to read
+    static func writeLimitUsageFile(_ results: [String: Double]) {
+        guard let url = containerURL?.appendingPathComponent("limitUsage.json") else { return }
+        if let jsonData = try? JSONEncoder().encode(results) {
+            try? jsonData.write(to: url, options: .atomic)
+        }
     }
 
     /// Writes categoryUsage.json for the limit editor
