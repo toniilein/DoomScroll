@@ -38,20 +38,6 @@ struct BlockView: View {
                 .padding(.top, 8)
             }
             .background(BrainRotTheme.background)
-            // Extension as background — renders behind ScrollView content,
-            // system still connects it so makeConfiguration runs for shield enforcement
-            #if !targetEnvironment(simulator)
-            .background(
-                Group {
-                    if !blockingManager.usageLimits.isEmpty {
-                        DeviceActivityReport(.limitUsage, filter: todayFilter)
-                            .id(reportID)
-                            .frame(width: 300, height: 300)
-                            .allowsHitTesting(false)
-                    }
-                }
-            )
-            #endif
             .navigationTitle("Shield")
             .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
@@ -79,7 +65,6 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
-                reportID = UUID()
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
