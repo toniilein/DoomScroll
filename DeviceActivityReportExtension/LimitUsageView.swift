@@ -1,143 +1,66 @@
 import SwiftUI
 
-// MARK: - Extension-rendered usage cards (one per limit, shown under native limit cards)
+// MARK: - Extension-rendered usage cards (compact, one row per limit)
 
 struct LimitUsageView: View {
     let data: LimitUsageData
 
     var body: some View {
-        VStack(spacing: 10) {
-            // Per-limit usage cards
+        VStack(spacing: 8) {
             ForEach(data.items, id: \.id) { item in
-                limitUsageCard(item)
-            }
-
-            // Category breakdown
-            if !data.categories.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chart.bar.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(BrainRotTheme.neonOrange)
-                        Text("Today's Usage")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                        Spacer()
-                        Text(formatDuration(data.totalDuration))
-                            .font(.system(size: 13, weight: .black, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                    }
-
-                    ForEach(Array(data.categories.prefix(8).enumerated()), id: \.offset) { _, cat in
-                        HStack(spacing: 8) {
-                            Image(systemName: categoryIcon(cat.name))
-                                .font(.system(size: 11))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                                .frame(width: 16)
-                            Text(cat.name)
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                                .lineLimit(1)
-                            Spacer()
-                            Text(formatDuration(cat.duration))
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                        }
-                    }
-                }
-                .padding(14)
-                .background(BrainRotTheme.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                limitRow(item)
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 
-    private func limitUsageCard(_ item: LimitUsageItem) -> some View {
+    private func limitRow(_ item: LimitUsageItem) -> some View {
         let usedMinutes = item.usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(item.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, item.limitMinutes)))
 
-        return VStack(spacing: 10) {
-            // Top: icon + name
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(item.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
-                        .frame(width: 42, height: 42)
-                    Image(systemName: iconFor(item.name))
-                        .font(.system(size: 18))
-                        .foregroundColor(item.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
-                }
-
+        return VStack(spacing: 6) {
+            HStack {
                 Text(item.name)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
+                    .lineLimit(1)
 
                 Spacer()
 
-                // Status pill
-                Text(item.isEnabled ? "Active" : "Off")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(item.isEnabled ? BrainRotTheme.neonGreen : BrainRotTheme.textSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background((item.isEnabled ? BrainRotTheme.neonGreen : BrainRotTheme.textSecondary).opacity(0.15))
-                    .clipShape(Capsule())
-            }
-
-            // Middle: usage vs limit
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Used")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                    Text(formatDuration(item.usedSeconds))
-                        .font(.system(size: 18, weight: .black, design: .rounded))
-                        .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Limit")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                    Text(formatMinutes(item.limitMinutes))
-                        .font(.system(size: 18, weight: .black, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                }
+                Text("\(formatDuration(item.usedSeconds)) / \(formatMinutes(item.limitMinutes))")
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
             }
 
             // Progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
+                    RoundedRectangle(cornerRadius: 2.5)
                         .fill(BrainRotTheme.cardBorder)
-                    RoundedRectangle(cornerRadius: 3)
+                    RoundedRectangle(cornerRadius: 2.5)
                         .fill(exceeded ? Color.red : BrainRotTheme.neonOrange)
                         .frame(width: geo.size.width * progress)
                 }
             }
-            .frame(height: 6)
+            .frame(height: 5)
 
-            // Bottom: exceeded warning
             if exceeded {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12))
-                    Text("Limit exceeded — apps are blocked")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: 10))
+                    Text("Limit exceeded")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                     Spacer()
                 }
                 .foregroundColor(.red)
-                .padding(10)
-                .background(Color.red.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
-        .padding(14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Helpers
@@ -157,36 +80,6 @@ struct LimitUsageView: View {
         if h > 0 && m > 0 { return "\(h)h \(m)m" }
         if h > 0 { return "\(h)h" }
         return "\(m)m"
-    }
-
-    private func iconFor(_ name: String) -> String {
-        let l = name.lowercased()
-        if l.contains("social") { return "person.2.fill" }
-        if l.contains("game") || l.contains("gaming") { return "gamecontroller.fill" }
-        if l.contains("entertainment") || l.contains("video") || l.contains("stream") { return "play.tv.fill" }
-        if l.contains("news") || l.contains("read") { return "newspaper.fill" }
-        if l.contains("shop") || l.contains("buy") { return "cart.fill" }
-        if l.contains("product") || l.contains("work") { return "briefcase.fill" }
-        if l.contains("message") || l.contains("chat") { return "message.fill" }
-        if l.contains("music") || l.contains("audio") { return "music.note" }
-        if l.contains("photo") || l.contains("camera") { return "camera.fill" }
-        return "hourglass"
-    }
-
-    private func categoryIcon(_ name: String) -> String {
-        let l = name.lowercased()
-        if l.contains("social") { return "person.2.fill" }
-        if l.contains("game") { return "gamecontroller.fill" }
-        if l.contains("entertainment") { return "play.tv.fill" }
-        if l.contains("productiv") { return "briefcase.fill" }
-        if l.contains("education") { return "book.fill" }
-        if l.contains("health") { return "heart.fill" }
-        if l.contains("news") || l.contains("read") { return "newspaper.fill" }
-        if l.contains("shopping") { return "cart.fill" }
-        if l.contains("music") { return "music.note" }
-        if l.contains("photo") || l.contains("video") { return "camera.fill" }
-        if l.contains("utilit") { return "wrench.fill" }
-        return "app.fill"
     }
 }
 
