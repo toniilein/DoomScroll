@@ -254,16 +254,46 @@ struct BlockView: View {
             }
             .padding(.horizontal, 4)
 
-            ForEach(blockingManager.usageLimits) { limit in
-                limitCard(limit)
-            }
-
             #if !targetEnvironment(simulator)
-            // Hidden: extension still runs for shield enforcement
             if !blockingManager.usageLimits.isEmpty {
                 DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                    .frame(width: 0, height: 0)
-                    .clipped()
+                    .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
+                    .allowsHitTesting(false)
+                    .overlay(alignment: .topTrailing) {
+                        // Only small toggle + edit overlays, not full-width
+                        VStack(spacing: 10) {
+                            ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
+                                HStack(spacing: 8) {
+                                    Spacer()
+
+                                    Button { editingLimit = limit } label: {
+                                        Image(systemName: "pencil")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundColor(BrainRotTheme.textSecondary)
+                                            .frame(width: 30, height: 30)
+                                            .background(BrainRotTheme.cardBorder.opacity(0.5))
+                                            .clipShape(Circle())
+                                    }
+
+                                    Toggle("", isOn: Binding(
+                                        get: { limit.isEnabled },
+                                        set: { _ in
+                                            blockingManager.toggleUsageLimit(limit)
+                                            syncAllLimitConfigs()
+                                        }
+                                    ))
+                                    .labelsHidden()
+                                    .tint(BrainRotTheme.neonOrange)
+                                }
+                                .padding(.trailing, 14)
+                                .frame(height: 82)
+                            }
+                        }
+                    }
+            }
+            #else
+            ForEach(blockingManager.usageLimits) { limit in
+                limitCard(limit)
             }
             #endif
 
