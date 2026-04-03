@@ -283,38 +283,68 @@ struct BlockView: View {
 
     private func limitCard(_ limit: UsageLimit) -> some View {
         Button { editingLimit = limit } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
-                        .frame(width: 42, height: 42)
-                    Image(systemName: limitIcon(limit.name))
-                        .font(.system(size: 18))
-                        .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(limit.name)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                    HStack(spacing: 6) {
-                        Text("Limit: \(limit.formattedLimit)")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
+            VStack(spacing: 10) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
+                            .frame(width: 42, height: 42)
+                        Image(systemName: limitIcon(limit.name))
+                            .font(.system(size: 18))
+                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(limit.name)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
                         Text(weekdaySummary(limit.activeDays))
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(BrainRotTheme.textSecondary)
                     }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { limit.isEnabled },
+                        set: { _ in
+                            blockingManager.toggleUsageLimit(limit)
+                            syncAllLimitConfigs()
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(BrainRotTheme.neonOrange)
                 }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { limit.isEnabled },
-                    set: { _ in
-                        blockingManager.toggleUsageLimit(limit)
-                        syncAllLimitConfigs()
+
+                // Limit info bar
+                HStack(spacing: 0) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 10))
+                        Text(limit.formattedLimit)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
                     }
-                ))
-                .labelsHidden()
-                .tint(BrainRotTheme.neonOrange)
+                    .foregroundColor(BrainRotTheme.neonOrange)
+
+                    Spacer()
+
+                    HStack(spacing: 5) {
+                        Image(systemName: "app.fill")
+                            .font(.system(size: 10))
+                        Text(limit.selectionSummary)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                    }
+                    .foregroundColor(BrainRotTheme.textSecondary)
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(limit.isEnabled ? BrainRotTheme.neonGreen : BrainRotTheme.textSecondary.opacity(0.4))
+                            .frame(width: 7, height: 7)
+                        Text(limit.isEnabled ? "Active" : "Off")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonGreen : BrainRotTheme.textSecondary)
+                    }
+                }
+                .padding(.horizontal, 4)
             }
             .padding(14)
             .background(BrainRotTheme.cardBackground)
