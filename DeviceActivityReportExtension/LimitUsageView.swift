@@ -6,8 +6,14 @@ struct LimitUsageView: View {
     let data: LimitUsageData
 
     var body: some View {
-        // Minimal visible view — triggers extension processing
-        // The main app renders per-limit progress bars natively
+        VStack(spacing: 2) {
+        // Debug info — remove after fixing
+        Text(data.debugInfo)
+            .font(.system(size: 9, weight: .medium, design: .monospaced))
+            .foregroundColor(.orange)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 8)
+
         if data.exceededCount > 0 {
             HStack(spacing: 4) {
                 Image(systemName: "exclamationmark.triangle.fill")
@@ -25,10 +31,11 @@ struct LimitUsageView: View {
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
                 .frame(height: 4)
-                .opacity(0.01) // nearly invisible — just needs to exist for processing
+                .opacity(0.01)
         } else {
             Color.clear.frame(height: 2)
         }
+        } // VStack
     }
 }
 
