@@ -7,10 +7,18 @@ struct LimitUsageView: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            ForEach(data.items, id: \.id) { item in
-                limitUsageLabel(item)
+            if data.items.isEmpty {
+                Text("No usage data yet")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(data.items, id: \.id) { item in
+                    limitUsageLabel(item)
+                }
             }
         }
+        .padding(.bottom, 6)
     }
 
     private func limitUsageLabel(_ item: LimitUsageItem) -> some View {
