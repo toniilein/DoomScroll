@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 #if !targetEnvironment(simulator)
 import FamilyControls
 import DeviceActivity
@@ -14,7 +13,6 @@ struct BlockView: View {
     @State private var blockPulse = false
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
-    @State private var usageRefreshID = UUID()
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -25,8 +23,6 @@ struct BlockView: View {
             ZStack {
                 BrainRotTheme.background.ignoresSafeArea()
 
-                // (extension report moved into scroll view)
-
                 ScrollView {
                     VStack(spacing: 20) {
                         quickBlockSection
@@ -34,6 +30,8 @@ struct BlockView: View {
                         if !activeRoutines.isEmpty {
                             activeNowSection
                         }
+
+                        todayUsageSection
 
                         limitsSection
 
@@ -71,13 +69,6 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
-                // Refresh usage data periodically
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    usageRefreshID = UUID()
-                }
-            }
-            .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
-                usageRefreshID = UUID()
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -248,6 +239,59 @@ struct BlockView: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(BrainRotTheme.neonPink.opacity(0.3), lineWidth: 1))
     }
 
+    // MARK: - Today's Usage (reads from UserDefaults written by TotalActivityReport)
+
+    private var todayUsageSection: some View {
+        let shared = SharedSettings.sharedDefaults
+        let totalMinutes = shared.double(forKey: "lastScreenTimeMinutes")
+        let catNamesStr = shared.string(forKey: "todayCategoryNamesStr") ?? ""
+        let catNames = catNamesStr.isEmpty ? [] : catNamesStr.components(separatedBy: "|||")
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(BrainRotTheme.neonOrange)
+                Text("Today's Usage")
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+                Spacer()
+                Text(formatDuration(totalMinutes * 60))
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+            }
+
+            if catNames.isEmpty {
+                Text("Visit Overview tab to load usage data")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary.opacity(0.6))
+            } else {
+                ForEach(catNames.prefix(8), id: \.self) { catName in
+                    let catMinutes = shared.double(forKey: "catMin_\(catName)")
+                    if catMinutes > 0 {
+                        HStack(spacing: 8) {
+                            Image(systemName: categoryIcon(catName))
+                                .font(.system(size: 11))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                                .frame(width: 16)
+                            Text(catName)
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(formatDuration(catMinutes * 60))
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
     // MARK: - Usage Limits
 
     private var limitsSection: some View {
@@ -269,16 +313,6 @@ struct BlockView: View {
                 limitCard(limit)
             }
 
-            // Extension-rendered usage (categories + per-limit, non-interactive)
-            #if !targetEnvironment(simulator)
-            DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                .id(usageRefreshID)
-                .frame(maxWidth: .infinity)
-                .allowsHitTesting(false)
-                .background(BrainRotTheme.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            #endif
-
             if blockingManager.usageLimits.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "hourglass").font(.system(size: 20)).foregroundColor(BrainRotTheme.textSecondary.opacity(0.4))
@@ -293,41 +327,72 @@ struct BlockView: View {
         }
     }
 
+    private func limitCard(_ limit: UsageLimit) -> some View {
+        let shared = SharedSettings.sharedDefaults
+        let usedSeconds = shared.double(forKey: "limitUsage_\(limit.id.uuidString)")
+        let usedMinutes = usedSeconds / 60.0
+        let exceeded = usedMinutes >= Double(limit.limitMinutes)
+        let progress = limit.limitMinutes > 0 ? min(1.0, usedMinutes / Double(limit.limitMinutes)) : 0
 
-private func limitCard(_ limit: UsageLimit) -> some View {
-        Button { editingLimit = limit } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
-                        .frame(width: 42, height: 42)
-                    Image(systemName: limitIcon(limit.name))
-                        .font(.system(size: 18))
-                        .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+        return Button { editingLimit = limit } label: {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
+                            .frame(width: 42, height: 42)
+                        Image(systemName: limitIcon(limit.name))
+                            .font(.system(size: 18))
+                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(limit.name)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                        HStack(spacing: 4) {
+                            Text(formatDuration(usedSeconds))
+                                .font(.system(size: 13, weight: .black, design: .rounded))
+                                .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
+                            Text("/ \(limit.formattedLimit)")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                            if exceeded {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 8))
+                                    Text("Exceeded")
+                                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(.red)
+                            }
+                            Spacer()
+                            Text(weekdaySummary(limit.activeDays))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { limit.isEnabled },
+                        set: { _ in
+                            blockingManager.toggleUsageLimit(limit)
+                            syncAllLimitConfigs()
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(BrainRotTheme.neonOrange)
                 }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(limit.name)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                    HStack(spacing: 6) {
-                        Text("Limit: \(limit.formattedLimit)")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                        Text(weekdaySummary(limit.activeDays))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(BrainRotTheme.cardBorder)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(exceeded ? Color.red : BrainRotTheme.neonOrange)
+                            .frame(width: geo.size.width * progress)
                     }
                 }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { limit.isEnabled },
-                    set: { _ in
-                        blockingManager.toggleUsageLimit(limit)
-                        syncAllLimitConfigs()
-                    }
-                ))
-                .labelsHidden()
-                .tint(BrainRotTheme.neonOrange)
+                .frame(height: 4)
             }
             .padding(14)
             .background(BrainRotTheme.cardBackground)
@@ -376,17 +441,31 @@ private func limitCard(_ limit: UsageLimit) -> some View {
         }
     }
 
-    #if !targetEnvironment(simulator)
-    private var todayAllAppsFilter: DeviceActivityFilter {
-        let interval = Calendar.current.dateInterval(of: .day, for: .now)
-            ?? DateInterval(start: .now, duration: 86400)
-        return DeviceActivityFilter(
-            segment: .daily(during: interval),
-            users: .all,
-            devices: .init([.iPhone, .iPad])
-        )
+    private func formatDuration(_ seconds: Double) -> String {
+        let totalMinutes = Int(seconds / 60)
+        let h = totalMinutes / 60
+        let m = totalMinutes % 60
+        if h > 0 && m > 0 { return "\(h)h \(m)m" }
+        if h > 0 { return "\(h)h" }
+        return "\(m)m"
     }
-    #endif
+
+    private func categoryIcon(_ name: String) -> String {
+        let l = name.lowercased()
+        if l.contains("social") { return "person.2.fill" }
+        if l.contains("game") { return "gamecontroller.fill" }
+        if l.contains("entertainment") { return "play.tv.fill" }
+        if l.contains("productiv") { return "briefcase.fill" }
+        if l.contains("education") { return "book.fill" }
+        if l.contains("health") { return "heart.fill" }
+        if l.contains("news") || l.contains("read") { return "newspaper.fill" }
+        if l.contains("shopping") { return "cart.fill" }
+        if l.contains("music") { return "music.note" }
+        if l.contains("photo") || l.contains("video") { return "camera.fill" }
+        if l.contains("utilit") { return "wrench.fill" }
+        if l.contains("information") || l.contains("reference") { return "info.circle.fill" }
+        return "app.fill"
+    }
 
     // MARK: - Routines
 
