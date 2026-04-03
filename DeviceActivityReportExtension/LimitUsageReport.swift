@@ -11,6 +11,15 @@ struct LimitUsageData: Sendable {
     let totalCount: Int
 }
 
+// Must match what the main app writes to usageLimits.json
+fileprivate struct CodableLimit: Codable {
+    let id: UUID
+    let name: String
+    let appSelectionData: Data?
+    let limitMinutes: Int
+    let isEnabled: Bool
+}
+
 // MARK: - Single report that processes ALL limits at once
 
 struct LimitUsageReport: DeviceActivityReportScene {
@@ -20,12 +29,10 @@ struct LimitUsageReport: DeviceActivityReportScene {
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> LimitUsageData {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        shared?.synchronize()
+        // Read limits from shared FILE (not UserDefaults — Data/arrays fail cross-process)
+        let limits = Self.readLimitsFromFile()
 
-        let allLimitIds = shared?.stringArray(forKey: "allLimitIds") ?? []
-
-        // Load all limit configs from UserDefaults
+        // Decode FamilyActivitySelection for each limit
         struct LimitConfig {
             let id: String
             let minutes: Int
@@ -34,19 +41,20 @@ struct LimitUsageReport: DeviceActivityReportScene {
         }
 
         var limitConfigs: [LimitConfig] = []
-        for id in allLimitIds {
-            let mins = shared?.integer(forKey: "limit_\(id)_minutes") ?? 0
-            guard mins > 0 else { continue }
-            let enabled = shared?.bool(forKey: "limit_\(id)_enabled") ?? false
-            if let selData = shared?.data(forKey: "limit_\(id)_selectionData"),
-               let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData) {
-                limitConfigs.append(LimitConfig(
-                    id: id, minutes: mins, enabled: enabled, selection: selection
-                ))
-            }
+        for limit in limits {
+            guard limit.limitMinutes > 0,
+                  let selData = limit.appSelectionData,
+                  let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData)
+            else { continue }
+            limitConfigs.append(LimitConfig(
+                id: limit.id.uuidString,
+                minutes: limit.limitMinutes,
+                enabled: limit.isEnabled,
+                selection: selection
+            ))
         }
 
-        // Process ALL data — build per-app-token duration maps
+        // Process ALL activity data
         var appTokenDurations: [ApplicationToken: TimeInterval] = [:]
         var catNameDurations: [String: TimeInterval] = [:]
         var appToCatTokens: [ApplicationToken: Set<ActivityCategoryToken>] = [:]
@@ -73,7 +81,8 @@ struct LimitUsageReport: DeviceActivityReportScene {
         // Write per-category usage to shared file (for limit editor)
         Self.writeCategoryUsageFile(catNameDurations)
 
-        // Compute per-limit usage and apply shields
+        // Compute per-limit usage, write results as simple Doubles (extension→app works)
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
         var exceededCount = 0
         var activeCount = 0
 
@@ -101,7 +110,7 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 limitDuration += appTokenDurations[appToken] ?? 0
             }
 
-            // Write to shared UserDefaults (simple Double — works cross-process)
+            // Write simple Double to UserDefaults (same direction as catMin_ — proven)
             shared?.set(limitDuration, forKey: "limit_\(config.id)_usedSeconds")
 
             let usedMinutes = limitDuration / 60.0
@@ -131,17 +140,28 @@ struct LimitUsageReport: DeviceActivityReportScene {
         )
     }
 
-    // MARK: - Category usage file (for limit editor)
+    // MARK: - File I/O (app group container — proven reliable cross-process)
 
     private static var containerURL: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.pookie1.shared")
     }
 
+    /// Reads usageLimits.json written by the main app
+    fileprivate static func readLimitsFromFile() -> [CodableLimit] {
+        guard let url = containerURL?.appendingPathComponent("usageLimits.json"),
+              let data = try? Data(contentsOf: url),
+              let limits = try? JSONDecoder().decode([CodableLimit].self, from: data) else {
+            return []
+        }
+        return limits
+    }
+
+    /// Writes categoryUsage.json for the limit editor
     static func writeCategoryUsageFile(_ catNameDurations: [String: TimeInterval]) {
         guard let url = containerURL?.appendingPathComponent("categoryUsage.json") else { return }
         var dict: [String: Double] = [:]
         for (name, dur) in catNameDurations where dur > 0 {
-            dict[name] = dur / 60.0 // store as minutes
+            dict[name] = dur / 60.0
         }
         if let jsonData = try? JSONEncoder().encode(dict) {
             try? jsonData.write(to: url, options: .atomic)
