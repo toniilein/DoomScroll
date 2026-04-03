@@ -256,15 +256,33 @@ struct BlockView: View {
 
             #if !targetEnvironment(simulator)
             if !blockingManager.usageLimits.isEmpty {
-                // Extension renders usage data (display only)
                 DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
                     .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
                     .allowsHitTesting(false)
-
-                // Native interactive cards for each limit (matches routine card style)
-                ForEach(blockingManager.usageLimits) { limit in
-                    limitCard(limit)
-                }
+                    .overlay(alignment: .top) {
+                        VStack(spacing: 10) {
+                            ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
+                                // Invisible tap target + toggle overlay per card
+                                Rectangle()
+                                    .opacity(0.001)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { editingLimit = limit }
+                                    .overlay(alignment: .trailing) {
+                                        Toggle("", isOn: Binding(
+                                            get: { limit.isEnabled },
+                                            set: { _ in
+                                                blockingManager.toggleUsageLimit(limit)
+                                                syncAllLimitConfigs()
+                                            }
+                                        ))
+                                        .labelsHidden()
+                                        .tint(BrainRotTheme.neonOrange)
+                                        .padding(.trailing, 14)
+                                    }
+                                    .frame(height: 82)
+                            }
+                        }
+                    }
             }
             #else
             ForEach(blockingManager.usageLimits) { limit in
