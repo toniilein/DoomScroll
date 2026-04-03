@@ -232,6 +232,14 @@ struct OctopusMascotView: View {
         ("Brainrot",      "\u{1F480}", 360, .infinity, .zombie),
     ]
 
+    private static func formatHM(_ minutes: Double) -> String {
+        let h = Int(minutes) / 60
+        let m = Int(minutes) % 60
+        if h > 0 && m > 0 { return "\(h)h \(m)m" }
+        if h > 0 { return "\(h)h" }
+        return "\(m)m"
+    }
+
     // MARK: - Tier Status Bar
 
     private var tierStatusBar: some View {
@@ -318,9 +326,9 @@ struct OctopusMascotView: View {
 
                                 let rangeText: String = {
                                     if tier.maxMinutes == .infinity {
-                                        return "\(Int(tier.minMinutes))min+"
+                                        return "\(Self.formatHM(tier.minMinutes))+"
                                     }
-                                    return "\(Int(tier.minMinutes))\u{2013}\(Int(tier.maxMinutes))min"
+                                    return "\(Self.formatHM(tier.minMinutes))\u{2013}\(Self.formatHM(tier.maxMinutes))"
                                 }()
 
                                 Text(rangeText)
