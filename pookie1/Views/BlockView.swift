@@ -267,7 +267,7 @@ struct BlockView: View {
                         DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
                             .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
 
-                        // Overlay toggles on extension cards
+                        // Overlay toggles + tap areas on extension cards
                         VStack(spacing: 10) {
                             ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
                                 HStack {
@@ -285,9 +285,10 @@ struct BlockView: View {
                                     ))
                                     .labelsHidden()
                                     .tint(BrainRotTheme.neonOrange)
-                                    .padding(.trailing, 34)
+                                    .padding(.trailing, 14)
                                 }
                                 .frame(height: 68)
+                                .padding(.top, 7) // align with card padding
                             }
                         }
                     }
@@ -315,61 +316,39 @@ struct BlockView: View {
 
 
     private func limitPlaceholderCard(_ limit: UsageLimit) -> some View {
-        Button { editingLimit = limit } label: {
-            VStack(spacing: 8) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
-                            .frame(width: 40, height: 40)
-                        Image(systemName: limitIcon(limit.name))
-                            .font(.system(size: 17))
-                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(limit.name)
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-
-                        HStack(spacing: 4) {
-                            Text("...")
-                                .font(.system(size: 13, weight: .black, design: .rounded))
-                                .foregroundColor(BrainRotTheme.neonOrange)
-                            Text("/ \(limit.formattedLimit)")
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        }
-                    }
-
-                    Spacer()
-
-                    Toggle("", isOn: Binding(
-                        get: { limit.isEnabled },
-                        set: { _ in
-                            blockingManager.toggleUsageLimit(limit)
-                            syncAllLimitConfigs()
-                        }
-                    ))
-                    .labelsHidden()
-                    .tint(BrainRotTheme.neonOrange)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
+                        .frame(width: 40, height: 40)
+                    Image(systemName: limitIcon(limit.name))
+                        .font(.system(size: 17))
+                        .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
                 }
 
-                GeometryReader { geo in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(BrainRotTheme.cardBorder)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(limit.name)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+
+                    Text("Loading...")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
                 }
-                .frame(height: 4)
+
+                Spacer()
             }
-            .padding(14)
-            .background(BrainRotTheme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            GeometryReader { geo in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(BrainRotTheme.cardBorder)
+            }
+            .frame(height: 4)
         }
-        .buttonStyle(.plain)
+        .padding(14)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     private func limitIcon(_ name: String) -> String {
