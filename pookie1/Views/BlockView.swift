@@ -254,42 +254,31 @@ struct BlockView: View {
 
             #if !targetEnvironment(simulator)
             if !blockingManager.usageLimits.isEmpty {
-                ZStack(alignment: .top) {
-                    // Native placeholder cards — visible immediately while extension loads
+                ZStack(alignment: .topTrailing) {
+                    DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
+                        .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
+
+                    // Overlay toggles + tap areas on extension cards
                     VStack(spacing: 10) {
-                        ForEach(blockingManager.usageLimits) { limit in
-                            limitPlaceholderCard(limit)
-                        }
-                    }
+                        ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
+                            HStack {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { editingLimit = limit }
 
-                    // Extension cards with real usage — render on top once loaded
-                    ZStack(alignment: .topTrailing) {
-                        DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                            .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
-
-                        // Overlay toggles + tap areas on extension cards
-                        VStack(spacing: 10) {
-                            ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
-                                HStack {
-                                    // Tap area to open editor
-                                    Color.clear
-                                        .contentShape(Rectangle())
-                                        .onTapGesture { editingLimit = limit }
-
-                                    Toggle("", isOn: Binding(
-                                        get: { limit.isEnabled },
-                                        set: { _ in
-                                            blockingManager.toggleUsageLimit(limit)
-                                            syncAllLimitConfigs()
-                                        }
-                                    ))
-                                    .labelsHidden()
-                                    .tint(BrainRotTheme.neonOrange)
-                                    .padding(.trailing, 14)
-                                }
-                                .frame(height: 68)
-                                .padding(.top, 7) // align with card padding
+                                Toggle("", isOn: Binding(
+                                    get: { limit.isEnabled },
+                                    set: { _ in
+                                        blockingManager.toggleUsageLimit(limit)
+                                        syncAllLimitConfigs()
+                                    }
+                                ))
+                                .labelsHidden()
+                                .tint(BrainRotTheme.neonOrange)
+                                .padding(.trailing, 14)
                             }
+                            .frame(height: 68)
+                            .padding(.top, 7)
                         }
                     }
                 }
