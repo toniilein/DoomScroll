@@ -78,9 +78,6 @@ struct LimitUsageView: View {
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
             }
 
             // Progress bar
