@@ -3,16 +3,16 @@ import SwiftUI
 // MARK: - Octopus Mood (4 tiers based on screen time minutes)
 
 enum OctopusMood {
-    case ecstatic    // < 1h:   Digital Monk
-    case happy       // 1-2h:   Grass Toucher
-    case sad         // 2-4h:   Doomscroller
-    case zombie      // 4h+:    Brainrot
+    case ecstatic    // < 2h:   Digital Monk
+    case happy       // 2-4h:   Grass Toucher
+    case sad         // 4-6h:   Doomscroller
+    case zombie      // 6h+:    Brainrot
 
     static func from(minutes: Double) -> OctopusMood {
         switch minutes {
-        case ..<60:  return .ecstatic
-        case ..<120: return .happy
-        case ..<240: return .sad
+        case ..<120: return .ecstatic
+        case ..<240: return .happy
+        case ..<360: return .sad
         default:     return .zombie
         }
     }
@@ -226,10 +226,10 @@ struct OctopusMascotView: View {
     // MARK: - Tier Definitions
 
     private static let tiers: [(name: String, emoji: String, minMinutes: Double, maxMinutes: Double, mood: OctopusMood)] = [
-        ("Digital Monk",  "\u{2728}", 0,   60,  .ecstatic),
-        ("Grass Toucher", "\u{1F33F}", 60,  120, .happy),
-        ("Doomscroller",  "\u{1F4F1}", 120, 240, .sad),
-        ("Brainrot",      "\u{1F480}", 240, .infinity, .zombie),
+        ("Digital Monk",  "\u{2728}", 0,   120, .ecstatic),
+        ("Grass Toucher", "\u{1F33F}", 120, 240, .happy),
+        ("Doomscroller",  "\u{1F4F1}", 240, 360, .sad),
+        ("Brainrot",      "\u{1F480}", 360, .infinity, .zombie),
     ]
 
     // MARK: - Tier Status Bar

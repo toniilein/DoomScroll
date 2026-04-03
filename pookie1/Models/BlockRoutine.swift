@@ -12,6 +12,7 @@ struct BlockRoutine: Identifiable, Codable {
     var endHour: Int
     var endMinute: Int
     var isEnabled: Bool = true
+    var activeDays: Set<Int> = [1, 2, 3, 4, 5, 6, 7] // 1=Sun..7=Sat
     var createdAt: Date = Date()
 
     var formattedTimeRange: String {
@@ -69,6 +70,7 @@ struct UsageLimit: Identifiable, Codable {
     var appSelectionData: Data?
     var limitMinutes: Int // daily limit in minutes
     var isEnabled: Bool = true
+    var activeDays: Set<Int> = [1, 2, 3, 4, 5, 6, 7] // 1=Sun..7=Sat
 
     var formattedLimit: String {
         let hours = limitMinutes / 60

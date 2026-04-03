@@ -12,6 +12,7 @@ struct RoutineEditorView: View {
     @State private var isEnabled: Bool
     @State private var routineId: UUID
     @State private var createdAt: Date
+    @State private var activeDays: Set<Int>
     @State private var showAppPicker = false
 
     #if !targetEnvironment(simulator)
@@ -40,6 +41,7 @@ struct RoutineEditorView: View {
         _isEnabled = State(initialValue: r.isEnabled)
         _routineId = State(initialValue: r.id)
         _createdAt = State(initialValue: r.createdAt)
+        _activeDays = State(initialValue: r.activeDays)
 
         var startComponents = DateComponents()
         startComponents.hour = r.startHour
@@ -68,6 +70,9 @@ struct RoutineEditorView: View {
 
                         // Time
                         timeSection
+
+                        // Weekdays
+                        WeekdayPickerView(activeDays: $activeDays)
 
                         // Apps
                         appsSection
@@ -276,6 +281,7 @@ struct RoutineEditorView: View {
             endHour: endComponents.hour ?? 7,
             endMinute: endComponents.minute ?? 0,
             isEnabled: isEnabled,
+            activeDays: activeDays,
             createdAt: createdAt
         )
 

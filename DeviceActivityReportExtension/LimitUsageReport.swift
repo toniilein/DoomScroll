@@ -26,6 +26,7 @@ fileprivate struct CodableLimit: Codable {
     let appSelectionData: Data?
     let limitMinutes: Int
     let isEnabled: Bool
+    let activeDays: Set<Int>?
 }
 
 // MARK: - Single report that processes ALL limits at once
@@ -45,20 +46,24 @@ struct LimitUsageReport: DeviceActivityReportScene {
             let name: String
             let minutes: Int
             let enabled: Bool
+            let activeToday: Bool
             let selection: FamilyActivitySelection
         }
 
+        let todayWeekday = Calendar.current.component(.weekday, from: Date()) // 1=Sun..7=Sat
         var limitConfigs: [LimitConfig] = []
         for limit in limits {
             guard limit.limitMinutes > 0,
                   let selData = limit.appSelectionData,
                   let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData)
             else { continue }
+            let activeDays = limit.activeDays ?? [1, 2, 3, 4, 5, 6, 7]
             limitConfigs.append(LimitConfig(
                 id: limit.id.uuidString,
                 name: limit.name,
                 minutes: limit.limitMinutes,
                 enabled: limit.isEnabled,
+                activeToday: activeDays.contains(todayWeekday),
                 selection: selection
             ))
         }
@@ -112,18 +117,18 @@ struct LimitUsageReport: DeviceActivityReportScene {
 
             let usedMinutes = limitDuration / 60.0
             let exceeded = usedMinutes >= Double(config.minutes)
-            if exceeded && config.enabled { exceededCount += 1 }
+            if exceeded && config.enabled && config.activeToday { exceededCount += 1 }
 
-            // Apply/remove shield
+            // Apply/remove shield (only enforce on active days)
             let store = ManagedSettingsStore(named: .init("limit_\(config.id)"))
-            if config.enabled && exceeded {
+            if config.enabled && config.activeToday && exceeded {
                 if !config.selection.applicationTokens.isEmpty {
                     store.shield.applications = config.selection.applicationTokens
                 }
                 if !config.selection.categoryTokens.isEmpty {
                     store.shield.applicationCategories = .specific(config.selection.categoryTokens)
                 }
-            } else if !config.enabled {
+            } else if !config.enabled || !config.activeToday {
                 store.clearAllSettings()
             }
 
