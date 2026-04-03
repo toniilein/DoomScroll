@@ -1,18 +1,26 @@
 import SwiftUI
 
-// MARK: - Extension-rendered usage cards (compact, one row per limit)
+// MARK: - Extension-rendered usage cards
+// Each card has a FIXED height so the native overlay can align controls on top.
+// Card height: 68pt content. Spacing: 8pt. Padding: 8pt top/bottom.
 
 struct LimitUsageView: View {
     let data: LimitUsageData
 
+    static let cardHeight: CGFloat = 68
+    static let cardSpacing: CGFloat = 8
+    static let verticalPadding: CGFloat = 8
+
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Self.cardSpacing) {
             ForEach(data.items, id: \.id) { item in
                 limitRow(item)
+                    .frame(height: Self.cardHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.vertical, Self.verticalPadding)
     }
 
     private func limitRow(_ item: LimitUsageItem) -> some View {
@@ -20,47 +28,59 @@ struct LimitUsageView: View {
         let exceeded = usedMinutes >= Double(item.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, item.limitMinutes)))
 
-        return VStack(spacing: 6) {
-            HStack {
-                Text(item.name)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
-                    .lineLimit(1)
+        return ZStack {
+            BrainRotTheme.cardBackground
 
-                Spacer()
+            VStack(spacing: 0) {
+                // Row 1: name + usage text (leave right space for native toggle)
+                HStack {
+                    Text(item.name)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                        .lineLimit(1)
 
-                Text("\(formatDuration(item.usedSeconds)) / \(formatMinutes(item.limitMinutes))")
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
-            }
-
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2.5)
-                        .fill(BrainRotTheme.cardBorder)
-                    RoundedRectangle(cornerRadius: 2.5)
-                        .fill(exceeded ? Color.red : BrainRotTheme.neonOrange)
-                        .frame(width: geo.size.width * progress)
-                }
-            }
-            .frame(height: 5)
-
-            if exceeded {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 10))
-                    Text("Limit exceeded")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
                     Spacer()
+
+                    Text("\(formatDuration(item.usedSeconds)) / \(formatMinutes(item.limitMinutes))")
+                        .font(.system(size: 13, weight: .heavy, design: .rounded))
+                        .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
+
+                    // Reserve space for native toggle overlay
+                    Color.clear.frame(width: 56, height: 1)
                 }
-                .foregroundColor(.red)
+
+                Spacer().frame(height: 8)
+
+                // Row 2: progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2.5)
+                            .fill(BrainRotTheme.cardBorder)
+                        RoundedRectangle(cornerRadius: 2.5)
+                            .fill(exceeded ? Color.red : BrainRotTheme.neonOrange)
+                            .frame(width: geo.size.width * progress)
+                    }
+                }
+                .frame(height: 5)
+
+                // Row 3: exceeded or status text
+                if exceeded {
+                    Spacer().frame(height: 6)
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9))
+                        Text("Limit exceeded — apps blocked")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                        Spacer()
+                    }
+                    .foregroundColor(.red)
+                }
+
+                Spacer(minLength: 0)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Helpers
