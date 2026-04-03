@@ -25,8 +25,6 @@ class BlockingManager: ObservableObject {
         isQuickBlocking = UserDefaults.standard.bool(forKey: "quickBlockActive")
         // Ensure usageLimits.json exists for extension to read
         writeLimitsFile()
-        // Start monitoring for all enabled limits immediately on init
-        syncAllLimits()
     }
 
     // MARK: - Emergency Unblock All
