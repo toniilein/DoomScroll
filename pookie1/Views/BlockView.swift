@@ -24,7 +24,7 @@ struct BlockView: View {
                 BrainRotTheme.background.ignoresSafeArea()
 
                 #if !targetEnvironment(simulator)
-                // Tiny offscreen extension — runs shield enforcement + writes usage to UserDefaults
+                // Shield enforcement — LimitUsageReport still applies/removes shields
                 if !blockingManager.usageLimits.isEmpty {
                     DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
                         .frame(width: 1, height: 1)
