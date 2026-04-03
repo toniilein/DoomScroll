@@ -362,12 +362,11 @@ struct BlockView: View {
         .buttonStyle(.plain)
     }
 
-    // Read per-limit usage from shared UserDefaults (written by extension)
+    // Read per-limit usage from limitUsage.json file (written by extension)
     private func usageForLimit(_ limit: UsageLimit) -> (formattedUsage: String, exceeded: Bool, progress: Double) {
         _ = usageRefreshTick // trigger re-read on timer
 
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let usedSeconds = shared?.double(forKey: "limit_\(limit.id.uuidString)_usedSeconds") ?? 0
+        let usedSeconds = readLimitUsageFromFile(limit.id.uuidString)
         let usedMinutes = usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(limit.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
@@ -380,6 +379,18 @@ struct BlockView: View {
         else { formatted = "\(m)m" }
 
         return (formatted, exceeded, progress)
+    }
+
+    /// Reads limitUsage.json written by extension — returns seconds for a given limit UUID
+    private func readLimitUsageFromFile(_ limitId: String) -> Double {
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("limitUsage.json"),
+              let data = try? Data(contentsOf: url),
+              let dict = try? JSONDecoder().decode([String: Double].self, from: data) else {
+            return 0
+        }
+        return dict[limitId] ?? 0
     }
 
     /// Writes usageLimits.json to app group container so the extension can read configs.
