@@ -139,6 +139,10 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 limitMinutes: config.minutes,
                 isEnabled: config.enabled
             ))
+
+            // Write per-limit usage to shared UserDefaults so main app can display it
+            let shared = UserDefaults(suiteName: "group.pookie1.shared")
+            shared?.set(limitDuration, forKey: "limitUsage_\(config.id)")
         }
 
         return LimitUsageData(items: items, exceededCount: exceededCount)

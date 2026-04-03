@@ -320,39 +320,79 @@ struct BlockView: View {
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        Button { editingLimit = limit } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
-                        .frame(width: 42, height: 42)
-                    Image(systemName: limitIcon(limit.name))
-                        .font(.system(size: 18))
-                        .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let usedSeconds = shared?.double(forKey: "limitUsage_\(limit.id.uuidString)") ?? 0
+        let usedMinutes = usedSeconds / 60.0
+        let exceeded = usedMinutes >= Double(limit.limitMinutes)
+        let progress = limit.limitMinutes > 0 ? min(1.0, usedMinutes / Double(limit.limitMinutes)) : 0
+
+        let usedFormatted: String = {
+            let h = Int(usedMinutes) / 60, m = Int(usedMinutes) % 60
+            if h > 0 && m > 0 { return "\(h)h \(m)m" }
+            if h > 0 { return "\(h)h" }
+            return "\(m)m"
+        }()
+
+        return Button { editingLimit = limit } label: {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
+                            .frame(width: 42, height: 42)
+                        Image(systemName: limitIcon(limit.name))
+                            .font(.system(size: 18))
+                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(limit.name)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                        HStack(spacing: 4) {
+                            Text(usedFormatted)
+                                .font(.system(size: 13, weight: .black, design: .rounded))
+                                .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
+                            Text("/ \(limit.formattedLimit)")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                            if exceeded {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 8))
+                                    Text("Exceeded")
+                                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(.red)
+                            }
+                            Spacer()
+                            Text(weekdaySummary(limit.activeDays))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { limit.isEnabled },
+                        set: { _ in
+                            blockingManager.toggleUsageLimit(limit)
+                            syncAllLimitConfigs()
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(BrainRotTheme.neonOrange)
                 }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(limit.name)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                    HStack(spacing: 8) {
-                        Label(limit.formattedLimit, systemImage: "hourglass")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                        Text(weekdaySummary(limit.activeDays))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
+
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(BrainRotTheme.cardBorder)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(exceeded ? Color.red : BrainRotTheme.neonOrange)
+                            .frame(width: geo.size.width * progress)
                     }
                 }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { limit.isEnabled },
-                    set: { _ in
-                        blockingManager.toggleUsageLimit(limit)
-                        syncAllLimitConfigs()
-                    }
-                ))
-                .labelsHidden()
-                .tint(BrainRotTheme.neonOrange)
+                .frame(height: 4)
             }
             .padding(14)
             .background(BrainRotTheme.cardBackground)
