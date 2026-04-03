@@ -11,15 +11,6 @@ struct LimitUsageData: Sendable {
     let totalCount: Int
 }
 
-// Codable limit model (mirrors UsageLimit from main app, decoded in extension)
-fileprivate struct CodableLimit: Codable {
-    let id: UUID
-    let name: String
-    let appSelectionData: Data?
-    let limitMinutes: Int
-    let isEnabled: Bool
-}
-
 // MARK: - Single report that processes ALL limits at once
 
 struct LimitUsageReport: DeviceActivityReportScene {
@@ -29,12 +20,34 @@ struct LimitUsageReport: DeviceActivityReportScene {
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> LimitUsageData {
-        // Read limits from shared file (reliable cross-process)
-        let limits = Self.readLimitsFromFile()
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        shared?.synchronize()
 
-        // Process ALL data
+        let allLimitIds = shared?.stringArray(forKey: "allLimitIds") ?? []
+
+        // Load all limit configs from UserDefaults
+        struct LimitConfig {
+            let id: String
+            let minutes: Int
+            let enabled: Bool
+            let selection: FamilyActivitySelection
+        }
+
+        var limitConfigs: [LimitConfig] = []
+        for id in allLimitIds {
+            let mins = shared?.integer(forKey: "limit_\(id)_minutes") ?? 0
+            guard mins > 0 else { continue }
+            let enabled = shared?.bool(forKey: "limit_\(id)_enabled") ?? false
+            if let selData = shared?.data(forKey: "limit_\(id)_selectionData"),
+               let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData) {
+                limitConfigs.append(LimitConfig(
+                    id: id, minutes: mins, enabled: enabled, selection: selection
+                ))
+            }
+        }
+
+        // Process ALL data — build per-app-token duration maps
         var appTokenDurations: [ApplicationToken: TimeInterval] = [:]
-        var catTokenDurations: [ActivityCategoryToken: TimeInterval] = [:]
         var catNameDurations: [String: TimeInterval] = [:]
         var appToCatTokens: [ApplicationToken: Set<ActivityCategoryToken>] = [:]
 
@@ -49,7 +62,6 @@ struct LimitUsageReport: DeviceActivityReportScene {
                             appTokenDurations[appToken, default: 0] += dur
                             catNameDurations[catName, default: 0] += dur
                             if let catToken {
-                                catTokenDurations[catToken, default: 0] += dur
                                 appToCatTokens[appToken, default: []].insert(catToken)
                             }
                         }
@@ -58,33 +70,24 @@ struct LimitUsageReport: DeviceActivityReportScene {
             }
         }
 
-        // Write per-category usage to shared file (for editor)
+        // Write per-category usage to shared file (for limit editor)
         Self.writeCategoryUsageFile(catNameDurations)
 
         // Compute per-limit usage and apply shields
         var exceededCount = 0
         var activeCount = 0
-        var limitResults: [String: Double] = [:]
 
-        for limit in limits {
-            let selection: FamilyActivitySelection
-            if let data = limit.appSelectionData,
-               let sel = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) {
-                selection = sel
-            } else {
-                continue
-            }
-
-            if limit.isEnabled { activeCount += 1 }
+        for config in limitConfigs {
+            if config.enabled { activeCount += 1 }
 
             // Collect matching app tokens
             var matchedApps = Set<ApplicationToken>()
-            for appToken in selection.applicationTokens {
+            for appToken in config.selection.applicationTokens {
                 if appTokenDurations[appToken] != nil {
                     matchedApps.insert(appToken)
                 }
             }
-            for catToken in selection.categoryTokens {
+            for catToken in config.selection.categoryTokens {
                 for (appToken, cats) in appToCatTokens {
                     if cats.contains(catToken) {
                         matchedApps.insert(appToken)
@@ -92,62 +95,46 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 }
             }
 
-            // Sum unique durations
+            // Sum unique app durations
             var limitDuration: TimeInterval = 0
             for appToken in matchedApps {
                 limitDuration += appTokenDurations[appToken] ?? 0
             }
 
-            let idStr = limit.id.uuidString
-            limitResults[idStr] = limitDuration
+            // Write to shared UserDefaults (simple Double — works cross-process)
+            shared?.set(limitDuration, forKey: "limit_\(config.id)_usedSeconds")
 
             let usedMinutes = limitDuration / 60.0
-            let exceeded = usedMinutes >= Double(limit.limitMinutes)
-            if exceeded && limit.isEnabled { exceededCount += 1 }
+            let exceeded = usedMinutes >= Double(config.minutes)
+            if exceeded && config.enabled { exceededCount += 1 }
 
             // Apply/remove shield
-            let store = ManagedSettingsStore(named: .init("limit_\(idStr)"))
-            if limit.isEnabled && exceeded {
-                if !selection.applicationTokens.isEmpty {
-                    store.shield.applications = selection.applicationTokens
+            let store = ManagedSettingsStore(named: .init("limit_\(config.id)"))
+            if config.enabled && exceeded {
+                if !config.selection.applicationTokens.isEmpty {
+                    store.shield.applications = config.selection.applicationTokens
                 }
-                if !selection.categoryTokens.isEmpty {
-                    store.shield.applicationCategories = .specific(selection.categoryTokens)
+                if !config.selection.categoryTokens.isEmpty {
+                    store.shield.applicationCategories = .specific(config.selection.categoryTokens)
                 }
-            } else if !limit.isEnabled {
+            } else if !config.enabled {
                 store.clearAllSettings()
             }
         }
 
-        // Write per-limit usage to shared file + UserDefaults simple Doubles
-        Self.writeLimitUsageFile(limitResults)
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        for (idStr, seconds) in limitResults {
-            shared?.set(seconds, forKey: "limitSec_\(idStr)")
-        }
-        shared?.set(Date().timeIntervalSince1970, forKey: "limitUsageUpdatedAt")
         shared?.synchronize()
 
         return LimitUsageData(
             exceededCount: exceededCount,
             activeCount: activeCount,
-            totalCount: limits.count
+            totalCount: limitConfigs.count
         )
     }
 
-    // MARK: - File-based cross-process communication
+    // MARK: - Category usage file (for limit editor)
 
     private static var containerURL: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.pookie1.shared")
-    }
-
-    fileprivate static func readLimitsFromFile() -> [CodableLimit] {
-        guard let url = containerURL?.appendingPathComponent("usageLimits.json"),
-              let data = try? Data(contentsOf: url),
-              let limits = try? JSONDecoder().decode([CodableLimit].self, from: data) else {
-            return []
-        }
-        return limits
     }
 
     static func writeCategoryUsageFile(_ catNameDurations: [String: TimeInterval]) {
@@ -160,17 +147,9 @@ struct LimitUsageReport: DeviceActivityReportScene {
             try? jsonData.write(to: url, options: .atomic)
         }
     }
-
-    static func writeLimitUsageFile(_ results: [String: Double]) {
-        guard let url = containerURL?.appendingPathComponent("limitUsage.json") else { return }
-        // Store as seconds
-        if let jsonData = try? JSONEncoder().encode(results) {
-            try? jsonData.write(to: url, options: .atomic)
-        }
-    }
 }
 
-// MARK: - Detail report (kept for backward compat, unused by editor now)
+// MARK: - Detail report (stub, kept for extension registration)
 
 struct LimitCategoryInfo: Sendable {
     let name: String

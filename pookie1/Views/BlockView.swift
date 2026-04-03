@@ -72,15 +72,20 @@ struct BlockView: View {
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
             }
+            .onReceive(refreshTimer) { _ in
+                usageRefreshTick += 1
+            }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
                     limit: limit,
                     onSave: { updated in
                         blockingManager.saveUsageLimit(updated)
+                        syncAllLimitConfigs()
                         editingLimit = nil
                     },
                     onDelete: { toDelete in
                         blockingManager.deleteUsageLimit(toDelete)
+                        syncAllLimitConfigs()
                         editingLimit = nil
                     }
                 )
@@ -99,9 +104,6 @@ struct BlockView: View {
                         editingRoutine = nil
                     } : nil
                 )
-            }
-            .onReceive(refreshTimer) { _ in
-                usageRefreshTick += 1
             }
             #if !targetEnvironment(simulator)
             .familyActivityPicker(
@@ -329,7 +331,6 @@ struct BlockView: View {
                         get: { limit.isEnabled },
                         set: { _ in
                             blockingManager.toggleUsageLimit(limit)
-                            // Re-sync so extension picks up the change
                             syncAllLimitConfigs()
                         }
                     ))
@@ -361,13 +362,12 @@ struct BlockView: View {
         .buttonStyle(.plain)
     }
 
-    // Read per-limit usage from UserDefaults simple Doubles (written by extension)
+    // Read per-limit usage from shared UserDefaults (written by extension)
     private func usageForLimit(_ limit: UsageLimit) -> (formattedUsage: String, exceeded: Bool, progress: Double) {
-        // Reference tick to trigger re-read on timer
-        _ = usageRefreshTick
+        _ = usageRefreshTick // trigger re-read on timer
 
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let usedSeconds = shared?.double(forKey: "limitSec_\(limit.id.uuidString)") ?? 0
+        let usedSeconds = shared?.double(forKey: "limit_\(limit.id.uuidString)_usedSeconds") ?? 0
         let usedMinutes = usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(limit.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
@@ -382,33 +382,18 @@ struct BlockView: View {
         return (formatted, exceeded, progress)
     }
 
-    /// Writes usageLimits.json so the extension can read limit configs
     private func syncAllLimitConfigs() {
-        guard let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("usageLimits.json") else { return }
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let allIds = blockingManager.usageLimits.map { $0.id.uuidString }
+        shared?.set(allIds, forKey: "allLimitIds")
 
-        struct CodableLimit: Codable {
-            let id: UUID
-            let name: String
-            let appSelectionData: Data?
-            let limitMinutes: Int
-            let isEnabled: Bool
+        for limit in blockingManager.usageLimits {
+            let id = limit.id.uuidString
+            shared?.set(limit.limitMinutes, forKey: "limit_\(id)_minutes")
+            shared?.set(limit.isEnabled, forKey: "limit_\(id)_enabled")
+            shared?.set(limit.appSelectionData, forKey: "limit_\(id)_selectionData")
         }
-
-        let codableLimits = blockingManager.usageLimits.map { limit in
-            CodableLimit(
-                id: limit.id,
-                name: limit.name,
-                appSelectionData: limit.appSelectionData,
-                limitMinutes: limit.limitMinutes,
-                isEnabled: limit.isEnabled
-            )
-        }
-
-        if let jsonData = try? JSONEncoder().encode(codableLimits) {
-            try? jsonData.write(to: url, options: .atomic)
-        }
+        shared?.synchronize()
     }
 
     #if !targetEnvironment(simulator)
