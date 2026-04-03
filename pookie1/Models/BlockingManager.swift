@@ -23,8 +23,6 @@ class BlockingManager: ObservableObject {
         routines = SharedSettings.blockRoutines
         usageLimits = SharedSettings.usageLimits
         isQuickBlocking = UserDefaults.standard.bool(forKey: "quickBlockActive")
-        // Ensure limits file exists for extension on launch
-        writeUsageLimitsFile()
     }
 
     // MARK: - Emergency Unblock All
@@ -68,9 +66,6 @@ class BlockingManager: ObservableObject {
         // Save disabled state
         SharedSettings.blockRoutines = routines
         SharedSettings.usageLimits = usageLimits
-
-        // Update shared file so extension sees disabled state
-        writeUsageLimitsFile()
         #endif
     }
 
@@ -196,38 +191,21 @@ class BlockingManager: ObservableObject {
     }
 
     private func syncLimitToSharedDefaults(_ limit: UsageLimit) {
-        // Write the full limits file so extension can read it
-        writeUsageLimitsFile()
-    }
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let id = limit.id.uuidString
 
-    /// Writes ALL usage limits as JSON to usageLimits.json in the app group container.
-    /// The extension reads this file to know which limits exist and their configs.
-    private func writeUsageLimitsFile() {
-        guard let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("usageLimits.json") else { return }
+        shared?.set(limit.limitMinutes, forKey: "limit_\(id)_minutes")
+        shared?.set(limit.isEnabled, forKey: "limit_\(id)_enabled")
+        shared?.set(limit.appSelectionData, forKey: "limit_\(id)_selectionData")
 
-        struct CodableLimit: Codable {
-            let id: UUID
-            let name: String
-            let appSelectionData: Data?
-            let limitMinutes: Int
-            let isEnabled: Bool
+        // Update master list of limit IDs
+        var allIds = shared?.stringArray(forKey: "allLimitIds") ?? []
+        if !allIds.contains(id) {
+            allIds.append(id)
+            shared?.set(allIds, forKey: "allLimitIds")
         }
 
-        let codableLimits = usageLimits.map { limit in
-            CodableLimit(
-                id: limit.id,
-                name: limit.name,
-                appSelectionData: limit.appSelectionData,
-                limitMinutes: limit.limitMinutes,
-                isEnabled: limit.isEnabled
-            )
-        }
-
-        if let jsonData = try? JSONEncoder().encode(codableLimits) {
-            try? jsonData.write(to: url, options: .atomic)
-        }
+        shared?.synchronize()
     }
 
     func deleteUsageLimit(_ limit: UsageLimit) {
@@ -236,8 +214,17 @@ class BlockingManager: ObservableObject {
         SharedSettings.deleteUsageLimit(id: limit.id)
         usageLimits = SharedSettings.usageLimits
 
-        // Re-write the limits file without this limit
-        writeUsageLimitsFile()
+        // Clean up per-limit shared defaults
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let id = limit.id.uuidString
+        shared?.removeObject(forKey: "limit_\(id)_minutes")
+        shared?.removeObject(forKey: "limit_\(id)_enabled")
+        shared?.removeObject(forKey: "limit_\(id)_selectionData")
+        shared?.removeObject(forKey: "limit_\(id)_usedSeconds")
+        var allIds = shared?.stringArray(forKey: "allLimitIds") ?? []
+        allIds.removeAll { $0 == id }
+        shared?.set(allIds, forKey: "allLimitIds")
+        shared?.synchronize()
     }
 
     func toggleUsageLimit(_ limit: UsageLimit) {
