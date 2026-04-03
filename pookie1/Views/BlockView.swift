@@ -201,10 +201,12 @@ struct BlockView: View {
     // MARK: - Active Routines
 
     private var activeRoutines: [BlockRoutine] {
-        let now = Calendar.current.dateComponents([.hour, .minute], from: Date())
+        let now = Calendar.current.dateComponents([.hour, .minute, .weekday], from: Date())
         let cur = (now.hour ?? 0) * 60 + (now.minute ?? 0)
+        let weekday = now.weekday ?? 1 // 1=Sun..7=Sat
         return blockingManager.routines.filter { r in
             guard r.isEnabled else { return false }
+            guard r.activeDays.contains(weekday) else { return false }
             let s = r.startHour * 60 + r.startMinute, e = r.endHour * 60 + r.endMinute
             return s <= e ? (cur >= s && cur < e) : (cur >= s || cur < e)
         }
@@ -254,34 +256,34 @@ struct BlockView: View {
 
             #if !targetEnvironment(simulator)
             if !blockingManager.usageLimits.isEmpty {
-                ZStack(alignment: .topTrailing) {
-                    DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                        .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
+                DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
+                    .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
+                    .overlay(alignment: .top) {
+                        // Overlay toggles + tap areas on extension cards
+                        VStack(spacing: 10) {
+                            ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
+                                HStack {
+                                    Color.clear
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { editingLimit = limit }
 
-                    // Overlay toggles + tap areas on extension cards
-                    VStack(spacing: 10) {
-                        ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
-                            HStack {
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { editingLimit = limit }
-
-                                Toggle("", isOn: Binding(
-                                    get: { limit.isEnabled },
-                                    set: { _ in
-                                        blockingManager.toggleUsageLimit(limit)
-                                        syncAllLimitConfigs()
-                                    }
-                                ))
-                                .labelsHidden()
-                                .tint(BrainRotTheme.neonOrange)
-                                .padding(.trailing, 14)
+                                    Toggle("", isOn: Binding(
+                                        get: { limit.isEnabled },
+                                        set: { _ in
+                                            blockingManager.toggleUsageLimit(limit)
+                                            syncAllLimitConfigs()
+                                        }
+                                    ))
+                                    .labelsHidden()
+                                    .tint(BrainRotTheme.neonOrange)
+                                    .padding(.trailing, 14)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 68)
+                                .padding(.top, 7)
                             }
-                            .frame(height: 68)
-                            .padding(.top, 7)
                         }
                     }
-                }
             }
             #else
             ForEach(blockingManager.usageLimits) { limit in
@@ -367,11 +369,12 @@ struct BlockView: View {
             let appSelectionData: Data?
             let limitMinutes: Int
             let isEnabled: Bool
+            let activeDays: Set<Int>
         }
 
         let codable = blockingManager.usageLimits.map {
             CodableLimit(id: $0.id, name: $0.name, appSelectionData: $0.appSelectionData,
-                         limitMinutes: $0.limitMinutes, isEnabled: $0.isEnabled)
+                         limitMinutes: $0.limitMinutes, isEnabled: $0.isEnabled, activeDays: $0.activeDays)
         }
 
         if let jsonData = try? JSONEncoder().encode(codable) {
@@ -434,8 +437,8 @@ struct BlockView: View {
                     HStack(spacing: 8) {
                         Label(routine.formattedTimeRange, systemImage: "clock")
                             .font(.system(size: 11, weight: .medium)).foregroundColor(BrainRotTheme.textSecondary)
-                        Text(routine.selectionSummary)
-                            .font(.system(size: 11, weight: .medium)).foregroundColor(BrainRotTheme.textSecondary).lineLimit(1)
+                        Text(weekdaySummary(routine.activeDays))
+                            .font(.system(size: 11, weight: .medium)).foregroundColor(BrainRotTheme.textSecondary)
                     }
                 }
                 Spacer()
@@ -461,6 +464,15 @@ struct BlockView: View {
         if l.contains("gym") || l.contains("exercise") || l.contains("fitness") { return "\u{1F3CB}\u{FE0F}" }
         if l.contains("meal") || l.contains("lunch") || l.contains("dinner") { return "\u{1F37D}\u{FE0F}" }
         return "\u{1F6E1}\u{FE0F}"
+    }
+
+    private func weekdaySummary(_ days: Set<Int>) -> String {
+        if days.count == 7 { return "Every day" }
+        if days == [2, 3, 4, 5, 6] { return "Weekdays" }
+        if days == [1, 7] { return "Weekends" }
+        let labels: [Int: String] = [1: "Su", 2: "Mo", 3: "Tu", 4: "We", 5: "Th", 6: "Fr", 7: "Sa"]
+        let ordered = [2, 3, 4, 5, 6, 7, 1]
+        return ordered.filter { days.contains($0) }.compactMap { labels[$0] }.joined(separator: " ")
     }
 
     private func formatEndTime(_ r: BlockRoutine) -> String {

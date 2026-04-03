@@ -12,6 +12,7 @@ struct LimitEditorView: View {
     @State private var limitMinutes: Int
     @State private var isEnabled: Bool
     @State private var limitId: UUID
+    @State private var activeDays: Set<Int>
     @State private var showAppPicker = false
     @State private var showDeleteConfirm = false
 
@@ -34,6 +35,7 @@ struct LimitEditorView: View {
         _limitMinutes = State(initialValue: limit.limitMinutes % 60)
         _isEnabled = State(initialValue: limit.isEnabled)
         _limitId = State(initialValue: limit.id)
+        _activeDays = State(initialValue: limit.activeDays)
 
         #if !targetEnvironment(simulator)
         _appSelection = State(initialValue: limit.decodedSelection)
@@ -50,6 +52,7 @@ struct LimitEditorView: View {
                         nameSection
                         appsSection
                         timeLimitSection
+                        WeekdayPickerView(activeDays: $activeDays)
                         todayUsageSection
 
                         if isEditing {
@@ -422,7 +425,8 @@ struct LimitEditorView: View {
             id: limitId,
             name: name.trimmingCharacters(in: .whitespaces),
             limitMinutes: limitHours * 60 + limitMinutes,
-            isEnabled: isEnabled
+            isEnabled: isEnabled,
+            activeDays: activeDays
         )
 
         #if !targetEnvironment(simulator)
