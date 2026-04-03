@@ -20,22 +20,37 @@ struct BlockView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    quickBlockCard
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        quickBlockCard
 
-                    usageLimitsSection
+                        usageLimitsSection
 
-                    if !activeRoutines.isEmpty {
-                        activeNowSection
+                        if !activeRoutines.isEmpty {
+                            activeNowSection
+                        }
+
+                        routinesSection
+
+                        Spacer().frame(height: 40)
                     }
-
-                    routinesSection
-
-                    Spacer().frame(height: 40)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
+
+                // Extension at bottom — must be outside ScrollView with real frame
+                // to connect out-of-process view. makeConfiguration applies shields.
+                #if !targetEnvironment(simulator)
+                if !blockingManager.usageLimits.isEmpty {
+                    DeviceActivityReport(.limitUsage, filter: todayFilter)
+                        .id(reportID)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 1)
+                        .clipped()
+                        .allowsHitTesting(false)
+                }
+                #endif
             }
             .background(BrainRotTheme.background)
             .navigationTitle("Shield")
@@ -65,6 +80,7 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
+                reportID = UUID()
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
