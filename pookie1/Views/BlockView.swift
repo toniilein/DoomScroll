@@ -254,39 +254,16 @@ struct BlockView: View {
             }
             .padding(.horizontal, 4)
 
+            ForEach(blockingManager.usageLimits) { limit in
+                limitCard(limit)
+            }
+
             #if !targetEnvironment(simulator)
+            // Hidden: extension still runs for shield enforcement
             if !blockingManager.usageLimits.isEmpty {
                 DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                    .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
-                    .allowsHitTesting(false)
-                    .overlay(alignment: .top) {
-                        VStack(spacing: 10) {
-                            ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
-                                // Invisible tap target + toggle overlay per card
-                                Rectangle()
-                                    .opacity(0.001)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { editingLimit = limit }
-                                    .overlay(alignment: .trailing) {
-                                        Toggle("", isOn: Binding(
-                                            get: { limit.isEnabled },
-                                            set: { _ in
-                                                blockingManager.toggleUsageLimit(limit)
-                                                syncAllLimitConfigs()
-                                            }
-                                        ))
-                                        .labelsHidden()
-                                        .tint(BrainRotTheme.neonOrange)
-                                        .padding(.trailing, 14)
-                                    }
-                                    .frame(height: 82)
-                            }
-                        }
-                    }
-            }
-            #else
-            ForEach(blockingManager.usageLimits) { limit in
-                limitPlaceholderCard(limit)
+                    .frame(width: 0, height: 0)
+                    .clipped()
             }
             #endif
 
