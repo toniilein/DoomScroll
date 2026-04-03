@@ -1,5 +1,6 @@
 import DeviceActivity
 import ExtensionKit
+import FamilyControls
 import ManagedSettings
 import SwiftUI
 
@@ -41,19 +42,33 @@ struct TotalActivityReport: DeviceActivityReportScene {
         // category name -> (duration, pickups, [apps])
         var dayCategoryData: [Date: [String: (duration: TimeInterval, pickups: Int, apps: [AppUsageData])]] = [:]
 
+        // For per-limit usage: track today's app token durations and category mappings
+        var todayAppTokenDurations: [ApplicationToken: TimeInterval] = [:]
+        var todayAppToCatTokens: [ApplicationToken: Set<ActivityCategoryToken>] = [:]
+
         for await dataItem in data {
             for await segment in dataItem.activitySegments {
                 let segDate = calendar.startOfDay(for: segment.dateInterval.start)
                 dayDurations[segDate, default: 0] += segment.totalActivityDuration
+                let isToday = segDate == today
 
                 for await categoryActivity in segment.categories {
                     let catName = categoryActivity.category.localizedDisplayName ?? "Other"
+                    let catToken = categoryActivity.category.token
 
                     for await appActivity in categoryActivity.applications {
                         let appName = appActivity.application.localizedDisplayName ?? "Unknown"
                         let appDuration = appActivity.totalActivityDuration
                         let pickups = appActivity.numberOfPickups
                         dayPickups[segDate, default: 0] += pickups
+
+                        // Track token durations for today's limit usage
+                        if isToday, appDuration > 0, let appToken = appActivity.application.token {
+                            todayAppTokenDurations[appToken, default: 0] += appDuration
+                            if let catToken {
+                                todayAppToCatTokens[appToken, default: []].insert(catToken)
+                            }
+                        }
 
                         if appDuration > 0 {
                             let appData = AppUsageData(
@@ -165,6 +180,14 @@ struct TotalActivityReport: DeviceActivityReportScene {
             }
             shared?.set(appNames, forKey: "todayAppNames")
         }
+
+        // Compute and save per-limit usage from token data
+        Self.computeLimitUsage(
+            appTokenDurations: todayAppTokenDurations,
+            appToCatTokens: todayAppToCatTokens,
+            defaults: shared
+        )
+
         shared?.synchronize()
 
         return TotalActivityData(
@@ -173,4 +196,57 @@ struct TotalActivityReport: DeviceActivityReportScene {
         )
     }
 
+    // MARK: - Per-Limit Usage
+
+    private struct LimitConfig: Codable {
+        let id: UUID
+        let name: String
+        let appSelectionData: Data?
+        let limitMinutes: Int
+        let isEnabled: Bool
+        let activeDays: Set<Int>?
+    }
+
+    private static func computeLimitUsage(
+        appTokenDurations: [ApplicationToken: TimeInterval],
+        appToCatTokens: [ApplicationToken: Set<ActivityCategoryToken>],
+        defaults: UserDefaults?
+    ) {
+        // Read limit configs from shared file
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("usageLimits.json"),
+              let data = try? Data(contentsOf: url),
+              let limits = try? JSONDecoder().decode([LimitConfig].self, from: data)
+        else { return }
+
+        for limit in limits {
+            guard let selData = limit.appSelectionData,
+                  let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData)
+            else { continue }
+
+            // Match app tokens
+            var matchedApps = Set<ApplicationToken>()
+            for appToken in selection.applicationTokens {
+                if appTokenDurations[appToken] != nil {
+                    matchedApps.insert(appToken)
+                }
+            }
+            for catToken in selection.categoryTokens {
+                for (appToken, cats) in appToCatTokens {
+                    if cats.contains(catToken) {
+                        matchedApps.insert(appToken)
+                    }
+                }
+            }
+
+            // Sum duration
+            var totalDuration: TimeInterval = 0
+            for appToken in matchedApps {
+                totalDuration += appTokenDurations[appToken] ?? 0
+            }
+
+            defaults?.set(totalDuration, forKey: "limitUsage_\(limit.id.uuidString)")
+        }
+    }
 }
