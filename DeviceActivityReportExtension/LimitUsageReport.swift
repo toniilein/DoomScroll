@@ -4,12 +4,19 @@ import FamilyControls
 import ManagedSettings
 import SwiftUI
 
-// Data returned to the view
+// Per-limit usage info passed to the view
+struct LimitUsageItem: Sendable {
+    let id: String
+    let name: String
+    let usedSeconds: Double
+    let limitMinutes: Int
+    let isEnabled: Bool
+}
+
+// Data returned to the view — includes per-limit breakdown
 struct LimitUsageData: Sendable {
+    let items: [LimitUsageItem]
     let exceededCount: Int
-    let activeCount: Int
-    let totalCount: Int
-    let debugInfo: String
 }
 
 // Must match what the main app writes to usageLimits.json
@@ -30,11 +37,12 @@ struct LimitUsageReport: DeviceActivityReportScene {
     func makeConfiguration(
         representing data: DeviceActivityResults<DeviceActivityData>
     ) async -> LimitUsageData {
-        // Read limits from shared FILE (UserDefaults is broken in extensions)
+        // Read limits from shared FILE (extension can read but not write)
         let limits = Self.readLimitsFromFile()
 
         struct LimitConfig {
             let id: String
+            let name: String
             let minutes: Int
             let enabled: Bool
             let selection: FamilyActivitySelection
@@ -48,6 +56,7 @@ struct LimitUsageReport: DeviceActivityReportScene {
             else { continue }
             limitConfigs.append(LimitConfig(
                 id: limit.id.uuidString,
+                name: limit.name,
                 minutes: limit.limitMinutes,
                 enabled: limit.isEnabled,
                 selection: selection
@@ -56,19 +65,16 @@ struct LimitUsageReport: DeviceActivityReportScene {
 
         // Process ALL activity data
         var appTokenDurations: [ApplicationToken: TimeInterval] = [:]
-        var catNameDurations: [String: TimeInterval] = [:]
         var appToCatTokens: [ApplicationToken: Set<ActivityCategoryToken>] = [:]
 
         for await dataItem in data {
             for await segment in dataItem.activitySegments {
                 for await categoryActivity in segment.categories {
                     let catToken = categoryActivity.category.token
-                    let catName = categoryActivity.category.localizedDisplayName ?? "Other"
                     for await appActivity in categoryActivity.applications {
                         let dur = appActivity.totalActivityDuration
                         if dur > 0, let appToken = appActivity.application.token {
                             appTokenDurations[appToken, default: 0] += dur
-                            catNameDurations[catName, default: 0] += dur
                             if let catToken {
                                 appToCatTokens[appToken, default: []].insert(catToken)
                             }
@@ -78,17 +84,11 @@ struct LimitUsageReport: DeviceActivityReportScene {
             }
         }
 
-        // Write per-category usage to file (for limit editor)
-        let catWriteResult = Self.writeCategoryUsageFile(catNameDurations)
-
         // Compute per-limit usage
+        var items: [LimitUsageItem] = []
         var exceededCount = 0
-        var activeCount = 0
-        var limitUsageResults: [String: Double] = [:]
 
         for config in limitConfigs {
-            if config.enabled { activeCount += 1 }
-
             // Collect matching app tokens
             var matchedApps = Set<ApplicationToken>()
             for appToken in config.selection.applicationTokens {
@@ -110,8 +110,6 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 limitDuration += appTokenDurations[appToken] ?? 0
             }
 
-            limitUsageResults[config.id] = limitDuration
-
             let usedMinutes = limitDuration / 60.0
             let exceeded = usedMinutes >= Double(config.minutes)
             if exceeded && config.enabled { exceededCount += 1 }
@@ -128,20 +126,20 @@ struct LimitUsageReport: DeviceActivityReportScene {
             } else if !config.enabled {
                 store.clearAllSettings()
             }
+
+            items.append(LimitUsageItem(
+                id: config.id,
+                name: config.name,
+                usedSeconds: limitDuration,
+                limitMinutes: config.minutes,
+                isEnabled: config.enabled
+            ))
         }
 
-        // Write usage results to file — capture error for debug
-        let writeResult = Self.writeLimitUsageFile(limitUsageResults)
-
-        return LimitUsageData(
-            exceededCount: exceededCount,
-            activeCount: activeCount,
-            totalCount: limitConfigs.count,
-            debugInfo: "limits:\(limitConfigs.count) usage:\(writeResult) cat:\(catWriteResult)"
-        )
+        return LimitUsageData(items: items, exceededCount: exceededCount)
     }
 
-    // MARK: - File I/O (app group container — proven reliable cross-process)
+    // MARK: - File I/O
 
     private static var containerURL: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.pookie1.shared")
@@ -154,40 +152,6 @@ struct LimitUsageReport: DeviceActivityReportScene {
             return []
         }
         return limits
-    }
-
-    @discardableResult
-    static func writeLimitUsageFile(_ results: [String: Double]) -> String {
-        guard let url = containerURL?.appendingPathComponent("limitUsage.json") else {
-            return "NO_URL"
-        }
-        guard let jsonData = try? JSONEncoder().encode(results) else {
-            return "ENCODE_FAIL"
-        }
-        do {
-            try jsonData.write(to: url) // no .atomic — extensions may not support temp file rename
-            // Verify it was written
-            let exists = FileManager.default.fileExists(atPath: url.path)
-            return exists ? "OK(\(jsonData.count)b@\(url.lastPathComponent))" : "WROTE_BUT_MISSING"
-        } catch {
-            return "ERR:\(error.localizedDescription)"
-        }
-    }
-
-    @discardableResult
-    static func writeCategoryUsageFile(_ catNameDurations: [String: TimeInterval]) -> String {
-        guard let url = containerURL?.appendingPathComponent("categoryUsage.json") else { return "NO_URL" }
-        var dict: [String: Double] = [:]
-        for (name, dur) in catNameDurations where dur > 0 {
-            dict[name] = dur / 60.0
-        }
-        guard let jsonData = try? JSONEncoder().encode(dict) else { return "ENCODE_FAIL" }
-        do {
-            try jsonData.write(to: url)
-            return "OK"
-        } catch {
-            return "ERR:\(error.localizedDescription)"
-        }
     }
 }
 
