@@ -57,7 +57,8 @@ struct LimitUsageView: View {
         let exceeded = usedMinutes >= Double(item.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, item.limitMinutes)))
 
-        return VStack(spacing: 8) {
+        return VStack(spacing: 10) {
+            // Top: icon + name
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
@@ -68,45 +69,71 @@ struct LimitUsageView: View {
                         .foregroundColor(item.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
                 }
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.name)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
+                Text(item.name)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
 
-                    HStack(spacing: 4) {
-                        Text(formatDuration(item.usedSeconds))
-                            .font(.system(size: 13, weight: .black, design: .rounded))
-                            .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
+                Spacer()
 
-                        Text("/ \(formatMinutes(item.limitMinutes))")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
+                // Status pill
+                Text(item.isEnabled ? "Active" : "Off")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundColor(item.isEnabled ? BrainRotTheme.neonGreen : BrainRotTheme.textSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background((item.isEnabled ? BrainRotTheme.neonGreen : BrainRotTheme.textSecondary).opacity(0.15))
+                    .clipShape(Capsule())
+            }
 
-                        if exceeded {
-                            HStack(spacing: 2) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 8))
-                                Text("Exceeded")
-                                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                            }
-                            .foregroundColor(.red)
-                        }
-                    }
+            // Middle: usage vs limit
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Used")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                    Text(formatDuration(item.usedSeconds))
+                        .font(.system(size: 18, weight: .black, design: .rounded))
+                        .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
                 }
 
                 Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Limit")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                    Text(formatMinutes(item.limitMinutes))
+                        .font(.system(size: 18, weight: .black, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                }
             }
 
+            // Progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2)
+                    RoundedRectangle(cornerRadius: 3)
                         .fill(BrainRotTheme.cardBorder)
-                    RoundedRectangle(cornerRadius: 2)
+                    RoundedRectangle(cornerRadius: 3)
                         .fill(exceeded ? Color.red : BrainRotTheme.neonOrange)
                         .frame(width: geo.size.width * progress)
                 }
             }
-            .frame(height: 4)
+            .frame(height: 6)
+
+            // Bottom: exceeded warning
+            if exceeded {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                    Text("Limit exceeded — apps are blocked")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                    Spacer()
+                }
+                .foregroundColor(.red)
+                .padding(10)
+                .background(Color.red.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
         }
         .padding(14)
         .background(BrainRotTheme.cardBackground)
