@@ -9,6 +9,7 @@ struct LimitUsageData: Sendable {
     let exceededCount: Int
     let activeCount: Int
     let totalCount: Int
+    let debugInfo: String
 }
 
 // Must match what the main app writes to usageLimits.json
@@ -78,7 +79,7 @@ struct LimitUsageReport: DeviceActivityReportScene {
         }
 
         // Write per-category usage to file (for limit editor)
-        Self.writeCategoryUsageFile(catNameDurations)
+        let catWriteResult = Self.writeCategoryUsageFile(catNameDurations)
 
         // Compute per-limit usage
         var exceededCount = 0
@@ -129,13 +130,14 @@ struct LimitUsageReport: DeviceActivityReportScene {
             }
         }
 
-        // Write usage results to file (UserDefaults broken in extensions)
-        Self.writeLimitUsageFile(limitUsageResults)
+        // Write usage results to file — capture error for debug
+        let writeResult = Self.writeLimitUsageFile(limitUsageResults)
 
         return LimitUsageData(
             exceededCount: exceededCount,
             activeCount: activeCount,
-            totalCount: limitConfigs.count
+            totalCount: limitConfigs.count,
+            debugInfo: "limits:\(limitConfigs.count) usage:\(writeResult) cat:\(catWriteResult)"
         )
     }
 
@@ -154,21 +156,37 @@ struct LimitUsageReport: DeviceActivityReportScene {
         return limits
     }
 
-    static func writeLimitUsageFile(_ results: [String: Double]) {
-        guard let url = containerURL?.appendingPathComponent("limitUsage.json") else { return }
-        if let jsonData = try? JSONEncoder().encode(results) {
-            try? jsonData.write(to: url, options: .atomic)
+    @discardableResult
+    static func writeLimitUsageFile(_ results: [String: Double]) -> String {
+        guard let url = containerURL?.appendingPathComponent("limitUsage.json") else {
+            return "NO_URL"
+        }
+        guard let jsonData = try? JSONEncoder().encode(results) else {
+            return "ENCODE_FAIL"
+        }
+        do {
+            try jsonData.write(to: url) // no .atomic — extensions may not support temp file rename
+            // Verify it was written
+            let exists = FileManager.default.fileExists(atPath: url.path)
+            return exists ? "OK(\(jsonData.count)b@\(url.lastPathComponent))" : "WROTE_BUT_MISSING"
+        } catch {
+            return "ERR:\(error.localizedDescription)"
         }
     }
 
-    static func writeCategoryUsageFile(_ catNameDurations: [String: TimeInterval]) {
-        guard let url = containerURL?.appendingPathComponent("categoryUsage.json") else { return }
+    @discardableResult
+    static func writeCategoryUsageFile(_ catNameDurations: [String: TimeInterval]) -> String {
+        guard let url = containerURL?.appendingPathComponent("categoryUsage.json") else { return "NO_URL" }
         var dict: [String: Double] = [:]
         for (name, dur) in catNameDurations where dur > 0 {
             dict[name] = dur / 60.0
         }
-        if let jsonData = try? JSONEncoder().encode(dict) {
-            try? jsonData.write(to: url, options: .atomic)
+        guard let jsonData = try? JSONEncoder().encode(dict) else { return "ENCODE_FAIL" }
+        do {
+            try jsonData.write(to: url)
+            return "OK"
+        } catch {
+            return "ERR:\(error.localizedDescription)"
         }
     }
 }

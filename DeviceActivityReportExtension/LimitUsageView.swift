@@ -6,6 +6,15 @@ struct LimitUsageView: View {
     let data: LimitUsageData
 
     var body: some View {
+        VStack(spacing: 4) {
+        Text(data.debugInfo)
+            .font(.system(size: 10, weight: .medium, design: .monospaced))
+            .foregroundColor(.orange)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(6)
+            .background(Color.orange.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+
         if data.exceededCount > 0 {
             HStack(spacing: 4) {
                 Image(systemName: "exclamationmark.triangle.fill")
@@ -27,6 +36,7 @@ struct LimitUsageView: View {
         } else {
             Color.clear.frame(height: 2)
         }
+        } // VStack
     }
 }
 
