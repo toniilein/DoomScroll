@@ -1,22 +1,28 @@
 import SwiftUI
 
-// MARK: - Octopus Mood
+// MARK: - Octopus Mood (4 tiers based on screen time minutes)
 
 enum OctopusMood {
-    case ecstatic    // Score 0-19:  Digital Monk
-    case happy       // Score 20-39: Grass Toucher
-    case neutral     // Score 40-59: Casual Scroller
-    case sad         // Score 60-79: Doomscroller
-    case distressed  // Score 80-94: Brainrot Mode
-    case zombie      // Score 95-99: Full Brainrot
+    case ecstatic    // < 1h:   Digital Monk
+    case happy       // 1-2h:   Grass Toucher
+    case sad         // 2-4h:   Doomscroller
+    case zombie      // 4h+:    Brainrot
 
+    static func from(minutes: Double) -> OctopusMood {
+        switch minutes {
+        case ..<60:  return .ecstatic
+        case ..<120: return .happy
+        case ..<240: return .sad
+        default:     return .zombie
+        }
+    }
+
+    /// Legacy score-based init for backward compat (day pills etc)
     static func from(score: Int) -> OctopusMood {
         switch score {
-        case 0..<20:  return .ecstatic
-        case 20..<40: return .happy
-        case 40..<60: return .neutral
-        case 60..<80: return .sad
-        case 80..<95: return .distressed
+        case 0..<30:  return .ecstatic
+        case 30..<60: return .happy
+        case 60..<85: return .sad
         default:      return .zombie
         }
     }
@@ -25,34 +31,28 @@ enum OctopusMood {
 
     var bodyColor: Color {
         switch self {
-        case .ecstatic:   return Color(red: 0.55, green: 0.88, blue: 0.70)  // soft mint
-        case .happy:      return Color(red: 0.52, green: 0.82, blue: 0.78)  // seafoam
-        case .neutral:    return Color(red: 0.60, green: 0.74, blue: 0.90)  // baby blue
-        case .sad:        return Color(red: 0.75, green: 0.62, blue: 0.88)  // lavender
-        case .distressed: return Color(red: 0.92, green: 0.58, blue: 0.58)  // soft coral
-        case .zombie:     return Color(red: 0.68, green: 0.65, blue: 0.63)  // warm gray
+        case .ecstatic: return Color(red: 0.55, green: 0.88, blue: 0.70)  // soft mint
+        case .happy:    return Color(red: 0.52, green: 0.82, blue: 0.78)  // seafoam
+        case .sad:      return Color(red: 0.75, green: 0.62, blue: 0.88)  // lavender
+        case .zombie:   return Color(red: 0.68, green: 0.65, blue: 0.63)  // warm gray
         }
     }
 
     var bodyColorDark: Color {
         switch self {
-        case .ecstatic:   return Color(red: 0.40, green: 0.75, blue: 0.55)
-        case .happy:      return Color(red: 0.38, green: 0.70, blue: 0.65)
-        case .neutral:    return Color(red: 0.48, green: 0.62, blue: 0.78)
-        case .sad:        return Color(red: 0.62, green: 0.48, blue: 0.75)
-        case .distressed: return Color(red: 0.80, green: 0.45, blue: 0.45)
-        case .zombie:     return Color(red: 0.52, green: 0.50, blue: 0.48)
+        case .ecstatic: return Color(red: 0.40, green: 0.75, blue: 0.55)
+        case .happy:    return Color(red: 0.38, green: 0.70, blue: 0.65)
+        case .sad:      return Color(red: 0.62, green: 0.48, blue: 0.75)
+        case .zombie:   return Color(red: 0.52, green: 0.50, blue: 0.48)
         }
     }
 
     var spotColor: Color {
         switch self {
-        case .ecstatic:   return Color(red: 0.45, green: 0.78, blue: 0.58)
-        case .happy:      return Color(red: 0.42, green: 0.72, blue: 0.68)
-        case .neutral:    return Color(red: 0.50, green: 0.65, blue: 0.82)
-        case .sad:        return Color(red: 0.65, green: 0.52, blue: 0.78)
-        case .distressed: return Color(red: 0.82, green: 0.48, blue: 0.48)
-        case .zombie:     return Color(red: 0.58, green: 0.55, blue: 0.53)
+        case .ecstatic: return Color(red: 0.45, green: 0.78, blue: 0.58)
+        case .happy:    return Color(red: 0.42, green: 0.72, blue: 0.68)
+        case .sad:      return Color(red: 0.65, green: 0.52, blue: 0.78)
+        case .zombie:   return Color(red: 0.58, green: 0.55, blue: 0.53)
         }
     }
 
@@ -60,60 +60,51 @@ enum OctopusMood {
 
     var tentacleAmplitude: CGFloat {
         switch self {
-        case .ecstatic:   return 10
-        case .happy:      return 8
-        case .neutral:    return 5
-        case .sad:        return 3
-        case .distressed: return 2
-        case .zombie:     return 1
+        case .ecstatic: return 10
+        case .happy:    return 8
+        case .sad:      return 3
+        case .zombie:   return 1
         }
     }
 
     var tentacleSpeed: Double {
         switch self {
-        case .ecstatic:   return 1.2
-        case .happy:      return 1.8
-        case .neutral:    return 2.8
-        case .sad:        return 4.0
-        case .distressed: return 5.5
-        case .zombie:     return 8.0
+        case .ecstatic: return 1.2
+        case .happy:    return 1.8
+        case .sad:      return 4.0
+        case .zombie:   return 8.0
         }
     }
 
     var tentacleDroop: CGFloat {
         switch self {
-        case .ecstatic:   return 0
-        case .happy:      return 3
-        case .neutral:    return 8
-        case .sad:        return 14
-        case .distressed: return 20
-        case .zombie:     return 28
+        case .ecstatic: return 0
+        case .happy:    return 3
+        case .sad:      return 14
+        case .zombie:   return 28
         }
     }
 
     // MARK: Face Details
 
     var showCheeks: Bool {
-        self == .ecstatic || self == .happy || self == .neutral
+        self == .ecstatic || self == .happy
     }
 
     var cheekOpacity: Double {
         switch self {
         case .ecstatic: return 0.45
         case .happy:    return 0.35
-        case .neutral:  return 0.20
         default:        return 0
         }
     }
 
     var particles: [String] {
         switch self {
-        case .ecstatic:   return ["✨", "💖", "✨"]
-        case .happy:      return ["♪", "🌸", "♪"]
-        case .neutral:    return ["💧", "📱", "💧"]
-        case .sad:        return ["💧", "😢", "💧"]
-        case .distressed: return ["🧠", "💫", "🧠"]
-        case .zombie:     return ["💀", "☠️", "💀"]
+        case .ecstatic: return ["\u{2728}", "\u{1F496}", "\u{2728}"]
+        case .happy:    return ["\u{266A}", "\u{1F338}", "\u{266A}"]
+        case .sad:      return ["\u{1F4A7}", "\u{1F622}", "\u{1F4A7}"]
+        case .zombie:   return ["\u{1F480}", "\u{2620}\u{FE0F}", "\u{1F480}"]
         }
     }
 }
@@ -181,29 +172,27 @@ struct OctopusMascotView: View {
     @State private var eyeBlink: Bool = false
     @State private var showTierSheet = false
 
-    private var mood: OctopusMood { .from(score: score) }
+    private var mood: OctopusMood { .from(minutes: totalDurationSeconds / 60.0) }
+    private var totalMinutes: Double { totalDurationSeconds / 60.0 }
 
     // MARK: Body
 
     var body: some View {
         VStack(spacing: 8) {
-            // ── Speech bubble ──
+            // Speech bubble
             speechBubble
                 .padding(.horizontal, 20)
 
-            // ── Character area ──
+            // Character area
             ZStack {
-                // Soft glow
                 Circle()
                     .fill(mood.bodyColor.opacity(0.15))
                     .frame(width: 200, height: 200)
                     .blur(radius: 30)
                     .scaleEffect(glowPulse ? 1.1 : 0.92)
 
-                // Floating particle decorations
                 floatingParticles
 
-                // Octopus character — tap to see all tiers
                 VStack(spacing: -10) {
                     octopusBody
                     tentacles
@@ -213,13 +202,20 @@ struct OctopusMascotView: View {
             }
             .frame(height: 220)
 
-            // ── Daily screen time ──
-            Text(totalScreenTime)
-                .font(.system(size: 22, weight: .black, design: .rounded))
-                .foregroundColor(BrainRotTheme.textPrimary)
+            // Daily screen time with label
+            VStack(spacing: 2) {
+                Text(totalScreenTime)
+                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
 
-            // ── Score info ──
-            scoreDisplay
+                Text("daily screentime")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+
+            // Tier status bar
+            tierStatusBar
+                .padding(.horizontal, 20)
         }
         .onAppear { startAnimations() }
         .sheet(isPresented: $showTierSheet) {
@@ -227,29 +223,67 @@ struct OctopusMascotView: View {
         }
     }
 
-    // MARK: - Tier Gallery Sheet
+    // MARK: - Tier Definitions
 
-    private var allTiers: [(name: String, emoji: String, min: Int, max: Int, mood: OctopusMood)] {
-        [
-            ("Digital Monk",    "\u{2728}", 0,  19, .ecstatic),
-            ("Grass Toucher",   "\u{266A}", 20, 39, .happy),
-            ("Casual Scroller", "\u{1F4F1}", 40, 59, .neutral),
-            ("Doomscroller",    "\u{1F62E}", 60, 79, .sad),
-            ("Brainrot Mode",   "\u{1F9E0}", 80, 94, .distressed),
-            ("Full Brainrot",   "\u{1F480}", 95, 100, .zombie),
-        ]
+    private static let tiers: [(name: String, emoji: String, minMinutes: Double, maxMinutes: Double, mood: OctopusMood)] = [
+        ("Digital Monk",  "\u{2728}", 0,   60,  .ecstatic),
+        ("Grass Toucher", "\u{1F33F}", 60,  120, .happy),
+        ("Doomscroller",  "\u{1F4F1}", 120, 240, .sad),
+        ("Brainrot",      "\u{1F480}", 240, .infinity, .zombie),
+    ]
+
+    // MARK: - Tier Status Bar
+
+    private var tierStatusBar: some View {
+        let currentTierIdx = Self.tiers.firstIndex(where: { totalMinutes < $0.maxMinutes }) ?? Self.tiers.count - 1
+
+        return VStack(spacing: 6) {
+            HStack(spacing: 3) {
+                ForEach(Array(Self.tiers.enumerated()), id: \.offset) { idx, tier in
+                    let isCurrent = idx == currentTierIdx
+
+                    VStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(
+                                isCurrent
+                                    ? LinearGradient(colors: [tier.mood.bodyColor, tier.mood.bodyColorDark], startPoint: .leading, endPoint: .trailing)
+                                    : LinearGradient(colors: [tier.mood.bodyColor.opacity(0.25), tier.mood.bodyColorDark.opacity(0.25)], startPoint: .leading, endPoint: .trailing)
+                            )
+                            .frame(height: 8)
+                            .overlay(
+                                isCurrent
+                                    ? RoundedRectangle(cornerRadius: 3)
+                                        .stroke(tier.mood.bodyColorDark, lineWidth: 1)
+                                    : nil
+                            )
+
+                        HStack(spacing: 2) {
+                            Text(tier.emoji)
+                                .font(.system(size: 10))
+                            Text(tier.name)
+                                .font(.system(size: 9, weight: isCurrent ? .black : .medium, design: .rounded))
+                                .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textSecondary)
+                        }
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    }
+                }
+            }
+        }
     }
 
+    // MARK: - Tier Gallery Sheet
+
     private var tierGallerySheet: some View {
-        NavigationStack {
+        let currentTierIdx = Self.tiers.firstIndex(where: { totalMinutes < $0.maxMinutes }) ?? Self.tiers.count - 1
+
+        return NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-                    ForEach(Array(allTiers.enumerated()), id: \.offset) { _, tier in
-                        let isCurrent = score >= tier.min && score <= tier.max
-                        let isUnlocked = score <= tier.max // better tiers are "unlocked" if your score is low enough
+                    ForEach(Array(Self.tiers.enumerated()), id: \.offset) { idx, tier in
+                        let isCurrent = idx == currentTierIdx
 
                         HStack(spacing: 14) {
-                            // Mini octopus circle
                             ZStack {
                                 Circle()
                                     .fill(
@@ -265,8 +299,6 @@ struct OctopusMascotView: View {
                                 Text(tier.emoji)
                                     .font(.system(size: 22))
                             }
-                            .opacity(isUnlocked ? 1.0 : 0.4)
-                            .grayscale(isUnlocked ? 0 : 0.8)
 
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack {
@@ -284,7 +316,14 @@ struct OctopusMascotView: View {
                                     }
                                 }
 
-                                Text("Score \(tier.min)\u{2013}\(tier.max)")
+                                let rangeText: String = {
+                                    if tier.maxMinutes == .infinity {
+                                        return "\(Int(tier.minMinutes))min+"
+                                    }
+                                    return "\(Int(tier.minMinutes))\u{2013}\(Int(tier.maxMinutes))min"
+                                }()
+
+                                Text(rangeText)
                                     .font(.system(size: 12, weight: .medium, design: .rounded))
                                     .foregroundColor(BrainRotTheme.textSecondary)
                             }
@@ -295,10 +334,6 @@ struct OctopusMascotView: View {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 20))
                                     .foregroundColor(tier.mood.bodyColorDark)
-                            } else if !isUnlocked {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
                             }
                         }
                         .padding(14)
@@ -326,23 +361,12 @@ struct OctopusMascotView: View {
     // MARK: - Speech Bubble
 
     private var speechBubbleText: String {
-        let tiers: [(name: String, min: Int, max: Int)] = [
-            ("Digital Monk", 0, 19),
-            ("Grass Toucher", 20, 39),
-            ("Casual Scroller", 40, 59),
-            ("Doomscroller", 60, 79),
-            ("Brainrot Mode", 80, 94),
-            ("Full Brainrot", 95, 100),
-        ]
+        let currentTierIdx = Self.tiers.firstIndex(where: { totalMinutes < $0.maxMinutes }) ?? Self.tiers.count - 1
 
-        let idx = tiers.firstIndex(where: { score >= $0.min && score <= $0.max }) ?? tiers.count - 1
-
-        // Time until NEXT WORSE tier
-        if idx < tiers.count - 1 {
-            let nextWorse = tiers[idx + 1]
-            let minutesAtNextWorse = BrainRotCalculator.minutesForScore(nextWorse.min)
-            let currentMinutes = totalDurationSeconds / 60.0
-            let remaining = minutesAtNextWorse - currentMinutes
+        // Time until next worse tier
+        if currentTierIdx < Self.tiers.count - 1 {
+            let nextTier = Self.tiers[currentTierIdx + 1]
+            let remaining = nextTier.minMinutes - totalMinutes
 
             if remaining > 0 {
                 let fmt = BrainRotCalculator.formatDuration(remaining * 60)
@@ -351,12 +375,8 @@ struct OctopusMascotView: View {
                     return "I'm so happy! You have \(fmt) before I get worried"
                 case .happy:
                     return "Feeling good! \(fmt) left before I start worrying"
-                case .neutral:
-                    return "Hmm... \(fmt) left before things get bad"
                 case .sad:
                     return "I'm not great... only \(fmt) before it gets worse"
-                case .distressed:
-                    return "Please stop... \(fmt) until I totally lose it"
                 case .zombie:
                     return "..."
                 }
@@ -366,11 +386,9 @@ struct OctopusMascotView: View {
         // Already at worst or no time remaining
         switch mood {
         case .ecstatic: return "I'm living my best life! \(totalScreenTime) today"
-        case .happy: return "Pretty good day! \(totalScreenTime) so far"
-        case .neutral: return "Getting a bit much... \(totalScreenTime) today"
-        case .sad: return "I'm hurting... \(totalScreenTime) today"
-        case .distressed: return "My brain is melting... \(totalScreenTime) today"
-        case .zombie: return "\(totalScreenTime)... I can't even talk anymore"
+        case .happy:    return "Pretty good day! \(totalScreenTime) so far"
+        case .sad:      return "I'm hurting... \(totalScreenTime) today"
+        case .zombie:   return "\(totalScreenTime)... I can't even talk anymore"
         }
     }
 
@@ -395,14 +413,10 @@ struct OctopusMascotView: View {
 
     private var octopusBody: some View {
         ZStack {
-            // Round chubby body — baby proportions
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [
-                            mood.bodyColor,
-                            mood.bodyColorDark
-                        ],
+                        colors: [mood.bodyColor, mood.bodyColorDark],
                         center: .init(x: 0.4, y: 0.35),
                         startRadius: 10,
                         endRadius: 80
@@ -411,25 +425,21 @@ struct OctopusMascotView: View {
                 .frame(width: 140, height: 140)
                 .shadow(color: mood.bodyColor.opacity(0.35), radius: 12, y: 6)
 
-            // Cute body spots (like a baby octopus)
             Group {
                 Circle()
                     .fill(mood.spotColor.opacity(0.4))
                     .frame(width: 12, height: 12)
                     .offset(x: -35, y: -20)
-
                 Circle()
                     .fill(mood.spotColor.opacity(0.3))
                     .frame(width: 8, height: 8)
                     .offset(x: 38, y: -30)
-
                 Circle()
                     .fill(mood.spotColor.opacity(0.35))
                     .frame(width: 10, height: 10)
                     .offset(x: 42, y: 5)
             }
 
-            // Big shiny highlight — makes it look squishy/round
             Ellipse()
                 .fill(
                     RadialGradient(
@@ -442,22 +452,18 @@ struct OctopusMascotView: View {
                 .frame(width: 100, height: 80)
                 .offset(x: -12, y: -22)
 
-            // Small secondary highlight
             Ellipse()
                 .fill(Color.white.opacity(0.25))
                 .frame(width: 16, height: 10)
                 .rotationEffect(.degrees(-25))
                 .offset(x: -32, y: -38)
 
-            // Face — positioned in center-lower area of the round body
             VStack(spacing: 4) {
-                // Big baby eyes
                 HStack(spacing: 20) {
                     babyEyeView(isLeft: true)
                     babyEyeView(isLeft: false)
                 }
 
-                // Rosy cheeks
                 if mood.showCheeks {
                     HStack(spacing: 50) {
                         Ellipse()
@@ -470,33 +476,26 @@ struct OctopusMascotView: View {
                     .offset(y: -2)
                 }
 
-                // Little mouth
                 mouthView
             }
             .offset(y: 8)
         }
     }
 
-    // MARK: - Baby Eyes (oversized!)
+    // MARK: - Baby Eyes
 
     @ViewBuilder
     private func babyEyeView(isLeft: Bool) -> some View {
         switch mood {
         case .ecstatic:
-            // Giant sparkly star eyes
             ZStack {
-                // White sclera
                 Circle()
                     .fill(Color.white)
                     .frame(width: 36, height: 36)
                     .shadow(color: Color.black.opacity(0.08), radius: 2, y: 1)
-
-                // Star pupil
-                Text("★")
+                Text("\u{2605}")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(mood.bodyColorDark)
-
-                // Sparkle highlight
                 Circle()
                     .fill(Color.white)
                     .frame(width: 8, height: 8)
@@ -504,7 +503,6 @@ struct OctopusMascotView: View {
             }
 
         case .happy:
-            // Big happy squint eyes  ◠‿◠
             ZStack {
                 Path { p in
                     p.move(to: CGPoint(x: 0, y: 18))
@@ -513,67 +511,22 @@ struct OctopusMascotView: View {
                         control: CGPoint(x: 13, y: 2)
                     )
                 }
-                .stroke(
-                    mood.bodyColorDark,
-                    style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
-                )
+                .stroke(mood.bodyColorDark, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .frame(width: 26, height: 22)
 
-                // Little lash/highlight
                 Circle()
                     .fill(Color.white.opacity(0.7))
                     .frame(width: 5, height: 5)
                     .offset(x: isLeft ? -6 : 6, y: 6)
             }
 
-        case .neutral:
-            // Big round worried baby eyes
-            ZStack {
-                // Sclera
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 36, height: 36)
-                    .shadow(color: Color.black.opacity(0.08), radius: 2, y: 1)
-
-                // Big iris
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color(red: 0.30, green: 0.30, blue: 0.38),
-                                Color(red: 0.18, green: 0.18, blue: 0.22)
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 9
-                        )
-                    )
-                    .frame(width: 18, height: 18)
-                    .offset(x: isLeft ? -2 : 2, y: 2)
-
-                // Big cute highlight
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 9, height: 9)
-                    .offset(x: isLeft ? 2 : 6, y: -4)
-
-                // Small secondary highlight
-                Circle()
-                    .fill(Color.white.opacity(0.8))
-                    .frame(width: 4, height: 4)
-                    .offset(x: isLeft ? -3 : 1, y: 4)
-            }
-
         case .sad:
-            // Big watery puppy eyes with tear
             ZStack {
-                // Sclera — slightly oval for droopy look
                 Ellipse()
                     .fill(Color.white)
                     .frame(width: 36, height: 34)
                     .shadow(color: Color.black.opacity(0.08), radius: 2, y: 1)
 
-                // Big watery iris
                 Circle()
                     .fill(
                         RadialGradient(
@@ -581,21 +534,17 @@ struct OctopusMascotView: View {
                                 Color(red: 0.35, green: 0.32, blue: 0.42),
                                 Color(red: 0.20, green: 0.18, blue: 0.25)
                             ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 10
+                            center: .center, startRadius: 0, endRadius: 10
                         )
                     )
                     .frame(width: 20, height: 20)
                     .offset(y: 3)
 
-                // Droopy eyelid
                 Ellipse()
                     .fill(mood.bodyColor)
                     .frame(width: 40, height: 16)
                     .offset(y: -14)
 
-                // Watery shine — bigger for sad puppy look
                 Circle()
                     .fill(Color.white)
                     .frame(width: 10, height: 10)
@@ -606,7 +555,6 @@ struct OctopusMascotView: View {
                     .frame(width: 5, height: 5)
                     .offset(x: -4, y: 5)
 
-                // Tear drop on one eye
                 if isLeft {
                     Ellipse()
                         .fill(
@@ -615,8 +563,7 @@ struct OctopusMascotView: View {
                                     Color(red: 0.65, green: 0.82, blue: 0.98),
                                     Color(red: 0.50, green: 0.72, blue: 0.95)
                                 ],
-                                startPoint: .top,
-                                endPoint: .bottom
+                                startPoint: .top, endPoint: .bottom
                             )
                         )
                         .frame(width: 7, height: 10)
@@ -624,33 +571,11 @@ struct OctopusMascotView: View {
                 }
             }
 
-        case .distressed:
-            // Big dizzy spiral eyes
-            ZStack {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 36, height: 36)
-                    .shadow(color: Color.black.opacity(0.08), radius: 2, y: 1)
-
-                // Spiral
-                Text("@")
-                    .font(.system(size: 22, weight: .heavy, design: .monospaced))
-                    .foregroundColor(Color(red: 0.25, green: 0.22, blue: 0.30))
-
-                // Faint highlight
-                Circle()
-                    .fill(Color.white.opacity(0.5))
-                    .frame(width: 6, height: 6)
-                    .offset(x: 6, y: -6)
-            }
-
         case .zombie:
-            // Big X_X dead eyes
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.7))
                     .frame(width: 34, height: 34)
-
                 Path { p in
                     p.move(to: CGPoint(x: 3, y: 3))
                     p.addLine(to: CGPoint(x: 19, y: 19))
@@ -672,14 +597,10 @@ struct OctopusMascotView: View {
     private var mouthView: some View {
         switch mood {
         case .ecstatic:
-            // Big open happy smile with rosy interior
             ZStack {
                 Path { p in
                     p.move(to: CGPoint(x: 0, y: 0))
-                    p.addQuadCurve(
-                        to: CGPoint(x: 28, y: 0),
-                        control: CGPoint(x: 14, y: 20)
-                    )
+                    p.addQuadCurve(to: CGPoint(x: 28, y: 0), control: CGPoint(x: 14, y: 20))
                     p.closeSubpath()
                 }
                 .fill(Color(red: 0.92, green: 0.50, blue: 0.55).opacity(0.5))
@@ -687,60 +608,29 @@ struct OctopusMascotView: View {
 
                 Path { p in
                     p.move(to: CGPoint(x: 0, y: 0))
-                    p.addQuadCurve(
-                        to: CGPoint(x: 28, y: 0),
-                        control: CGPoint(x: 14, y: 20)
-                    )
+                    p.addQuadCurve(to: CGPoint(x: 28, y: 0), control: CGPoint(x: 14, y: 20))
                 }
                 .stroke(Color.white.opacity(0.9), style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .frame(width: 28, height: 20)
             }
 
         case .happy:
-            // Cute little smile ‿
             Path { p in
                 p.move(to: CGPoint(x: 0, y: 0))
-                p.addQuadCurve(
-                    to: CGPoint(x: 20, y: 0),
-                    control: CGPoint(x: 10, y: 12)
-                )
+                p.addQuadCurve(to: CGPoint(x: 20, y: 0), control: CGPoint(x: 10, y: 12))
             }
             .stroke(Color.white.opacity(0.9), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
             .frame(width: 20, height: 12)
 
-        case .neutral:
-            // Tiny "o" surprise mouth
-            Circle()
-                .stroke(Color.white.opacity(0.8), lineWidth: 2)
-                .frame(width: 10, height: 10)
-
         case .sad:
-            // Little frown ︵
             Path { p in
                 p.move(to: CGPoint(x: 0, y: 8))
-                p.addQuadCurve(
-                    to: CGPoint(x: 18, y: 8),
-                    control: CGPoint(x: 9, y: 0)
-                )
+                p.addQuadCurve(to: CGPoint(x: 18, y: 8), control: CGPoint(x: 9, y: 0))
             }
             .stroke(Color.white.opacity(0.9), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
             .frame(width: 18, height: 10)
 
-        case .distressed:
-            // Wavy wobbly mouth
-            Path { p in
-                p.move(to: CGPoint(x: 0, y: 6))
-                p.addCurve(
-                    to: CGPoint(x: 22, y: 6),
-                    control1: CGPoint(x: 7, y: 0),
-                    control2: CGPoint(x: 15, y: 12)
-                )
-            }
-            .stroke(Color.white.opacity(0.9), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-            .frame(width: 22, height: 12)
-
         case .zombie:
-            // Flat line + little tongue
             VStack(spacing: 1) {
                 Path { p in
                     p.move(to: CGPoint(x: 0, y: 0))
@@ -795,95 +685,6 @@ struct OctopusMascotView: View {
                 .font(.system(size: 14))
                 .offset(x: 55, y: -75 + particleDrift * 0.5)
                 .opacity(particleFade * 0.5)
-        }
-    }
-
-    // MARK: - Score Display
-
-    private var tierInfo: (name: String, emoji: String, nextName: String?, nextEmoji: String?, nextMax: Int, progress: Double) {
-        let tiers: [(name: String, emoji: String, min: Int, max: Int)] = [
-            ("Digital Monk",    "\u{2728}", 0,  19),
-            ("Grass Toucher",   "\u{266A}", 20, 39),
-            ("Casual Scroller", "\u{1F4F1}", 40, 59),
-            ("Doomscroller",    "\u{1F62E}", 60, 79),
-            ("Brainrot Mode",   "\u{1F9E0}", 80, 94),
-            ("Full Brainrot",   "\u{1F480}", 95, 100),
-        ]
-
-        let idx = tiers.firstIndex(where: { score >= $0.min && score <= $0.max }) ?? tiers.count - 1
-        let current = tiers[idx]
-
-        if idx == 0 {
-            let progress = 1.0 - Double(score) / Double(current.max + 1)
-            return (current.name, current.emoji, nil, nil, 0, progress)
-        }
-
-        let next = tiers[idx - 1]
-        let range = Double(current.max - current.min)
-        let progress = range > 0 ? Double(current.max - score) / range : 1.0
-        return (current.name, current.emoji, next.name, next.emoji, next.max, progress)
-    }
-
-    private var scoreDisplay: some View {
-        let info = tierInfo
-
-        return VStack(spacing: 8) {
-            // Tier badge
-            HStack(spacing: 6) {
-                Text(info.emoji)
-                    .font(.system(size: 16))
-                Text(info.name)
-                    .font(.system(size: 15, weight: .black, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-            .background(mood.bodyColor.opacity(0.2))
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(mood.bodyColor.opacity(0.4), lineWidth: 1)
-            )
-
-            // Progress to next tier
-            if let nextName = info.nextName {
-                VStack(spacing: 6) {
-                    // Clean progress bar (no emojis)
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(BrainRotTheme.cardBorder)
-                            .frame(height: 8)
-
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(
-                                LinearGradient(
-                                    colors: [mood.bodyColor, mood.bodyColorDark],
-                                    startPoint: .leading, endPoint: .trailing
-                                )
-                            )
-                            .frame(
-                                width: max(0, min(1, info.progress)) * 220,
-                                height: 8
-                            )
-                    }
-                    .frame(width: 220)
-
-                    // Time to reduce under the bar
-                    let currentMinutes = totalDurationSeconds / 60.0
-                    let targetMinutes = BrainRotCalculator.minutesForScore(info.nextMax)
-                    let reduceMinutes = max(0, currentMinutes - targetMinutes)
-                    let reduceFormatted = BrainRotCalculator.formatDuration(reduceMinutes * 60)
-                    Text("Reduce \(reduceFormatted) to become \(nextName)")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-            } else {
-                Text("You're at the top! \u{1F451}")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.neonGreen)
-            }
-
         }
     }
 

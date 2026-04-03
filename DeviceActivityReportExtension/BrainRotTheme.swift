@@ -50,29 +50,26 @@ enum BrainRotTheme {
         switch score {
         case 0..<30: return neonGreen
         case 30..<60: return neonBlue
-        case 60..<80: return neonPurple
+        case 60..<85: return neonPurple
         default: return neonPink
         }
     }
 
     static func scoreLabel(for score: Int) -> String {
         switch score {
-        case 0..<20: return "ECSTATIC"
-        case 20..<40: return "HAPPY"
-        case 40..<60: return "NEUTRAL"
-        case 60..<80: return "SAD"
-        case 80..<95: return "DISTRESSED"
-        default: return "ZOMBIE"
+        case 0..<30: return "DIGITAL MONK"
+        case 30..<60: return "GRASS TOUCHER"
+        case 60..<85: return "DOOMSCROLLER"
+        default: return "BRAINROT"
         }
     }
 
     static func scoreEmoji(for score: Int) -> String {
         switch score {
-        case 0..<20: return "\u{1F9D8}"
-        case 20..<40: return "\u{1F33F}"
-        case 40..<60: return "\u{1F4F1}"
-        case 60..<80: return "\u{1F9DF}"
-        default: return "\u{1F9E0}\u{1F480}"
+        case 0..<30: return "\u{2728}"
+        case 30..<60: return "\u{1F33F}"
+        case 60..<85: return "\u{1F4F1}"
+        default: return "\u{1F480}"
         }
     }
 
@@ -80,7 +77,7 @@ enum BrainRotTheme {
         switch score {
         case 0..<30: return neonGreen
         case 30..<60: return neonBlue
-        case 60..<80: return neonPurple
+        case 60..<85: return neonPurple
         default: return neonPink
         }
     }

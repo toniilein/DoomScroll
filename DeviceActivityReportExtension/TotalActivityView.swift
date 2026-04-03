@@ -155,21 +155,11 @@ struct TotalActivityView: View {
                 Capsule().fill(Color.white).frame(width: 4.5, height: 2)
                 Capsule().fill(Color.white).frame(width: 4.5, height: 2)
             }.offset(y: -1)
-        case .neutral:
-            HStack(spacing: 5) {
-                Circle().fill(Color.white).frame(width: 4.5, height: 4.5)
-                Circle().fill(Color.white).frame(width: 4.5, height: 4.5)
-            }.offset(y: -1)
         case .sad:
             HStack(spacing: 5) {
                 Circle().fill(Color.white).frame(width: 4, height: 4)
                 Circle().fill(Color.white).frame(width: 4, height: 4)
             }
-        case .distressed:
-            HStack(spacing: 4) {
-                Text("@").font(.system(size: 5, weight: .heavy)).foregroundColor(.white)
-                Text("@").font(.system(size: 5, weight: .heavy)).foregroundColor(.white)
-            }.offset(y: -1)
         case .zombie:
             HStack(spacing: 4) {
                 Text("x").font(.system(size: 6, weight: .black)).foregroundColor(.white.opacity(0.8))
