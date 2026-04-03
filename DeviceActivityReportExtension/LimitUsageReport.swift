@@ -75,11 +75,6 @@ struct LimitUsageReport: DeviceActivityReportScene {
             }
         }
 
-        // Build sorted category list
-        let categories = categoryDurations
-            .map { CategoryUsageItem(name: $0.key, duration: $0.value) }
-            .sorted { $0.duration > $1.duration }
-
         // 2. Read limits from shared FILE and compute per-limit usage
         let limits = Self.readLimitsFromFile()
         let todayWeekday = Calendar.current.component(.weekday, from: Date())
@@ -142,7 +137,7 @@ struct LimitUsageReport: DeviceActivityReportScene {
         }
 
         return LimitUsageData(
-            categories: categories,
+            categories: [],
             totalDuration: totalDuration,
             items: items,
             exceededCount: exceededCount
