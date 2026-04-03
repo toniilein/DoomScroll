@@ -269,25 +269,14 @@ struct BlockView: View {
                 limitCard(limit)
             }
 
-            // Extension-rendered usage labels (has real usage data)
+            // Extension-rendered usage (categories + per-limit, non-interactive)
             #if !targetEnvironment(simulator)
-            if !blockingManager.usageLimits.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Today's Usage")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                        .padding(.horizontal, 14)
-                        .padding(.top, 10)
-
-                    DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                        .id(usageRefreshID)
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: CGFloat(blockingManager.usageLimits.count) * 50)
-                }
+            DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
+                .id(usageRefreshID)
+                .frame(maxWidth: .infinity)
                 .allowsHitTesting(false)
                 .background(BrainRotTheme.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
             #endif
 
             if blockingManager.usageLimits.isEmpty {
