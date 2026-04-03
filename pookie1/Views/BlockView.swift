@@ -252,11 +252,33 @@ struct BlockView: View {
             }
             .padding(.horizontal, 4)
 
-            // Extension renders the limit cards directly (extension can't write files/UserDefaults back)
+            // Extension renders limit cards with usage data; toggles overlaid from main app
             #if !targetEnvironment(simulator)
             if !blockingManager.usageLimits.isEmpty {
-                DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                    .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 80))
+                ZStack(alignment: .topTrailing) {
+                    DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
+                        .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
+
+                    // Overlay toggles on each card
+                    VStack(spacing: 10) {
+                        ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
+                            HStack {
+                                Spacer()
+                                Toggle("", isOn: Binding(
+                                    get: { limit.isEnabled },
+                                    set: { _ in
+                                        blockingManager.toggleUsageLimit(limit)
+                                        syncAllLimitConfigs()
+                                    }
+                                ))
+                                .labelsHidden()
+                                .tint(BrainRotTheme.neonOrange)
+                            }
+                            .frame(height: 68)
+                            .padding(.trailing, 34) // align with chevron
+                        }
+                    }
+                }
             }
             #endif
 
