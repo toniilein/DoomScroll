@@ -21,14 +21,15 @@ struct BlockView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Hidden extension — MUST be outside ScrollView to run.
-                // makeConfiguration applies/removes shields. Visual is invisible.
+                // Extension behind ScrollView — needs real size to connect
+                // and run makeConfiguration (which applies/removes shields).
+                // ScrollView's opaque background covers it visually.
                 #if !targetEnvironment(simulator)
                 if !blockingManager.usageLimits.isEmpty {
                     DeviceActivityReport(.limitUsage, filter: todayFilter)
                         .id(reportID)
-                        .frame(width: 1, height: 1)
-                        .opacity(0)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 200)
                         .allowsHitTesting(false)
                 }
                 #endif
