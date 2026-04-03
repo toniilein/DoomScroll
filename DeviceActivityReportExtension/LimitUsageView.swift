@@ -78,6 +78,8 @@ struct LimitUsageView: View {
 
                 Spacer()
 
+                // Reserve space for toggle + edit overlay from main app
+                Color.clear.frame(width: 90)
             }
 
             // Progress bar
