@@ -18,37 +18,38 @@ struct BlockView: View {
     @State private var quickBlockSelection = FamilyActivitySelection()
     #endif
 
-    // Must match LimitUsageView constants in the extension
-    private let extCardHeight: CGFloat = 68
-    private let extCardSpacing: CGFloat = 8
-    private let extVertPadding: CGFloat = 8
-
-    private var extensionTotalHeight: CGFloat {
-        let count = CGFloat(blockingManager.usageLimits.count)
-        guard count > 0 else { return 0 }
-        return extVertPadding * 2 + count * extCardHeight + (count - 1) * extCardSpacing
-    }
-
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Quick Block
-                    quickBlockCard
-
-                    // Usage Limits
-                    usageLimitsSection
-
-                    if !activeRoutines.isEmpty {
-                        activeNowSection
-                    }
-
-                    routinesSection
-
-                    Spacer().frame(height: 40)
+            ZStack {
+                // Hidden extension — MUST be outside ScrollView to run.
+                // makeConfiguration applies/removes shields. Visual is invisible.
+                #if !targetEnvironment(simulator)
+                if !blockingManager.usageLimits.isEmpty {
+                    DeviceActivityReport(.limitUsage, filter: todayFilter)
+                        .id(reportID)
+                        .frame(width: 1, height: 1)
+                        .opacity(0)
+                        .allowsHitTesting(false)
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
+                #endif
+
+                ScrollView {
+                    VStack(spacing: 16) {
+                        quickBlockCard
+
+                        usageLimitsSection
+
+                        if !activeRoutines.isEmpty {
+                            activeNowSection
+                        }
+
+                        routinesSection
+
+                        Spacer().frame(height: 40)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                }
             }
             .background(BrainRotTheme.background)
             .navigationTitle("Shield")
@@ -122,7 +123,7 @@ struct BlockView: View {
         }
     }
 
-    // MARK: - Quick Block (compact card)
+    // MARK: - Quick Block
 
     private var quickBlockCard: some View {
         let isBlocking = blockingManager.isQuickBlocking
@@ -184,11 +185,10 @@ struct BlockView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    // MARK: - Usage Limits Section
+    // MARK: - Usage Limits
 
     private var usageLimitsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Header
             HStack {
                 Text("Usage Limits")
                     .font(.system(size: 14, weight: .black, design: .rounded))
@@ -223,69 +223,38 @@ struct BlockView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                // Extension cards with native toggle/edit overlay
-                #if !targetEnvironment(simulator)
-                ZStack(alignment: .top) {
-                    // Layer 1: Extension renders usage cards
-                    DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: extensionTotalHeight)
-                        .clipped()
-                        .allowsHitTesting(false)
-
-                    // Layer 2: Native overlay — edit tap + toggle per card
-                    VStack(spacing: extCardSpacing) {
-                        ForEach(blockingManager.usageLimits) { limit in
-                            HStack {
-                                // Tap to edit (transparent, covers left side)
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { editingLimit = limit }
-
-                                // Toggle on the right (matches reserved space in extension)
-                                Toggle("", isOn: Binding(
-                                    get: { limit.isEnabled },
-                                    set: { _ in
-                                        blockingManager.toggleUsageLimit(limit)
-                                        syncAllLimitConfigs()
-                                    }
-                                ))
-                                .labelsHidden()
-                                .tint(BrainRotTheme.neonOrange)
-                            }
-                            .padding(.trailing, 14)
-                            .frame(height: extCardHeight)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, extVertPadding)
-                }
-                .frame(height: extensionTotalHeight)
-                #else
-                // Simulator fallback: native-only limit cards
                 ForEach(blockingManager.usageLimits) { limit in
-                    simulatorLimitCard(limit)
+                    limitCard(limit)
                 }
-                #endif
             }
         }
     }
 
-    #if targetEnvironment(simulator)
-    private func simulatorLimitCard(_ limit: UsageLimit) -> some View {
+    private func limitCard(_ limit: UsageLimit) -> some View {
         Button { editingLimit = limit } label: {
-            HStack {
-                Text(limit.name)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(limit.name)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                        .lineLimit(1)
+                    Text("Limit: \(limit.formattedLimit)")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+
                 Spacer()
-                Text(limit.formattedLimit)
-                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(BrainRotTheme.neonOrange)
+
+                Image(systemName: "pencil")
+                    .font(.system(size: 12))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+
                 Toggle("", isOn: Binding(
                     get: { limit.isEnabled },
-                    set: { _ in blockingManager.toggleUsageLimit(limit) }
+                    set: { _ in
+                        blockingManager.toggleUsageLimit(limit)
+                        syncAllLimitConfigs()
+                    }
                 ))
                 .labelsHidden()
                 .tint(BrainRotTheme.neonOrange)
@@ -296,7 +265,6 @@ struct BlockView: View {
         }
         .buttonStyle(.plain)
     }
-    #endif
 
     // MARK: - Active Routines
 
