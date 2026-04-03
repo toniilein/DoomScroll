@@ -61,7 +61,7 @@ struct TotalActivityView: View {
 
     private func dayPill(day: DayBreakdown, index: Int) -> some View {
         let isSelected = index == selectedIndex
-        let mood = OctopusMood.from(score: day.score)
+        let mood = OctopusMood.from(minutes: day.duration / 60.0)
 
         return Button {
             withAnimation(.easeInOut(duration: 0.2)) {
