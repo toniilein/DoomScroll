@@ -13,6 +13,7 @@ struct BlockView: View {
     @State private var blockPulse = false
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
+    @State private var reportID = UUID()
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -20,8 +21,18 @@ struct BlockView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                BrainRotTheme.background.ignoresSafeArea()
+            VStack(spacing: 0) {
+                // Extension-rendered usage — OUTSIDE ScrollView, fixed height, forced re-render on appear
+                #if !targetEnvironment(simulator)
+                if !blockingManager.usageLimits.isEmpty {
+                    DeviceActivityReport(.limitUsage, filter: screenTimeManager.weekFilter(weekOffset: 0))
+                        .id(reportID)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: max(200, CGFloat(blockingManager.usageLimits.count) * 90 + 120))
+                        .clipped()
+                        .allowsHitTesting(false)
+                }
+                #endif
 
                 ScrollView {
                     VStack(spacing: 20) {
@@ -40,6 +51,7 @@ struct BlockView: View {
                     .padding()
                 }
             }
+            .background(BrainRotTheme.background)
             .navigationTitle("Shield")
             .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
@@ -67,6 +79,8 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
+                // Force re-render of extension report when tab appears
+                reportID = UUID()
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -257,15 +271,6 @@ struct BlockView: View {
             ForEach(blockingManager.usageLimits) { limit in
                 limitCard(limit)
             }
-
-            // Extension-rendered usage per limit (categories + progress bars)
-            #if !targetEnvironment(simulator)
-            if !blockingManager.usageLimits.isEmpty {
-                DeviceActivityReport(.limitUsage, filter: screenTimeManager.weekFilter(weekOffset: 0))
-                    .frame(maxWidth: .infinity)
-                    .allowsHitTesting(false)
-            }
-            #endif
 
             if blockingManager.usageLimits.isEmpty {
                 HStack(spacing: 10) {
