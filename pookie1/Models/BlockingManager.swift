@@ -245,12 +245,9 @@ class BlockingManager: ObservableObject {
     private func startLimitMonitoring(_ limit: UsageLimit) {
         #if !targetEnvironment(simulator)
         let selection = limit.decodedSelection
-
-        // Schedule: full day, repeating. Use 0:00 to 23:59 with second 59
-        // to cover the maximum range the API allows.
         let schedule = DeviceActivitySchedule(
-            intervalStart: DateComponents(hour: 0, minute: 0, second: 0),
-            intervalEnd: DateComponents(hour: 23, minute: 59, second: 59),
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
             repeats: true
         )
 
@@ -266,7 +263,6 @@ class BlockingManager: ObservableObject {
 
         let activityName = DeviceActivityName("limit_\(limit.id.uuidString)")
 
-        // Stop any existing monitoring first
         center.stopMonitoring([activityName])
 
         do {
@@ -275,14 +271,9 @@ class BlockingManager: ObservableObject {
                 during: schedule,
                 events: [eventName: event]
             )
-            print("Started limit monitoring for \(limit.name), threshold: \(limit.limitMinutes)m")
         } catch {
             print("Failed to start limit monitoring \(limit.name): \(error)")
         }
-
-        // Also apply shield immediately if we can detect the limit is already exceeded.
-        // The report extension's makeConfiguration handles this, but as a backup,
-        // ensure monitoring is active for the monitor extension to catch the threshold.
         #endif
     }
 
