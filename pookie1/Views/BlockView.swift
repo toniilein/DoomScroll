@@ -261,41 +261,9 @@ struct BlockView: View {
                     .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
                     .allowsHitTesting(false)
 
-                // Native interactive rows for each limit
+                // Native interactive cards for each limit (matches routine card style)
                 ForEach(blockingManager.usageLimits) { limit in
-                    Button { editingLimit = limit } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "pencil.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(BrainRotTheme.neonOrange)
-                            Text(limit.name)
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-
-                            if limit.activeDays.count < 7 {
-                                Text(weekdaySummary(limit.activeDays))
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                                    .foregroundColor(BrainRotTheme.textSecondary)
-                            }
-
-                            Spacer()
-
-                            Toggle("", isOn: Binding(
-                                get: { limit.isEnabled },
-                                set: { _ in
-                                    blockingManager.toggleUsageLimit(limit)
-                                    syncAllLimitConfigs()
-                                }
-                            ))
-                            .labelsHidden()
-                            .tint(BrainRotTheme.neonOrange)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(BrainRotTheme.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .buttonStyle(.plain)
+                    limitCard(limit)
                 }
             }
             #else
@@ -353,6 +321,48 @@ struct BlockView: View {
         .padding(14)
         .background(BrainRotTheme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func limitCard(_ limit: UsageLimit) -> some View {
+        Button { editingLimit = limit } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
+                        .frame(width: 42, height: 42)
+                    Image(systemName: limitIcon(limit.name))
+                        .font(.system(size: 18))
+                        .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(limit.name)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                    HStack(spacing: 8) {
+                        Label(limit.formattedLimit, systemImage: "hourglass")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                        Text(weekdaySummary(limit.activeDays))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                    }
+                }
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { limit.isEnabled },
+                    set: { _ in
+                        blockingManager.toggleUsageLimit(limit)
+                        syncAllLimitConfigs()
+                    }
+                ))
+                .labelsHidden()
+                .tint(BrainRotTheme.neonOrange)
+            }
+            .padding(14)
+            .background(BrainRotTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
     }
 
     private func limitIcon(_ name: String) -> String {
