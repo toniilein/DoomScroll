@@ -20,7 +20,9 @@ struct BlockView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ZStack {
+                BrainRotTheme.background.ignoresSafeArea()
+
                 ScrollView {
                     VStack(spacing: 20) {
                         quickBlockSection
@@ -33,21 +35,11 @@ struct BlockView: View {
 
                         routinesSection
 
-                        Spacer().frame(height: 16)
+                        Spacer().frame(height: 40)
                     }
                     .padding()
                 }
-
-                // Extension-rendered usage (outside ScrollView so it gets a proper render context)
-                #if !targetEnvironment(simulator)
-                DeviceActivityReport(.limitUsage, filter: screenTimeManager.weekFilter(weekOffset: 0))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 200)
-                    .background(BrainRotTheme.cardBackground)
-                    .allowsHitTesting(false)
-                #endif
             }
-            .background(BrainRotTheme.background)
             .navigationTitle("Shield")
             .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
@@ -265,6 +257,15 @@ struct BlockView: View {
             ForEach(blockingManager.usageLimits) { limit in
                 limitCard(limit)
             }
+
+            // Extension-rendered usage per limit (categories + progress bars)
+            #if !targetEnvironment(simulator)
+            if !blockingManager.usageLimits.isEmpty {
+                DeviceActivityReport(.limitUsage, filter: screenTimeManager.weekFilter(weekOffset: 0))
+                    .frame(maxWidth: .infinity)
+                    .allowsHitTesting(false)
+            }
+            #endif
 
             if blockingManager.usageLimits.isEmpty {
                 HStack(spacing: 10) {
