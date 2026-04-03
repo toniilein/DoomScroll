@@ -89,6 +89,9 @@ struct LimitUsageReport: DeviceActivityReportScene {
             }
         }
 
+        // Shared defaults for writing usage back to the main app
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+
         // Compute per-limit usage
         var items: [LimitUsageItem] = []
         var exceededCount = 0
@@ -132,6 +135,9 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 store.clearAllSettings()
             }
 
+            // Write usage to shared UserDefaults so main app can read it
+            shared?.set(limitDuration, forKey: "limitUsage_\(config.id)")
+
             items.append(LimitUsageItem(
                 id: config.id,
                 name: config.name,
@@ -141,6 +147,8 @@ struct LimitUsageReport: DeviceActivityReportScene {
             ))
 
         }
+
+        shared?.synchronize()
 
         return LimitUsageData(items: items, exceededCount: exceededCount)
     }
