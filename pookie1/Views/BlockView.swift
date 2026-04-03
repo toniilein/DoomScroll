@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 #if !targetEnvironment(simulator)
 import FamilyControls
 import DeviceActivity
@@ -14,13 +13,10 @@ struct BlockView: View {
     @State private var blockPulse = false
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
-    @State private var usageRefreshTick = 0
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
     #endif
-
-    private let refreshTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
     var body: some View {
         NavigationStack {
@@ -71,9 +67,6 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
-            }
-            .onReceive(refreshTimer) { _ in
-                usageRefreshTick += 1
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -259,20 +252,13 @@ struct BlockView: View {
             }
             .padding(.horizontal, 4)
 
-            // Single report processes ALL limits at once — writes per-limit usage to UserDefaults
+            // Extension renders the limit cards directly (extension can't write files/UserDefaults back)
             #if !targetEnvironment(simulator)
-            DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                .frame(minHeight: 80)
+            if !blockingManager.usageLimits.isEmpty {
+                DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
+                    .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 80))
+            }
             #endif
-
-            // DEBUG: show what the app reads from limitUsage.json
-            Text(debugLimitFileContents())
-                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .foregroundColor(.blue)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(6)
-                .background(Color.blue.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
 
             if blockingManager.usageLimits.isEmpty {
                 HStack(spacing: 10) {
@@ -284,142 +270,10 @@ struct BlockView: View {
                 .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                 .background(BrainRotTheme.cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-            } else {
-                ForEach(blockingManager.usageLimits) { limit in
-                    limitCard(limit)
-                }
             }
         }
     }
 
-    private func limitCard(_ limit: UsageLimit) -> some View {
-        let usage = usageForLimit(limit)
-
-        return Button { editingLimit = limit } label: {
-            VStack(spacing: 8) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
-                            .frame(width: 40, height: 40)
-                        Image(systemName: limitIcon(limit.name))
-                            .font(.system(size: 17))
-                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(limit.name)
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-
-                        HStack(spacing: 4) {
-                            Text(usage.formattedUsage)
-                                .font(.system(size: 13, weight: .black, design: .rounded))
-                                .foregroundColor(usage.exceeded ? .red : BrainRotTheme.neonOrange)
-
-                            Text("/ \(limit.formattedLimit)")
-                                .font(.system(size: 11, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-
-                            if usage.exceeded {
-                                HStack(spacing: 2) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.system(size: 8))
-                                    Text("Exceeded")
-                                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                                }
-                                .foregroundColor(.red)
-                                .padding(.leading, 2)
-                            }
-                        }
-                    }
-
-                    Spacer()
-
-                    Toggle("", isOn: Binding(
-                        get: { limit.isEnabled },
-                        set: { _ in
-                            blockingManager.toggleUsageLimit(limit)
-                            syncAllLimitConfigs()
-                        }
-                    ))
-                    .labelsHidden()
-                    .tint(BrainRotTheme.neonOrange)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
-                }
-
-                // Native progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(BrainRotTheme.cardBorder)
-
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(usage.exceeded ? Color.red : BrainRotTheme.neonOrange)
-                            .frame(width: geo.size.width * usage.progress)
-                    }
-                }
-                .frame(height: 4)
-            }
-            .padding(14)
-            .background(BrainRotTheme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
-        .buttonStyle(.plain)
-    }
-
-    // Read per-limit usage from limitUsage.json file (written by extension)
-    private func usageForLimit(_ limit: UsageLimit) -> (formattedUsage: String, exceeded: Bool, progress: Double) {
-        _ = usageRefreshTick // trigger re-read on timer
-
-        let usedSeconds = readLimitUsageFromFile(limit.id.uuidString)
-        let usedMinutes = usedSeconds / 60.0
-        let exceeded = usedMinutes >= Double(limit.limitMinutes)
-        let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
-
-        let h = Int(usedMinutes) / 60
-        let m = Int(usedMinutes) % 60
-        let formatted: String
-        if h > 0 && m > 0 { formatted = "\(h)h \(m)m" }
-        else if h > 0 { formatted = "\(h)h" }
-        else { formatted = "\(m)m" }
-
-        return (formatted, exceeded, progress)
-    }
-
-    private func debugLimitFileContents() -> String {
-        _ = usageRefreshTick
-        guard let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("limitUsage.json") else {
-            return "APP: no container URL"
-        }
-        let exists = FileManager.default.fileExists(atPath: url.path)
-        guard exists else { return "APP: limitUsage.json NOT FOUND" }
-        guard let data = try? Data(contentsOf: url) else {
-            return "APP: file exists but can't read"
-        }
-        guard let dict = try? JSONDecoder().decode([String: Double].self, from: data) else {
-            return "APP: file \(data.count)b but decode fail: \(String(data: data, encoding: .utf8) ?? "?")"
-        }
-        let items = dict.map { "\($0.key.prefix(4))=\(Int($0.value))s" }.joined(separator: ", ")
-        return "APP: \(dict.count) entries — \(items)"
-    }
-
-    /// Reads limitUsage.json written by extension — returns seconds for a given limit UUID
-    private func readLimitUsageFromFile(_ limitId: String) -> Double {
-        guard let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("limitUsage.json"),
-              let data = try? Data(contentsOf: url),
-              let dict = try? JSONDecoder().decode([String: Double].self, from: data) else {
-            return 0
-        }
-        return dict[limitId] ?? 0
-    }
 
     /// Writes usageLimits.json to app group container so the extension can read configs.
     /// Uses file I/O (not UserDefaults) because Data/arrays are unreliable cross-process.
@@ -516,20 +370,6 @@ struct BlockView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-    }
-
-    private func limitIcon(_ name: String) -> String {
-        let l = name.lowercased()
-        if l.contains("social") { return "person.2.fill" }
-        if l.contains("game") || l.contains("gaming") { return "gamecontroller.fill" }
-        if l.contains("entertainment") || l.contains("video") || l.contains("stream") { return "play.tv.fill" }
-        if l.contains("news") || l.contains("read") { return "newspaper.fill" }
-        if l.contains("shop") || l.contains("buy") { return "cart.fill" }
-        if l.contains("product") || l.contains("work") { return "briefcase.fill" }
-        if l.contains("message") || l.contains("chat") { return "message.fill" }
-        if l.contains("music") || l.contains("audio") { return "music.note" }
-        if l.contains("photo") || l.contains("camera") { return "camera.fill" }
-        return "hourglass"
     }
 
     private func routineIcon(_ name: String) -> String {
