@@ -258,6 +258,7 @@ struct BlockView: View {
             if !blockingManager.usageLimits.isEmpty {
                 DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
                     .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
+                    .allowsHitTesting(false)
                     .overlay(alignment: .top) {
                         // Overlay toggles + tap areas on extension cards
                         VStack(spacing: 10) {
