@@ -23,6 +23,8 @@ class BlockingManager: ObservableObject {
         routines = SharedSettings.blockRoutines
         usageLimits = SharedSettings.usageLimits
         isQuickBlocking = UserDefaults.standard.bool(forKey: "quickBlockActive")
+        // Ensure usageLimits.json exists for extension to read
+        writeLimitsFile()
     }
 
     // MARK: - Emergency Unblock All
@@ -206,11 +208,12 @@ class BlockingManager: ObservableObject {
             let appSelectionData: Data?
             let limitMinutes: Int
             let isEnabled: Bool
+            let activeDays: Set<Int>
         }
 
         let codable = usageLimits.map {
             CodableLimit(id: $0.id, name: $0.name, appSelectionData: $0.appSelectionData,
-                         limitMinutes: $0.limitMinutes, isEnabled: $0.isEnabled)
+                         limitMinutes: $0.limitMinutes, isEnabled: $0.isEnabled, activeDays: $0.activeDays)
         }
 
         if let jsonData = try? JSONEncoder().encode(codable) {

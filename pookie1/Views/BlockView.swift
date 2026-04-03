@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 #if !targetEnvironment(simulator)
 import FamilyControls
 import DeviceActivity
@@ -13,6 +14,7 @@ struct BlockView: View {
     @State private var blockPulse = false
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
+    @State private var usageRefreshID = UUID()
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -24,10 +26,12 @@ struct BlockView: View {
                 BrainRotTheme.background.ignoresSafeArea()
 
                 #if !targetEnvironment(simulator)
-                // Shield enforcement — LimitUsageReport still applies/removes shields
+                // Hidden report — LimitUsageReport computes usage + writes to UserDefaults + enforces shields
                 if !blockingManager.usageLimits.isEmpty {
                     DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                        .frame(width: 1, height: 1)
+                        .id(usageRefreshID)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 1)
                         .opacity(0.01)
                         .allowsHitTesting(false)
                 }
@@ -77,6 +81,13 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
+                // Refresh usage data periodically
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    usageRefreshID = UUID()
+                }
+            }
+            .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
+                usageRefreshID = UUID()
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
