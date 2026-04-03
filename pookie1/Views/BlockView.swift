@@ -24,11 +24,11 @@ struct BlockView: View {
                 BrainRotTheme.background.ignoresSafeArea()
 
                 #if !targetEnvironment(simulator)
-                // Hidden extension — runs shield enforcement without affecting scroll
+                // Tiny offscreen extension — runs shield enforcement + writes usage to UserDefaults
                 if !blockingManager.usageLimits.isEmpty {
                     DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                        .frame(width: 0, height: 0)
-                        .clipped()
+                        .frame(width: 1, height: 1)
+                        .opacity(0.01)
                         .allowsHitTesting(false)
                 }
                 #endif
@@ -320,8 +320,10 @@ struct BlockView: View {
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let usedSeconds = shared?.double(forKey: "limitUsage_\(limit.id.uuidString)") ?? 0
+        // Fresh instance each read to avoid cross-process caching
+        let fresh = UserDefaults(suiteName: "group.pookie1.shared")
+        fresh?.synchronize()
+        let usedSeconds = fresh?.double(forKey: "limitUsage_\(limit.id.uuidString)") ?? 0
         let usedMinutes = usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(limit.limitMinutes)
         let progress = limit.limitMinutes > 0 ? min(1.0, usedMinutes / Double(limit.limitMinutes)) : 0
