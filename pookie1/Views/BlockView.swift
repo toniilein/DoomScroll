@@ -256,35 +256,47 @@ struct BlockView: View {
 
             #if !targetEnvironment(simulator)
             if !blockingManager.usageLimits.isEmpty {
+                // Extension renders usage data (display only)
                 DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
                     .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
                     .allowsHitTesting(false)
-                    .overlay(alignment: .top) {
-                        // Overlay toggles + tap areas on extension cards
-                        VStack(spacing: 10) {
-                            ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
-                                HStack {
-                                    Color.clear
-                                        .contentShape(Rectangle())
-                                        .onTapGesture { editingLimit = limit }
 
-                                    Toggle("", isOn: Binding(
-                                        get: { limit.isEnabled },
-                                        set: { _ in
-                                            blockingManager.toggleUsageLimit(limit)
-                                            syncAllLimitConfigs()
-                                        }
-                                    ))
-                                    .labelsHidden()
-                                    .tint(BrainRotTheme.neonOrange)
-                                    .padding(.trailing, 14)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 68)
-                                .padding(.top, 7)
+                // Native interactive rows for each limit
+                ForEach(blockingManager.usageLimits) { limit in
+                    Button { editingLimit = limit } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(BrainRotTheme.neonOrange)
+                            Text(limit.name)
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+
+                            if limit.activeDays.count < 7 {
+                                Text(weekdaySummary(limit.activeDays))
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundColor(BrainRotTheme.textSecondary)
                             }
+
+                            Spacer()
+
+                            Toggle("", isOn: Binding(
+                                get: { limit.isEnabled },
+                                set: { _ in
+                                    blockingManager.toggleUsageLimit(limit)
+                                    syncAllLimitConfigs()
+                                }
+                            ))
+                            .labelsHidden()
+                            .tint(BrainRotTheme.neonOrange)
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(BrainRotTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .buttonStyle(.plain)
+                }
             }
             #else
             ForEach(blockingManager.usageLimits) { limit in
