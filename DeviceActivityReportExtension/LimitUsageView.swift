@@ -6,13 +6,16 @@ struct LimitUsageView: View {
     let data: LimitUsageData
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
         // Debug info — remove after fixing
         Text(data.debugInfo)
-            .font(.system(size: 9, weight: .medium, design: .monospaced))
+            .font(.system(size: 10, weight: .medium, design: .monospaced))
             .foregroundColor(.orange)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 8)
+            .padding(8)
+            .background(Color.black.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
 
         if data.exceededCount > 0 {
             HStack(spacing: 4) {

@@ -262,7 +262,7 @@ struct BlockView: View {
             // Single report processes ALL limits at once — writes per-limit usage to UserDefaults
             #if !targetEnvironment(simulator)
             DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                .frame(minHeight: 2)
+                .frame(minHeight: 80)
             #endif
 
             if blockingManager.usageLimits.isEmpty {
