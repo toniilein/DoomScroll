@@ -252,33 +252,50 @@ struct BlockView: View {
             }
             .padding(.horizontal, 4)
 
-            // Extension renders limit cards with usage data; toggles overlaid from main app
             #if !targetEnvironment(simulator)
             if !blockingManager.usageLimits.isEmpty {
-                ZStack(alignment: .topTrailing) {
-                    DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
-                        .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
-
-                    // Overlay toggles on each card
+                ZStack(alignment: .top) {
+                    // Native placeholder cards — visible immediately while extension loads
                     VStack(spacing: 10) {
-                        ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
-                            HStack {
-                                Spacer()
-                                Toggle("", isOn: Binding(
-                                    get: { limit.isEnabled },
-                                    set: { _ in
-                                        blockingManager.toggleUsageLimit(limit)
-                                        syncAllLimitConfigs()
-                                    }
-                                ))
-                                .labelsHidden()
-                                .tint(BrainRotTheme.neonOrange)
+                        ForEach(blockingManager.usageLimits) { limit in
+                            limitPlaceholderCard(limit)
+                        }
+                    }
+
+                    // Extension cards with real usage — render on top once loaded
+                    ZStack(alignment: .topTrailing) {
+                        DeviceActivityReport(.limitUsage, filter: todayAllAppsFilter)
+                            .frame(minHeight: CGFloat(blockingManager.usageLimits.count * 90))
+
+                        // Overlay toggles on extension cards
+                        VStack(spacing: 10) {
+                            ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { _, limit in
+                                HStack {
+                                    // Tap area to open editor
+                                    Color.clear
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { editingLimit = limit }
+
+                                    Toggle("", isOn: Binding(
+                                        get: { limit.isEnabled },
+                                        set: { _ in
+                                            blockingManager.toggleUsageLimit(limit)
+                                            syncAllLimitConfigs()
+                                        }
+                                    ))
+                                    .labelsHidden()
+                                    .tint(BrainRotTheme.neonOrange)
+                                    .padding(.trailing, 34)
+                                }
+                                .frame(height: 68)
                             }
-                            .frame(height: 68)
-                            .padding(.trailing, 34) // align with chevron
                         }
                     }
                 }
+            }
+            #else
+            ForEach(blockingManager.usageLimits) { limit in
+                limitPlaceholderCard(limit)
             }
             #endif
 
@@ -296,6 +313,78 @@ struct BlockView: View {
         }
     }
 
+
+    private func limitPlaceholderCard(_ limit: UsageLimit) -> some View {
+        Button { editingLimit = limit } label: {
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(limit.isEnabled ? BrainRotTheme.neonOrange.opacity(0.15) : BrainRotTheme.cardBorder)
+                            .frame(width: 40, height: 40)
+                        Image(systemName: limitIcon(limit.name))
+                            .font(.system(size: 17))
+                            .foregroundColor(limit.isEnabled ? BrainRotTheme.neonOrange : BrainRotTheme.textSecondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(limit.name)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+
+                        HStack(spacing: 4) {
+                            Text("...")
+                                .font(.system(size: 13, weight: .black, design: .rounded))
+                                .foregroundColor(BrainRotTheme.neonOrange)
+                            Text("/ \(limit.formattedLimit)")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                    }
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
+                        get: { limit.isEnabled },
+                        set: { _ in
+                            blockingManager.toggleUsageLimit(limit)
+                            syncAllLimitConfigs()
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(BrainRotTheme.neonOrange)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary.opacity(0.5))
+                }
+
+                GeometryReader { geo in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(BrainRotTheme.cardBorder)
+                }
+                .frame(height: 4)
+            }
+            .padding(14)
+            .background(BrainRotTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func limitIcon(_ name: String) -> String {
+        let l = name.lowercased()
+        if l.contains("social") { return "person.2.fill" }
+        if l.contains("game") || l.contains("gaming") { return "gamecontroller.fill" }
+        if l.contains("entertainment") || l.contains("video") || l.contains("stream") { return "play.tv.fill" }
+        if l.contains("news") || l.contains("read") { return "newspaper.fill" }
+        if l.contains("shop") || l.contains("buy") { return "cart.fill" }
+        if l.contains("product") || l.contains("work") { return "briefcase.fill" }
+        if l.contains("message") || l.contains("chat") { return "message.fill" }
+        if l.contains("music") || l.contains("audio") { return "music.note" }
+        if l.contains("photo") || l.contains("camera") { return "camera.fill" }
+        return "hourglass"
+    }
 
     /// Writes usageLimits.json to app group container so the extension can read configs.
     /// Uses file I/O (not UserDefaults) because Data/arrays are unreliable cross-process.
