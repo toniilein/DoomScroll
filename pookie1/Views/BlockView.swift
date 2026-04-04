@@ -14,8 +14,6 @@ struct BlockView: View {
     @State private var editingLimit: UsageLimit?
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
-    @State private var reportID = UUID()
-    @State private var showUsageReport = false
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -41,7 +39,6 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 if !blockingManager.usageLimits.isEmpty {
                     DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
                         .frame(width: 1, height: 1)
                         .opacity(0.01)
                         .allowsHitTesting(false)
@@ -80,12 +77,6 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
-                // Only do initial setup once — don't destroy/recreate extension on tab switches
-                if !showUsageReport {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showUsageReport = true
-                    }
-                }
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -244,9 +235,8 @@ struct BlockView: View {
 
                         // Per-limit usage bar rendered by extension
                         #if !targetEnvironment(simulator)
-                        if showUsageReport, index < 5 {
+                        if index < 5 {
                             DeviceActivityReport(limitSlotContext(index), filter: todayFilter)
-                                .id("\(reportID)_\(index)")
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)
                                 .clipShape(
