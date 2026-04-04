@@ -9,7 +9,7 @@ struct WeeklyTrendView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "chart.bar.fill")
                         .foregroundColor(BrainRotTheme.neonPurple)
-                    Text("This Week")
+                    Text(L("trend.thisWeek"))
                         .font(.headline)
                         .foregroundColor(BrainRotTheme.textPrimary)
                 }
@@ -40,7 +40,7 @@ struct WeeklyTrendView: View {
             }
 
             HStack {
-                Text("Total: \(trendData.formattedWeeklyTotal)")
+                Text(String(format: L("trend.total"), trendData.formattedWeeklyTotal))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
                 Spacer()

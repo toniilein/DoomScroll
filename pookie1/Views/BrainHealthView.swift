@@ -29,7 +29,7 @@ struct BrainHealthView: View {
                         VStack(spacing: 12) {
                             ProgressView()
                                 .tint(BrainRotTheme.neonPurple)
-                            Text("Loading...")
+                            Text(L("overview.loading"))
                                 .font(.system(size: 13, weight: .medium, design: .rounded))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         }
@@ -40,7 +40,7 @@ struct BrainHealthView: View {
                     #endif
                 }
             }
-            .navigationTitle("Brain Health")
+            .navigationTitle(L("brainHealth.title"))
             .toolbarColorScheme(.light, for: .navigationBar)
         }
     }
@@ -115,10 +115,10 @@ struct BrainHealthView: View {
         VStack(spacing: 16) {
             Text("\u{1F9E0}")
                 .font(.system(size: 60))
-            Text("Screen Time Required")
+            Text(L("overview.screenTimeRequired"))
                 .font(.title2.bold())
                 .foregroundColor(BrainRotTheme.textPrimary)
-            Text("Enable Screen Time on the Overview tab to see your brain health data")
+            Text(L("overview.enableScreenTime"))
                 .font(.body)
                 .foregroundColor(BrainRotTheme.textSecondary)
                 .multilineTextAlignment(.center)

@@ -14,7 +14,7 @@ struct LimitUsageView: View {
             VStack(spacing: 0) {
                 // "Today's Usage" label
                 HStack {
-                    Text("Today's Usage")
+                    Text(L("limitEditor.todayUsage"))
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(Color(red: 0.549, green: 0.522, blue: 0.467))
                     Spacer()

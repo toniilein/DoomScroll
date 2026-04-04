@@ -10,21 +10,21 @@ struct QuickStatsRowView: View {
             quickStat(
                 icon: "iphone.gen3",
                 value: "\(pickups)",
-                label: "Pickups",
+                label: L("stats.pickups"),
                 color: BrainRotTheme.neonPurple
             )
 
             quickStat(
                 icon: "timer",
                 value: "\(Int(avgSessionMinutes))m",
-                label: "Avg Session",
+                label: L("stats.avgSession"),
                 color: BrainRotTheme.neonBlue
             )
 
             quickStat(
                 icon: "hand.tap.fill",
                 value: "\(Int(pickupFrequencyMinutes))m",
-                label: "Frequency",
+                label: L("stats.frequency"),
                 color: BrainRotTheme.neonPink
             )
         }

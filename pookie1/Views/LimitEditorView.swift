@@ -64,15 +64,15 @@ struct LimitEditorView: View {
                     .padding()
                 }
             }
-            .navigationTitle(isEditing ? "Edit Limit" : "New Limit")
+            .navigationTitle(isEditing ? L("limitEditor.editTitle") : L("limitEditor.newTitle"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("limitEditor.cancel")) { dismiss() }
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") { save() }
+                    Button(L("limitEditor.save")) { save() }
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(canSave ? BrainRotTheme.neonPink : BrainRotTheme.textSecondary)
                         .disabled(!canSave)
@@ -102,11 +102,11 @@ struct LimitEditorView: View {
 
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Name")
+            Text(L("limitEditor.name"))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
-            TextField("Social Media", text: $name)
+            TextField(L("limitEditor.namePlaceholder"), text: $name)
                 .font(.system(size: 16, weight: .medium))
                 .padding(14)
                 .background(BrainRotTheme.cardBackground)
@@ -118,7 +118,7 @@ struct LimitEditorView: View {
 
     private var appsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Apps to Limit")
+            Text(L("limitEditor.appsToLimit"))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
@@ -129,7 +129,7 @@ struct LimitEditorView: View {
                         .foregroundColor(BrainRotTheme.neonOrange)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Select Apps & Categories")
+                        Text(L("limitEditor.selectApps"))
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundColor(BrainRotTheme.textPrimary)
 
@@ -141,12 +141,12 @@ struct LimitEditorView: View {
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         } else {
-                            Text("Tap to choose apps and categories")
+                            Text(L("limitEditor.tapToChoose"))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         }
                         #else
-                        Text("Not available in simulator")
+                        Text(L("common.notAvailableSimulator"))
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(BrainRotTheme.textSecondary)
                         #endif
@@ -170,13 +170,13 @@ struct LimitEditorView: View {
 
     private var timeLimitSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Daily Limit")
+            Text(L("limitEditor.dailyLimit"))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
             HStack(spacing: 16) {
                 VStack(spacing: 4) {
-                    Picker("Hours", selection: $limitHours) {
+                    Picker(L("limitEditor.hours"), selection: $limitHours) {
                         ForEach(0..<13) { h in
                             Text("\(h)h").tag(h)
                         }
@@ -185,13 +185,13 @@ struct LimitEditorView: View {
                     .frame(width: 80, height: 100)
                     .clipped()
 
-                    Text("Hours")
+                    Text(L("limitEditor.hours"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
 
                 VStack(spacing: 4) {
-                    Picker("Minutes", selection: $limitMinutes) {
+                    Picker(L("limitEditor.minutes"), selection: $limitMinutes) {
                         ForEach([0, 5, 10, 15, 20, 30, 45], id: \.self) { m in
                             Text("\(m)m").tag(m)
                         }
@@ -200,7 +200,7 @@ struct LimitEditorView: View {
                     .frame(width: 80, height: 100)
                     .clipped()
 
-                    Text("Minutes")
+                    Text(L("limitEditor.minutes"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
@@ -222,7 +222,7 @@ struct LimitEditorView: View {
         let progress = limitMins > 0 ? min(1.0, totalMinutes / limitMins) : 0
 
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Today's Usage")
+            Text(L("limitEditor.todayUsage"))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
@@ -243,7 +243,7 @@ struct LimitEditorView: View {
                         HStack(spacing: 3) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 10))
-                            Text("Exceeded")
+                            Text(L("limitEditor.exceeded"))
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                         }
                         .foregroundColor(.red)
@@ -271,7 +271,7 @@ struct LimitEditorView: View {
                     Image(systemName: "chart.bar")
                         .font(.system(size: 16))
                         .foregroundColor(BrainRotTheme.textSecondary.opacity(0.4))
-                    Text("Usage data loads from Overview tab")
+                    Text(L("limitEditor.usageDataLoads"))
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
@@ -395,7 +395,7 @@ struct LimitEditorView: View {
         Button { showDeleteConfirm = true } label: {
             HStack {
                 Image(systemName: "trash")
-                Text("Delete Limit")
+                Text(L("limitEditor.deleteLimit"))
             }
             .font(.system(size: 15, weight: .bold))
             .foregroundColor(.red)
@@ -404,13 +404,13 @@ struct LimitEditorView: View {
             .background(Color.red.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
-        .alert("Delete \"\(name)\"?", isPresented: $showDeleteConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
+        .alert(String(format: L("limitEditor.deleteTitle"), name), isPresented: $showDeleteConfirm) {
+            Button(L("common.cancel"), role: .cancel) {}
+            Button(L("common.delete"), role: .destructive) {
                 onDelete?(buildLimit())
             }
         } message: {
-            Text("This limit and its settings will be permanently removed.")
+            Text(L("limitEditor.deleteMessage"))
         }
     }
 

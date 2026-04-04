@@ -1,0 +1,195 @@
+/* Tabs */
+"tab.shield" = "Schutz";
+"tab.brainHealth" = "Gehirngesundheit";
+"tab.overview" = "Übersicht";
+"tab.settings" = "Einstellungen";
+
+/* Onboarding */
+"onboarding.appName" = "ScreenRot";
+"onboarding.subtitle" = "dein Bildschirmzeit-Wächter";
+"onboarding.trackUsage" = "Nutzung tracken";
+"onboarding.blockApps" = "Apps blockieren";
+"onboarding.brainHealth" = "Gehirngesundheit";
+"onboarding.permission" = "Wir brauchen Bildschirmzeit-Zugriff, um dir zu helfen, deine Bildschirmgewohnheiten zu kontrollieren";
+"onboarding.getStarted" = "Los geht's";
+"onboarding.denied" = "Zugriff verweigert.";
+"onboarding.enableScreenTime" = "Stelle sicher, dass Bildschirmzeit in Einstellungen > Bildschirmzeit aktiviert ist";
+
+/* Shield Tab */
+"shield.title" = "Schutz";
+"shield.subtitle" = "Dein digitales Immunsystem. Stärker als deine Willenskraft.";
+"shield.unblockAll" = "Alle entsperren";
+"shield.unblockAllTitle" = "Alle Apps entsperren?";
+"shield.unblockAllMessage" = "Dies deaktiviert alle Schilder, Routinen und Nutzungslimits.";
+"shield.cancel" = "Abbrechen";
+
+/* Usage Limits */
+"limits.title" = "Nutzungslimits";
+"limits.addLimit" = "Limit hinzufügen";
+"limits.addUsageLimit" = "Nutzungslimit hinzufügen";
+"limits.addUsageLimitDesc" = "Tägliche Zeitlimits für App-Gruppen festlegen";
+"limits.dailyLimit" = "Tageslimit";
+"limits.used" = "genutzt";
+"limits.left" = "übrig";
+"limits.exceeded" = "Überschritten";
+
+/* Routines */
+"routines.title" = "Block-Routinen";
+"routines.schedule" = "Planen";
+"routines.addRoutine" = "Routine hinzufügen";
+"routines.addRoutineDesc" = "App-Blockierung nach Tageszeit planen";
+"routines.activeNow" = "Gerade aktiv";
+
+/* Routine Editor */
+"routineEditor.editTitle" = "Routine bearbeiten";
+"routineEditor.newTitle" = "Neue Routine";
+"routineEditor.cancel" = "Abbrechen";
+"routineEditor.save" = "Speichern";
+"routineEditor.name" = "Name";
+"routineEditor.namePlaceholder" = "Abendroutine";
+"routineEditor.schedule" = "Zeitplan";
+"routineEditor.start" = "Start";
+"routineEditor.end" = "Ende";
+"routineEditor.overnight" = "Über-Nacht-Zeitplan";
+"routineEditor.appsToBlock" = "Apps zum Blockieren";
+"routineEditor.selectApps" = "Apps auswählen";
+"routineEditor.tapToChoose" = "Tippen um Apps und Kategorien auszuwählen";
+"routineEditor.deleteRoutine" = "Routine löschen";
+"routineEditor.deleteTitle" = "Routine löschen?";
+"routineEditor.deleteMessage" = "\"%@\" wird dauerhaft entfernt.";
+"routineEditor.delete" = "Löschen";
+
+/* Limit Editor */
+"limitEditor.editTitle" = "Limit bearbeiten";
+"limitEditor.newTitle" = "Neues Nutzungslimit";
+"limitEditor.name" = "Name";
+"limitEditor.namePlaceholder" = "Soziale Medien";
+"limitEditor.dailyLimit" = "Tageslimit";
+"limitEditor.activeDays" = "Aktive Tage";
+"limitEditor.appsToLimit" = "Apps begrenzen";
+"limitEditor.selectApps" = "Apps auswählen";
+"limitEditor.tapToChoose" = "Tippen um Apps und Kategorien auszuwählen";
+"limitEditor.deleteLimit" = "Limit löschen";
+
+/* Quick Block */
+"quickBlock.title" = "Schnellblock";
+"quickBlock.tapToBlock" = "Tippen um ausgewählte Apps sofort zu blockieren";
+"quickBlock.chooseApps" = "Apps wählen";
+"quickBlock.blocking" = "Blockierung aktiv";
+"quickBlock.tapToUnblock" = "Tippen zum Entsperren";
+
+/* Overview / Dashboard */
+"overview.title" = "Übersicht";
+"overview.loading" = "Laden...";
+"overview.screenTimeRequired" = "Bildschirmzeit erforderlich";
+"overview.enableScreenTime" = "Aktiviere Bildschirmzeit im Übersicht-Tab um deine Gehirngesundheitsdaten zu sehen";
+
+/* Octopus */
+"octopus.screentime" = "Bildschirmzeit:";
+"octopus.ecstatic.timeLeft" = "Ich bin so glücklich! Du hast noch %@ bevor ich mir Sorgen mache";
+"octopus.happy.timeLeft" = "Fühlt sich gut an! Noch %@ bevor ich mir Sorgen mache";
+"octopus.sad.timeLeft" = "Mir geht's nicht gut... nur noch %@ bevor es schlimmer wird";
+"octopus.ecstatic.noTime" = "Mir geht's super! %@ heute";
+"octopus.happy.noTime" = "Guter Tag! %@ bisher";
+"octopus.sad.noTime" = "Es tut weh... %@ heute";
+"octopus.zombie.noTime" = "%@... Ich kann nicht mehr reden";
+
+/* Tiers */
+"tier.digitalMonk" = "Digitaler Mönch";
+"tier.grassToucher" = "Grasberührer";
+"tier.doomscroller" = "Doomscroller";
+"tier.brainrot" = "Hirnfäule";
+"tier.current" = "AKTUELL";
+"tier.krakenTiers" = "Kraken-Stufen";
+"tier.done" = "Fertig";
+
+/* Quick Stats */
+"stats.pickups" = "Aufnahmen";
+"stats.avgSession" = "Ø Sitzung";
+"stats.frequency" = "Häufigkeit";
+
+/* App Breakdown */
+"breakdown.appBreakdown" = "App-Aufschlüsselung";
+"breakdown.categoryBreakdown" = "Kategorie-Aufschlüsselung";
+"breakdown.apps" = "Apps";
+"breakdown.groups" = "Gruppen";
+"breakdown.pickups" = "Aufnahmen";
+"breakdown.duration" = "Dauer";
+"breakdown.avgSession" = "Ø Sitzung";
+"breakdown.screenTimeShare" = "Bildschirmzeit-Anteil";
+
+/* Brain Health */
+"brainHealth.title" = "Gehirngesundheit";
+"brainHealth.recommendations" = "Empfehlungen";
+"brainHealth.setLimit" = "Limit für %@ setzen";
+"brainHealth.setLimitDetail" = "Du nutzt ~%dMin/Tag auf %@. Gehe zum Schutz-Tab und füge ein %dMin-Limit hinzu.";
+"brainHealth.addLimit" = "Nutzungslimit hinzufügen";
+"brainHealth.addLimitDetail" = "Gehe zum Schutz-Tab und setze ein tägliches Nutzungslimit für deine meistgenutzten Apps.";
+"brainHealth.goToShield" = "Zum Schutz-Tab";
+"brainHealth.screenTimeHigh" = "Bildschirmzeit ist sehr hoch";
+"brainHealth.screenTimeHighDetail" = "Versuche App-Timer zu setzen, um deine meistgenutzten Apps zu begrenzen.";
+"brainHealth.roomToImprove" = "Raum für Verbesserung";
+"brainHealth.roomToImproveDetail" = "Du bist auf halbem Weg. Leg dein Handy beim Essen in einen anderen Raum.";
+"brainHealth.greatJob" = "Super gemacht diese Woche!";
+"brainHealth.greatJobDetail" = "Deine Bildschirmzeit ist gut unter Kontrolle. Weiter so!";
+"brainHealth.tooManyPickups" = "Zu viele Aufnahmen";
+"brainHealth.tooManyPickupsDetail" = "Du hast dein Handy %d Mal aufgenommen. Deaktiviere unnötige Benachrichtigungen.";
+"brainHealth.watchPickups" = "Aufnahmen beobachten";
+"brainHealth.watchPickupsDetail" = "%d Aufnahmen diese Woche. Prüfe Benachrichtigungen gebündelt statt auf jedes Vibrieren zu reagieren.";
+"brainHealth.biggestDrain" = "%@ ist dein größter Zeitfresser";
+"brainHealth.biggestDrainDetail" = "%dh+ diese Woche. Setze ein tägliches Limit für diese App.";
+
+/* Weekly Trend */
+"trend.weeklyTrend" = "Wochentrend";
+"trend.weeklyAvg" = "Wochen-Ø";
+"trend.improving" = "Verbessernd";
+"trend.worsening" = "Verschlechternd";
+"trend.stable" = "Stabil";
+"trend.bestDay" = "Bester";
+"trend.worstDay" = "Schlechtester";
+"trend.weeklyTotal" = "Wochengesamt";
+"trend.streak" = "Tage unter Kontrolle";
+
+/* Settings */
+"settings.title" = "Einstellungen";
+"settings.language" = "Sprache";
+"settings.system" = "System";
+"settings.english" = "English";
+"settings.german" = "Deutsch";
+"settings.krakenTiers" = "Kraken-Stufen";
+"settings.krakenTiersDesc" = "Deine tägliche Bildschirmzeit bestimmt die Stimmung deines Krakens:";
+"settings.about" = "Über ScreenRot";
+"settings.aboutDesc1" = "ScreenRot verfolgt deine tägliche Bildschirmzeit und visualisiert sie durch ein Kraken-Maskottchen, das auf deine Nutzung reagiert.";
+"settings.aboutDesc2" = "Nutze den Schutz-Tab um Nutzungslimits und Block-Routinen für bestimmte Apps zu setzen. Der Übersicht-Tab zeigt deine tägliche Aufschlüsselung und Gehirngesundheit verfolgt deine Wochentrends.";
+
+/* Weekday Picker */
+"weekday.mon" = "M";
+"weekday.tue" = "D";
+"weekday.wed" = "M";
+"weekday.thu" = "D";
+"weekday.fri" = "F";
+"weekday.sat" = "S";
+"weekday.sun" = "S";
+
+/* Limit Editor (extended) */
+"limitEditor.cancel" = "Abbrechen";
+"limitEditor.save" = "Speichern";
+"limitEditor.hours" = "Stunden";
+"limitEditor.minutes" = "Minuten";
+"limitEditor.todayUsage" = "Heutige Nutzung";
+"limitEditor.exceeded" = "Überschritten";
+"limitEditor.usageDataLoads" = "Nutzungsdaten laden vom Übersicht-Tab";
+"limitEditor.deleteTitle" = "\"%@\" löschen?";
+"limitEditor.deleteMessage" = "Dieses Limit und seine Einstellungen werden dauerhaft entfernt.";
+
+/* Weekly Trend (extended) */
+"trend.thisWeek" = "Diese Woche";
+"trend.total" = "Gesamt: %@";
+
+/* Common */
+"common.cancel" = "Abbrechen";
+"common.delete" = "Löschen";
+"common.save" = "Speichern";
+"common.done" = "Fertig";
+"common.apps" = "Apps";
+"common.notAvailableSimulator" = "Nicht verfügbar im Simulator";
