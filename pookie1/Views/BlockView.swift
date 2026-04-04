@@ -19,7 +19,7 @@ struct BlockView: View {
     #endif
 
     // Must match LimitUsageView constants in extension
-    private let extCardHeight: CGFloat = 76
+    private let extCardHeight: CGFloat = 90
     private let extCardSpacing: CGFloat = 12
 
     private var extensionHeight: CGFloat {
