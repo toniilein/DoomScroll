@@ -7,7 +7,6 @@ import DeviceActivity
 struct BrainHealthView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @State private var selectedDayOffset = 0
-    @State private var reportKey = UUID()
 
     private var selectedDate: Date {
         Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now))!
@@ -36,14 +35,7 @@ struct BrainHealthView: View {
                         }
 
                         DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
-                            .id(reportKey)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                    .onAppear {
-                        // Force re-render on first appearance to fix report not loading
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            reportKey = UUID()
-                        }
                     }
                     #endif
                 }
