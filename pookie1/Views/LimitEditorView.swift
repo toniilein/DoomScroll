@@ -16,6 +16,7 @@ struct LimitEditorView: View {
     @State private var activeDays: Set<Int>
     @State private var showAppPicker = false
     @State private var showDeleteConfirm = false
+    @State private var showValidation = false
     @State private var currentUsageMinutes: Double = 0
     private let usageTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
@@ -53,8 +54,19 @@ struct LimitEditorView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         nameSection
+                        if showValidation && !hasName {
+                            validationWarning(L("validation.nameRequired"))
+                        }
                         appsSection
+                        #if !targetEnvironment(simulator)
+                        if showValidation && !hasApps {
+                            validationWarning(L("validation.appsRequired"))
+                        }
+                        #endif
                         timeLimitSection
+                        if showValidation && !hasTime {
+                            validationWarning(L("validation.timeRequired"))
+                        }
                         WeekdayPickerView(activeDays: $activeDays)
                         todayUsageSection
 
@@ -75,10 +87,15 @@ struct LimitEditorView: View {
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(L("limitEditor.save")) { save() }
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(canSave ? BrainRotTheme.neonPink : BrainRotTheme.textSecondary)
-                        .disabled(!canSave)
+                    Button(L("limitEditor.save")) {
+                        if canSave {
+                            save()
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.3)) { showValidation = true }
+                        }
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(canSave ? BrainRotTheme.neonPink : BrainRotTheme.textSecondary)
                 }
             }
             #if !targetEnvironment(simulator)
@@ -92,15 +109,25 @@ struct LimitEditorView: View {
         }
     }
 
-    private var canSave: Bool {
-        let hasName = !name.trimmingCharacters(in: .whitespaces).isEmpty
-        let hasTime = (limitHours * 60 + limitMinutes) > 0
-        #if !targetEnvironment(simulator)
-        let hasApps = !appSelection.applicationTokens.isEmpty || !appSelection.categoryTokens.isEmpty
-        return hasName && hasTime && hasApps
-        #else
-        return hasName && hasTime
-        #endif
+    private var hasName: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var hasTime: Bool { (limitHours * 60 + limitMinutes) > 0 }
+    #if !targetEnvironment(simulator)
+    private var hasApps: Bool { !appSelection.applicationTokens.isEmpty || !appSelection.categoryTokens.isEmpty }
+    private var canSave: Bool { hasName && hasTime && hasApps }
+    #else
+    private var canSave: Bool { hasName && hasTime }
+    #endif
+
+    private func validationWarning(_ text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 11))
+            Text(text)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+        }
+        .foregroundColor(.red)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, -12)
     }
 
     // MARK: - Name
