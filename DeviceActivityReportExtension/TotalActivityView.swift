@@ -44,6 +44,7 @@ struct TotalActivityView: View {
             .padding(.vertical, 8)
         }
         .background(BrainRotTheme.background)
+        .preferredColorScheme(SharedTheme.colorScheme)
         .onAppear {
             selectedIndex = activityData.selectedDayIndex
         }

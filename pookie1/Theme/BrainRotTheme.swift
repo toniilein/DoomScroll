@@ -26,6 +26,8 @@ class ThemeManager {
         set {
             withMutation(keyPath: \.appTheme) {
                 UserDefaults.standard.set(newValue, forKey: "appTheme")
+                // Share with extensions so they can match the theme
+                UserDefaults(suiteName: "group.pookie1.shared")?.set(newValue, forKey: "appTheme")
             }
         }
     }

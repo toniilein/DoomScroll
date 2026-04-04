@@ -27,6 +27,7 @@ struct BrainHealthReportView: View {
             .padding(.vertical, 8)
         }
         .background(BrainRotTheme.background)
+        .preferredColorScheme(SharedTheme.colorScheme)
     }
 
     // MARK: - Recommendations
