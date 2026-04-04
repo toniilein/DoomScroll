@@ -1,7 +1,7 @@
 import SwiftUI
 
-// MARK: - Usage bars rendered by the extension
-// Apple's sandbox prevents passing data back to the native app.
+// MARK: - Usage bars rendered by extension, placed under each limit card
+// Apple's sandbox prevents passing data back to native app.
 // This rendered view IS the only way to show real usage.
 
 struct LimitUsageView: View {
@@ -12,30 +12,26 @@ struct LimitUsageView: View {
             Color.clear.frame(height: 1)
         } else {
             VStack(spacing: 0) {
-                // Section header
+                // "Today's Usage" label
                 HStack {
                     Text("Today's Usage")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.239, green: 0.224, blue: 0.161))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.549, green: 0.522, blue: 0.467))
                     Spacer()
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
-                .padding(.bottom, 10)
+                .padding(.bottom, 8)
 
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     ForEach(data.items, id: \.id) { item in
-                        usageRow(item)
+                        usageBar(item)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 14)
             }
-            .background(Color(red: 0.957, green: 0.953, blue: 0.933))
+            .padding(.horizontal, 0)
         }
     }
 
-    private func usageRow(_ item: LimitUsageItem) -> some View {
+    private func usageBar(_ item: LimitUsageItem) -> some View {
         let usedMinutes = item.usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(item.limitMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, item.limitMinutes)))
@@ -47,21 +43,22 @@ struct LimitUsageView: View {
         let purple = Color(red: 0.608, green: 0.420, blue: 0.769)
 
         return VStack(spacing: 8) {
-            HStack(spacing: 10) {
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(Color(red: 0.957, green: 0.953, blue: 0.933))
-                        .frame(width: 32, height: 32)
-                    Image(systemName: iconForName(item.name))
-                        .font(.system(size: 13))
-                        .foregroundColor(textSecondary)
-                }
+            HStack {
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(red: 0.957, green: 0.953, blue: 0.933))
+                            .frame(width: 28, height: 28)
+                        Image(systemName: iconForName(item.name))
+                            .font(.system(size: 11))
+                            .foregroundColor(textSecondary)
+                    }
 
-                Text(item.name)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(textPrimary)
-                    .lineLimit(1)
+                    Text(item.name)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(textPrimary)
+                        .lineLimit(1)
+                }
 
                 Spacer()
 
@@ -69,17 +66,17 @@ struct LimitUsageView: View {
                     HStack(spacing: 3) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 9))
-                        Text("Exceeded")
+                        Text("\(formatDuration(item.usedSeconds)) / \(formatMinutes(item.limitMinutes))")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
                     }
                     .foregroundColor(.red)
                 } else if usedMinutes > 0 {
-                    Text("\(formatDuration(item.usedSeconds)) used \u{2022} \(formatDuration(remaining * 60)) left")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundColor(textSecondary)
+                    Text("\(formatDuration(item.usedSeconds)) / \(formatMinutes(item.limitMinutes))")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(purple)
                 } else {
-                    Text("\(formatMinutes(item.limitMinutes)) remaining")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    Text("0m / \(formatMinutes(item.limitMinutes))")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(textSecondary)
                 }
             }
@@ -89,18 +86,20 @@ struct LimitUsageView: View {
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(barTrack)
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(exceeded ? Color.red : purple)
-                        .frame(width: geo.size.width * progress)
+                    if progress > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(exceeded ? Color.red : purple)
+                            .frame(width: max(4, geo.size.width * progress))
+                    }
                 }
             }
-            .frame(height: 5)
+            .frame(height: 6)
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, y: 1)
+        .shadow(color: Color.black.opacity(0.04), radius: 6, y: 2)
     }
 
     // MARK: - Helpers
