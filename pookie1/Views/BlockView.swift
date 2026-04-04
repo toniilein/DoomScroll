@@ -4,6 +4,14 @@ import FamilyControls
 import DeviceActivity
 #endif
 
+// Usage data written by extension, read by native UI
+private struct LimitUsageEntry: Codable {
+    let id: String
+    let usedSeconds: Double
+    let limitMinutes: Int
+    let timestamp: Date
+}
+
 struct BlockView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @StateObject private var blockingManager = BlockingManager.shared
@@ -13,6 +21,7 @@ struct BlockView: View {
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
     @State private var reportID = UUID()
+    @State private var usageData: [String: LimitUsageEntry] = [:]
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -88,6 +97,7 @@ struct BlockView: View {
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
                 reportID = UUID()
+                loadUsageData()
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -279,7 +289,14 @@ struct BlockView: View {
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        Button { editingLimit = limit } label: {
+        let usage = usageData[limit.id.uuidString]
+        let usedMinutes = (usage?.usedSeconds ?? 0) / 60.0
+        let exceeded = usedMinutes >= Double(limit.limitMinutes)
+        let remaining = max(0, Double(limit.limitMinutes) - usedMinutes)
+        let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
+        let hasUsage = usage != nil
+
+        return Button { editingLimit = limit } label: {
             VStack(spacing: 0) {
                 HStack(spacing: 14) {
                     // Icon circle
@@ -292,15 +309,30 @@ struct BlockView: View {
                             .foregroundColor(BrainRotTheme.textSecondary)
                     }
 
-                    // Name + limit info
+                    // Name + usage info
                     VStack(alignment: .leading, spacing: 3) {
                         Text(limit.name)
                             .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundColor(BrainRotTheme.textPrimary)
                             .lineLimit(1)
-                        Text("\(limit.formattedLimit) daily limit")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
+
+                        if hasUsage {
+                            if exceeded {
+                                Text("\(limit.formattedLimit) limit \u{2022} \(formatMinutes(usedMinutes)) used \u{2022} Exceeded")
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.red)
+                                    .lineLimit(1)
+                            } else {
+                                Text("\(limit.formattedLimit) limit \u{2022} \(formatMinutes(remaining)) remaining")
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundColor(BrainRotTheme.textSecondary)
+                                    .lineLimit(1)
+                            }
+                        } else {
+                            Text("\(limit.formattedLimit) daily limit")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
                     }
 
                     Spacer()
@@ -320,11 +352,17 @@ struct BlockView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 12)
 
-                // Progress bar placeholder — shows track, actual fill from extension
+                // Progress bar
                 GeometryReader { geo in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(BrainRotTheme.cardBorder)
-                        .frame(height: 4)
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(BrainRotTheme.cardBorder)
+                        if hasUsage {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(exceeded ? Color.red : BrainRotTheme.neonPurple)
+                                .frame(width: geo.size.width * progress)
+                        }
+                    }
                 }
                 .frame(height: 4)
                 .padding(.horizontal, 18)
@@ -335,6 +373,32 @@ struct BlockView: View {
             .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
         }
         .buttonStyle(.plain)
+    }
+
+    private func formatMinutes(_ minutes: Double) -> String {
+        let total = Int(minutes)
+        let h = total / 60
+        let m = total % 60
+        if h > 0 && m > 0 { return "\(h)h \(m)m" }
+        if h > 0 { return "\(h)h" }
+        return "\(m)m"
+    }
+
+    private func loadUsageData() {
+        guard let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("limitUsageData.json"),
+              let data = try? Data(contentsOf: url),
+              let entries = try? JSONDecoder().decode([LimitUsageEntry].self, from: data) else {
+            return
+        }
+        // Only use data from today
+        let startOfDay = Calendar.current.startOfDay(for: .now)
+        var dict: [String: LimitUsageEntry] = [:]
+        for entry in entries where entry.timestamp >= startOfDay {
+            dict[entry.id] = entry
+        }
+        usageData = dict
     }
 
     // MARK: - Block Routines
