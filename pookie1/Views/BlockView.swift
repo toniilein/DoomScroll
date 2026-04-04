@@ -40,12 +40,17 @@ struct BlockView: View {
 
                         Button {
                             showDebugInfo.toggle()
+                            loadUsageProgress()
                         } label: {
-                            Text(showDebugInfo ? "Hide Debug" : "Show Debug Info")
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .foregroundColor(BrainRotTheme.textSecondary.opacity(0.4))
+                            Text(showDebugInfo ? "Hide Debug" : "🔧 Show Debug Info")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(.orange)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.orange.opacity(0.1))
+                                .clipShape(Capsule())
                         }
-                        .padding(.top, 20)
+                        .padding(.top, 10)
 
                         Spacer().frame(height: 60)
                     }
