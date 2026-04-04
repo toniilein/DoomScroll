@@ -53,6 +53,7 @@ struct BlockView: View {
             }
             .background(BrainRotTheme.background)
             .navigationTitle(L("shield.title"))
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {

@@ -37,6 +37,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle(L("settings.title"))
+            .navigationBarTitleDisplayMode(.large)
         }
     }
 
