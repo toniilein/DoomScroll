@@ -223,7 +223,25 @@ struct BlockView: View {
                 emptyLimitCard
             } else {
                 ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { index, limit in
-                    limitCard(limit)
+                    VStack(spacing: 0) {
+                        limitCard(limit)
+
+                        // Per-limit usage bar rendered by extension
+                        #if !targetEnvironment(simulator)
+                        if index < 5 {
+                            DeviceActivityReport(limitSlotContext(index), filter: todayFilter)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .clipShape(
+                                    .rect(
+                                        topLeadingRadius: 0, bottomLeadingRadius: 20,
+                                        bottomTrailingRadius: 20, topTrailingRadius: 0
+                                    )
+                                )
+                                .allowsHitTesting(false)
+                        }
+                        #endif
+                    }
                 }
             }
         }
@@ -293,91 +311,46 @@ struct BlockView: View {
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        let usedMinutes = Double(shared?.integer(forKey: "limitProgress_\(limit.id.uuidString)") ?? 0)
-        let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
-        let exceeded = usedMinutes >= Double(limit.limitMinutes)
-        let remaining = max(0, Double(limit.limitMinutes) - usedMinutes)
-
         return Button { editingLimit = limit } label: {
-            VStack(spacing: 0) {
-                HStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(limit.name)
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                            .lineLimit(1)
-                        Text("\(limit.formattedLimit) \(L("limits.dailyLimit"))")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                    }
-
-                    Spacer()
-
-                    HStack(spacing: 3) {
-                        ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
-                            Text(label)
-                                .font(.system(size: 9, weight: .bold, design: .rounded))
-                                .foregroundColor(limit.activeDays.contains(weekday)
-                                    ? BrainRotTheme.neonPurple
-                                    : BrainRotTheme.textSecondary.opacity(0.3))
-                        }
-                    }
-
-                    Spacer()
-
-                    Toggle("", isOn: Binding(
-                        get: { limit.isEnabled },
-                        set: { _ in
-                            blockingManager.toggleUsageLimit(limit)
-                            syncAllLimitConfigs()
-                        }
-                    ))
-                    .labelsHidden()
-                    .tint(BrainRotTheme.neonPurple)
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(limit.name)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                        .lineLimit(1)
+                    Text("\(limit.formattedLimit) \(L("limits.dailyLimit"))")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
-                .padding(.bottom, usedMinutes > 0 ? 12 : 18)
 
-                // Inline usage bar
-                if usedMinutes > 0 {
-                    VStack(spacing: 6) {
-                        HStack {
-                            Text("\(formatMinutes(usedMinutes)) \(L("limits.used"))")
-                                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                .foregroundColor(exceeded ? .red : BrainRotTheme.neonPurple)
-                            Spacer()
-                            if exceeded {
-                                Text(L("limits.exceeded"))
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundColor(.red)
-                            } else {
-                                Text("\(formatMinutes(remaining)) \(L("limits.left"))")
-                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                    .foregroundColor(BrainRotTheme.textSecondary)
-                            }
-                        }
+                Spacer()
 
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(BrainRotTheme.cardBorder)
-                                if progress > 0 {
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(exceeded ? Color.red : BrainRotTheme.neonPurple)
-                                        .frame(width: max(4, geo.size.width * progress))
-                                }
-                            }
-                        }
-                        .frame(height: 6)
+                HStack(spacing: 3) {
+                    ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
+                        Text(label)
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(limit.activeDays.contains(weekday)
+                                ? BrainRotTheme.neonPurple
+                                : BrainRotTheme.textSecondary.opacity(0.3))
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.bottom, 14)
                 }
+
+                Spacer()
+
+                Toggle("", isOn: Binding(
+                    get: { limit.isEnabled },
+                    set: { _ in
+                        blockingManager.toggleUsageLimit(limit)
+                        syncAllLimitConfigs()
+                    }
+                ))
+                .labelsHidden()
+                .tint(BrainRotTheme.neonPurple)
             }
+            .padding(18)
             .background(BrainRotTheme.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
         }
         .buttonStyle(.plain)
     }
