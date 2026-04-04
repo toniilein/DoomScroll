@@ -136,12 +136,35 @@ struct LimitUsageReport: DeviceActivityReportScene {
             ))
         }
 
+        // Write usage data to shared file so native cards can display it
+        Self.writeUsageToFile(items)
+
         return LimitUsageData(
             categories: [],
             totalDuration: totalDuration,
             items: items,
             exceededCount: exceededCount
         )
+    }
+
+    /// Writes per-limit usage to app group container for the native UI to read.
+    private static func writeUsageToFile(_ items: [LimitUsageItem]) {
+        guard let url = containerURL?.appendingPathComponent("limitUsageData.json") else { return }
+
+        struct UsageEntry: Codable {
+            let id: String
+            let usedSeconds: Double
+            let limitMinutes: Int
+            let timestamp: Date
+        }
+
+        let entries = items.map {
+            UsageEntry(id: $0.id, usedSeconds: $0.usedSeconds, limitMinutes: $0.limitMinutes, timestamp: Date())
+        }
+
+        if let data = try? JSONEncoder().encode(entries) {
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     // MARK: - File I/O
