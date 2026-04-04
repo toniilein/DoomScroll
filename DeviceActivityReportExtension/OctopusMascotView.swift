@@ -246,35 +246,72 @@ struct OctopusMascotView: View {
         let currentTierIdx = Self.tiers.firstIndex(where: { totalMinutes < $0.maxMinutes }) ?? Self.tiers.count - 1
 
         return VStack(spacing: 6) {
+            // Combined progress bar with position indicator
+            GeometryReader { geo in
+                let totalWidth = geo.size.width
+                let tierCount = CGFloat(Self.tiers.count)
+                let gap: CGFloat = 3
+                let tierWidth = (totalWidth - gap * (tierCount - 1)) / tierCount
+
+                ZStack(alignment: .leading) {
+                    // Tier segments
+                    HStack(spacing: gap) {
+                        ForEach(Array(Self.tiers.enumerated()), id: \.offset) { idx, tier in
+                            let isCurrent = idx == currentTierIdx
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(
+                                    isCurrent
+                                        ? LinearGradient(colors: [tier.mood.bodyColor, tier.mood.bodyColorDark], startPoint: .leading, endPoint: .trailing)
+                                        : LinearGradient(colors: [tier.mood.bodyColor.opacity(0.25), tier.mood.bodyColorDark.opacity(0.25)], startPoint: .leading, endPoint: .trailing)
+                                )
+                                .frame(height: 8)
+                                .overlay(
+                                    isCurrent
+                                        ? RoundedRectangle(cornerRadius: 3)
+                                            .stroke(tier.mood.bodyColorDark, lineWidth: 1)
+                                        : nil
+                                )
+                        }
+                    }
+
+                    // Position indicator line
+                    let currentTier = Self.tiers[currentTierIdx]
+                    let progressInTier: CGFloat = {
+                        let range = currentTier.maxMinutes == .infinity ? 240.0 : (currentTier.maxMinutes - currentTier.minMinutes)
+                        return min(1.0, CGFloat((totalMinutes - currentTier.minMinutes) / range))
+                    }()
+                    let segmentStart = CGFloat(currentTierIdx) * (tierWidth + gap)
+                    let xPos = segmentStart + tierWidth * progressInTier
+
+                    VStack(spacing: 0) {
+                        // Triangle pointer
+                        Image(systemName: "arrowtriangle.down.fill")
+                            .font(.system(size: 8))
+                            .foregroundColor(currentTier.mood.bodyColorDark)
+                        // Vertical line
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(currentTier.mood.bodyColorDark)
+                            .frame(width: 2.5, height: 14)
+                    }
+                    .offset(x: xPos - 5, y: -10)
+                }
+            }
+            .frame(height: 18)
+
+            // Tier labels
             HStack(spacing: 3) {
                 ForEach(Array(Self.tiers.enumerated()), id: \.offset) { idx, tier in
                     let isCurrent = idx == currentTierIdx
-
-                    VStack(spacing: 3) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(
-                                isCurrent
-                                    ? LinearGradient(colors: [tier.mood.bodyColor, tier.mood.bodyColorDark], startPoint: .leading, endPoint: .trailing)
-                                    : LinearGradient(colors: [tier.mood.bodyColor.opacity(0.25), tier.mood.bodyColorDark.opacity(0.25)], startPoint: .leading, endPoint: .trailing)
-                            )
-                            .frame(height: 8)
-                            .overlay(
-                                isCurrent
-                                    ? RoundedRectangle(cornerRadius: 3)
-                                        .stroke(tier.mood.bodyColorDark, lineWidth: 1)
-                                    : nil
-                            )
-
-                        HStack(spacing: 2) {
-                            Text(tier.emoji)
-                                .font(.system(size: 10))
-                            Text(tier.name)
-                                .font(.system(size: 9, weight: isCurrent ? .black : .medium, design: .rounded))
-                                .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textSecondary)
-                        }
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                    HStack(spacing: 2) {
+                        Text(tier.emoji)
+                            .font(.system(size: 10))
+                        Text(tier.name)
+                            .font(.system(size: 9, weight: isCurrent ? .black : .medium, design: .rounded))
+                            .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textSecondary)
                     }
+                    .frame(maxWidth: .infinity)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 }
             }
         }
