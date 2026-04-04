@@ -4,11 +4,9 @@ import FamilyControls
 import DeviceActivity
 #endif
 
-// Usage data written by extension, read by native UI
-private struct LimitUsageEntry: Codable {
-    let id: String
-    let usedSeconds: Double
-    let limitMinutes: Int
+// Usage progress written by DeviceActivityMonitor, read by native UI
+private struct LimitProgress: Codable {
+    let minutesUsed: Int
     let timestamp: Date
 }
 
@@ -21,7 +19,8 @@ struct BlockView: View {
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
     @State private var reportID = UUID()
-    @State private var usageData: [String: LimitUsageEntry] = [:]
+    @State private var usageProgress: [String: LimitProgress] = [:]
+    @State private var refreshTimer: Timer?
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -97,7 +96,18 @@ struct BlockView: View {
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
                 reportID = UUID()
-                loadUsageData()
+                loadUsageProgress()
+                // Refresh usage progress every 30s
+                refreshTimer?.invalidate()
+                refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
+                    Task { @MainActor in
+                        loadUsageProgress()
+                    }
+                }
+            }
+            .onDisappear {
+                refreshTimer?.invalidate()
+                refreshTimer = nil
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -289,12 +299,12 @@ struct BlockView: View {
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        let usage = usageData[limit.id.uuidString]
-        let usedMinutes = (usage?.usedSeconds ?? 0) / 60.0
+        let progress_entry = usageProgress[limit.id.uuidString]
+        let usedMinutes = Double(progress_entry?.minutesUsed ?? 0)
         let exceeded = usedMinutes >= Double(limit.limitMinutes)
         let remaining = max(0, Double(limit.limitMinutes) - usedMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
-        let hasUsage = usage != nil
+        let hasUsage = progress_entry != nil
 
         return Button { editingLimit = limit } label: {
             VStack(spacing: 0) {
@@ -338,7 +348,7 @@ struct BlockView: View {
                 VStack(spacing: 10) {
                     HStack {
                         if hasUsage {
-                            Text(formatMinutes(usedMinutes))
+                            Text("~\(formatMinutes(usedMinutes))")
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundColor(exceeded ? .red : BrainRotTheme.textPrimary)
                             Text("used")
@@ -355,7 +365,7 @@ struct BlockView: View {
 
                         Spacer()
 
-                        if hasUsage && exceeded {
+                        if exceeded {
                             HStack(spacing: 4) {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.system(size: 10))
@@ -377,7 +387,7 @@ struct BlockView: View {
                                 .fill(BrainRotTheme.cardBorder)
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(exceeded ? Color.red : BrainRotTheme.neonPurple)
-                                .frame(width: geo.size.width * (hasUsage ? progress : 0))
+                                .frame(width: geo.size.width * progress)
                         }
                     }
                     .frame(height: 6)
@@ -401,21 +411,21 @@ struct BlockView: View {
         return "\(m)m"
     }
 
-    private func loadUsageData() {
+    private func loadUsageProgress() {
         guard let url = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("limitUsageData.json"),
+        )?.appendingPathComponent("limitUsageProgress.json"),
               let data = try? Data(contentsOf: url),
-              let entries = try? JSONDecoder().decode([LimitUsageEntry].self, from: data) else {
+              let progress = try? JSONDecoder().decode([String: LimitProgress].self, from: data) else {
             return
         }
         // Only use data from today
         let startOfDay = Calendar.current.startOfDay(for: .now)
-        var dict: [String: LimitUsageEntry] = [:]
-        for entry in entries where entry.timestamp >= startOfDay {
-            dict[entry.id] = entry
+        var filtered: [String: LimitProgress] = [:]
+        for (id, entry) in progress where entry.timestamp >= startOfDay {
+            filtered[id] = entry
         }
-        usageData = dict
+        usageProgress = filtered
     }
 
     // MARK: - Block Routines
