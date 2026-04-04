@@ -296,14 +296,17 @@ struct BlockView: View {
                     Text("\(limit.formattedLimit) daily limit")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
-                    HStack(spacing: 3) {
-                        ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
-                            Text(label)
-                                .font(.system(size: 9, weight: .bold, design: .rounded))
-                                .foregroundColor(limit.activeDays.contains(weekday)
-                                    ? BrainRotTheme.neonPurple
-                                    : BrainRotTheme.textSecondary.opacity(0.3))
-                        }
+                }
+
+                Spacer()
+
+                HStack(spacing: 3) {
+                    ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
+                        Text(label)
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(limit.activeDays.contains(weekday)
+                                ? BrainRotTheme.neonPurple
+                                : BrainRotTheme.textSecondary.opacity(0.3))
                     }
                 }
 
@@ -398,16 +401,21 @@ struct BlockView: View {
                     Text(routine.formattedTimeRange)
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundColor(routine.isEnabled ? BrainRotTheme.textSecondary : BrainRotTheme.textSecondary.opacity(0.5))
-                    HStack(spacing: 3) {
-                        ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
-                            Text(label)
-                                .font(.system(size: 9, weight: .bold, design: .rounded))
-                                .foregroundColor(routine.activeDays.contains(weekday)
-                                    ? (routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary)
-                                    : BrainRotTheme.textSecondary.opacity(0.3))
-                        }
+                }
+
+                Spacer()
+
+                HStack(spacing: 3) {
+                    ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
+                        Text(label)
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(routine.activeDays.contains(weekday)
+                                ? (routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary)
+                                : BrainRotTheme.textSecondary.opacity(0.3))
                     }
                 }
+
+                Spacer()
 
                 Spacer()
 
