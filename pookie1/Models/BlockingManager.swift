@@ -68,6 +68,9 @@ class BlockingManager: ObservableObject {
         // Save disabled state
         SharedSettings.blockRoutines = routines
         SharedSettings.usageLimits = usageLimits
+
+        // Update shared file so extension doesn't re-apply shields
+        writeLimitsFile()
         #endif
     }
 
