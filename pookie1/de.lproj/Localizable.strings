@@ -24,7 +24,7 @@
 "shield.cancel" = "Abbrechen";
 
 /* Usage Limits */
-"limits.title" = "Nutzungslimits";
+"limits.title" = "Limits";
 "limits.addLimit" = "Limit hinzufügen";
 "limits.addUsageLimit" = "Nutzungslimit hinzufügen";
 "limits.addUsageLimitDesc" = "Tägliche Zeitlimits für App-Gruppen festlegen";
@@ -34,8 +34,8 @@
 "limits.exceeded" = "Überschritten";
 
 /* Routines */
-"routines.title" = "Block-Routinen";
-"routines.schedule" = "Planen";
+"routines.title" = "Routinen";
+"routines.schedule" = "Routine hinzufügen";
 "routines.addRoutine" = "Routine hinzufügen";
 "routines.addRoutineDesc" = "App-Blockierung nach Tageszeit planen";
 "routines.activeNow" = "Gerade aktiv";
