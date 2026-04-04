@@ -338,6 +338,25 @@ struct LimitSlotHelper {
             duration += appTokenDurations[appToken] ?? 0
         }
 
+        // Apply/remove shield based on usage
+        let usedMinutes = duration / 60.0
+        let exceeded = usedMinutes >= Double(limit.limitMinutes)
+        let todayWeekday = Calendar.current.component(.weekday, from: Date())
+        let activeDays = limit.activeDays ?? [1, 2, 3, 4, 5, 6, 7]
+        let activeToday = activeDays.contains(todayWeekday)
+
+        let store = ManagedSettingsStore(named: .init("limit_\(limit.id.uuidString)"))
+        if limit.isEnabled && activeToday && exceeded {
+            if !selection.applicationTokens.isEmpty {
+                store.shield.applications = selection.applicationTokens
+            }
+            if !selection.categoryTokens.isEmpty {
+                store.shield.applicationCategories = .specific(selection.categoryTokens)
+            }
+        } else if !limit.isEnabled || !activeToday {
+            store.clearAllSettings()
+        }
+
         return SingleLimitData(
             id: limit.id.uuidString, name: limit.name,
             usedSeconds: duration, limitMinutes: limit.limitMinutes, isEmpty: false
