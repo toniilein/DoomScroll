@@ -254,27 +254,33 @@ class BlockingManager: ObservableObject {
         let activityName = DeviceActivityName("limit_\(limit.id.uuidString)")
         center.stopMonitoring([activityName])
 
-        // Create multiple threshold events so monitor extension can track usage progress.
-        // The monitor CAN write files (unlike report extension), so each threshold
-        // writes progress to a shared file the main app reads for display.
+        // Build threshold events for tracking progress + enforcement
         var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
 
-        // Progress tracking events every 5 minutes (or 1 min for small limits)
-        let step = limit.limitMinutes <= 10 ? 1 : 5
-        var m = step
-        while m <= limit.limitMinutes {
-            let eventName = DeviceActivityEvent.Name("limit_\(limit.id.uuidString)_\(m)")
+        // Progress events: "limitprog_<UUID>_<minutes>" — monitor writes to UserDefaults
+        // Use fewer checkpoints to stay well under Apple's 20-event limit
+        let checkpoints: [Int]
+        if limit.limitMinutes <= 5 {
+            checkpoints = Array(1...limit.limitMinutes)
+        } else if limit.limitMinutes <= 30 {
+            checkpoints = stride(from: 5, through: limit.limitMinutes, by: 5).map { $0 }
+        } else {
+            // Every 10 minutes for longer limits
+            checkpoints = stride(from: 10, through: limit.limitMinutes, by: 10).map { $0 }
+        }
+
+        for mins in checkpoints {
+            let eventName = DeviceActivityEvent.Name("limitprog_\(limit.id.uuidString)_\(mins)")
             let event = DeviceActivityEvent(
                 applications: selection.applicationTokens,
                 categories: selection.categoryTokens,
                 webDomains: selection.webDomainTokens,
-                threshold: DateComponents(minute: m)
+                threshold: DateComponents(minute: mins)
             )
             events[eventName] = event
-            m += step
         }
 
-        // Ensure we always have the exact limit threshold (for shield enforcement)
+        // Final shield enforcement event: "limit_<UUID>"
         let limitEventName = DeviceActivityEvent.Name("limit_\(limit.id.uuidString)")
         let limitEvent = DeviceActivityEvent(
             applications: selection.applicationTokens,
@@ -284,14 +290,27 @@ class BlockingManager: ObservableObject {
         )
         events[limitEventName] = limitEvent
 
+        // Log for debugging
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        shared?.set(events.count, forKey: "monitor_eventCount_\(limit.id.uuidString)")
+        shared?.set(Date().timeIntervalSince1970, forKey: "monitor_startTime_\(limit.id.uuidString)")
+        shared?.set(selection.applicationTokens.count, forKey: "monitor_appTokens_\(limit.id.uuidString)")
+        shared?.set(selection.categoryTokens.count, forKey: "monitor_catTokens_\(limit.id.uuidString)")
+        shared?.synchronize()
+
         do {
             try center.startMonitoring(
                 activityName,
                 during: schedule,
                 events: events
             )
+            print("✅ Started limit monitoring '\(limit.name)' with \(events.count) events")
+            shared?.set(true, forKey: "monitor_started_\(limit.id.uuidString)")
+            shared?.synchronize()
         } catch {
-            print("Failed to start limit monitoring \(limit.name): \(error)")
+            print("❌ Failed to start limit monitoring \(limit.name): \(error)")
+            shared?.set("error: \(error.localizedDescription)", forKey: "monitor_error_\(limit.id.uuidString)")
+            shared?.synchronize()
         }
         #endif
     }

@@ -4,11 +4,7 @@ import FamilyControls
 import DeviceActivity
 #endif
 
-// Usage progress written by DeviceActivityMonitor, read by native UI
-private struct LimitProgress: Codable {
-    let minutesUsed: Int
-    let timestamp: Date
-}
+// No struct needed — usage progress stored as individual UserDefaults keys
 
 struct BlockView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
@@ -19,7 +15,8 @@ struct BlockView: View {
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
     @State private var reportID = UUID()
-    @State private var usageProgress: [String: LimitProgress] = [:]
+    @State private var usageMinutes: [String: Int] = [:]
+    @State private var showDebugInfo = false
     @State private var refreshTimer: Timer?
 
     #if !targetEnvironment(simulator)
@@ -35,20 +32,35 @@ struct BlockView: View {
                         quickBlockHero
                         usageLimitsSection
                         routinesSection
+
+                        // Debug: tap to show monitoring diagnostics
+                        if showDebugInfo {
+                            debugSection
+                        }
+
+                        Button {
+                            showDebugInfo.toggle()
+                        } label: {
+                            Text(showDebugInfo ? "Hide Debug" : "Show Debug Info")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(BrainRotTheme.textSecondary.opacity(0.4))
+                        }
+                        .padding(.top, 20)
+
                         Spacer().frame(height: 60)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
                 }
 
-                // Hidden extension outside ScrollView — runs makeConfiguration for shields
+                // Extension outside ScrollView with real frame — triggers makeConfiguration for shield enforcement
                 #if !targetEnvironment(simulator)
                 if !blockingManager.usageLimits.isEmpty {
                     DeviceActivityReport(.limitUsage, filter: todayFilter)
                         .id(reportID)
                         .frame(maxWidth: .infinity)
                         .frame(height: 1)
-                        .clipped()
+                        .opacity(0.01)
                         .allowsHitTesting(false)
                 }
                 #endif
@@ -299,12 +311,12 @@ struct BlockView: View {
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        let progress_entry = usageProgress[limit.id.uuidString]
-        let usedMinutes = Double(progress_entry?.minutesUsed ?? 0)
+        let usedMins = usageMinutes[limit.id.uuidString] ?? 0
+        let usedMinutes = Double(usedMins)
         let exceeded = usedMinutes >= Double(limit.limitMinutes)
         let remaining = max(0, Double(limit.limitMinutes) - usedMinutes)
         let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
-        let hasUsage = progress_entry != nil
+        let hasUsage = usedMins > 0
 
         return Button { editingLimit = limit } label: {
             VStack(spacing: 0) {
@@ -412,20 +424,17 @@ struct BlockView: View {
     }
 
     private func loadUsageProgress() {
-        guard let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("limitUsageProgress.json"),
-              let data = try? Data(contentsOf: url),
-              let progress = try? JSONDecoder().decode([String: LimitProgress].self, from: data) else {
-            return
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        shared?.synchronize() // Force read latest from disk
+        var result: [String: Int] = [:]
+        for limit in blockingManager.usageLimits {
+            let key = "limitProgress_\(limit.id.uuidString)"
+            let mins = shared?.integer(forKey: key) ?? 0
+            if mins > 0 {
+                result[limit.id.uuidString] = mins
+            }
         }
-        // Only use data from today
-        let startOfDay = Calendar.current.startOfDay(for: .now)
-        var filtered: [String: LimitProgress] = [:]
-        for (id, entry) in progress where entry.timestamp >= startOfDay {
-            filtered[id] = entry
-        }
-        usageProgress = filtered
+        usageMinutes = result
     }
 
     // MARK: - Block Routines
@@ -523,6 +532,60 @@ struct BlockView: View {
             .shadow(color: Color.black.opacity(routine.isEnabled ? 0.04 : 0.02), radius: 8, y: 2)
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Debug Section
+
+    private var debugSection: some View {
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        shared?.synchronize()
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Monitor Diagnostics")
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(.orange)
+
+            let lastThreshold = shared?.double(forKey: "monitor_lastThreshold") ?? 0
+            let lastEvent = shared?.string(forKey: "monitor_lastThresholdEvent") ?? "none"
+            Text("Last threshold: \(lastThreshold > 0 ? Date(timeIntervalSince1970: lastThreshold).formatted() : "never")")
+                .font(.system(size: 11, design: .monospaced))
+            Text("Last event: \(lastEvent)")
+                .font(.system(size: 11, design: .monospaced))
+                .lineLimit(2)
+
+            ForEach(blockingManager.usageLimits) { limit in
+                let id = limit.id.uuidString
+                let started = shared?.bool(forKey: "monitor_started_\(id)") ?? false
+                let eventCount = shared?.integer(forKey: "monitor_eventCount_\(id)") ?? 0
+                let appTokens = shared?.integer(forKey: "monitor_appTokens_\(id)") ?? 0
+                let catTokens = shared?.integer(forKey: "monitor_catTokens_\(id)") ?? 0
+                let progress = shared?.integer(forKey: "limitProgress_\(id)") ?? 0
+                let error = shared?.string(forKey: "monitor_error_\(id)")
+                let intervalStart = shared?.double(forKey: "monitor_lastIntervalStart_limit_\(id)") ?? 0
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("— \(limit.name) (\(limit.isEnabled ? "ON" : "OFF"))")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(limit.isEnabled ? .green : .gray)
+                    Text("  started=\(started ? "✅" : "❌") events=\(eventCount) apps=\(appTokens) cats=\(catTokens)")
+                        .font(.system(size: 10, design: .monospaced))
+                    Text("  progress=\(progress)m / \(limit.limitMinutes)m")
+                        .font(.system(size: 10, design: .monospaced))
+                    if intervalStart > 0 {
+                        Text("  intervalStart: \(Date(timeIntervalSince1970: intervalStart).formatted())")
+                            .font(.system(size: 10, design: .monospaced))
+                    }
+                    if let error = error {
+                        Text("  ERROR: \(error)")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.black.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Active Routines

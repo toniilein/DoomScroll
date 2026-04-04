@@ -7,15 +7,30 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
 
     let sharedSuiteName = "group.pookie1.shared"
 
+    private var shared: UserDefaults? {
+        UserDefaults(suiteName: sharedSuiteName)
+    }
+
     // MARK: - Routine schedule callbacks
 
     override func intervalDidStart(for activity: DeviceActivityName) {
         let raw = activity.rawValue
+
+        // Log that monitoring is active
+        shared?.set(Date().timeIntervalSince1970, forKey: "monitor_lastIntervalStart_\(raw)")
+        shared?.synchronize()
+
         if raw.hasPrefix("routine_") {
             let id = String(raw.dropFirst("routine_".count))
             applyRoutineShield(id: id)
         }
-        // limit_ activities: shield applied via eventDidReachThreshold
+        if raw.hasPrefix("limit_") {
+            // Reset usage progress at start of new interval (new day)
+            let id = String(raw.dropFirst("limit_".count))
+            shared?.set(0, forKey: "limitProgress_\(id)")
+            shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(id)")
+            shared?.synchronize()
+        }
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
@@ -26,11 +41,12 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
             store.clearAllSettings()
         }
         if raw.hasPrefix("limit_") {
-            // Daily reset: clear the limit shield and usage progress
+            // Daily reset: clear shield and usage progress
             let id = String(raw.dropFirst("limit_".count))
             let store = ManagedSettingsStore(named: .init("limit_\(id)"))
             store.clearAllSettings()
-            clearUsageProgress(limitId: id)
+            shared?.set(0, forKey: "limitProgress_\(id)")
+            shared?.synchronize()
         }
     }
 
@@ -38,90 +54,42 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
 
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         let raw = event.rawValue
-        if raw.hasPrefix("limit_") {
-            // Parse event name: "limit_<UUID>_<minutes>" for progress, "limit_<UUID>" for final threshold
-            let suffix = String(raw.dropFirst("limit_".count))
-            let parts = suffix.split(separator: "_", maxSplits: 1)
 
-            if parts.count == 1 {
-                // Final threshold: "limit_<UUID>" — apply shield
-                let id = String(parts[0])
-                applyLimitShield(id: id)
-                // Also write progress
-                writeUsageProgress(limitId: id, minutesReached: nil)
-            } else {
-                // Progress threshold: "limit_<36-char-UUID>_<minutes>"
-                // UUID is 36 chars, so split differently
-                let uuidLength = 36
-                if suffix.count > uuidLength + 1 {
-                    let id = String(suffix.prefix(uuidLength))
-                    let minuteStr = String(suffix.dropFirst(uuidLength + 1))
-                    if let minutes = Int(minuteStr) {
-                        writeUsageProgress(limitId: id, minutesReached: minutes)
+        // Log every threshold hit for diagnostics
+        shared?.set(Date().timeIntervalSince1970, forKey: "monitor_lastThreshold")
+        shared?.set(raw, forKey: "monitor_lastThresholdEvent")
+        shared?.synchronize()
+
+        // Event naming: "limit_<UUID>" for final shield, "limitprog_<UUID>_<minutes>" for progress
+        if raw.hasPrefix("limitprog_") {
+            // Progress event: "limitprog_<UUID>_<minutes>"
+            let suffix = String(raw.dropFirst("limitprog_".count))
+            // UUID is 36 chars (with hyphens), then "_", then minutes
+            if suffix.count > 37 {
+                let id = String(suffix.prefix(36))
+                let minuteStr = String(suffix.dropFirst(37))
+                if let minutes = Int(minuteStr) {
+                    // Write progress to UserDefaults
+                    let current = shared?.integer(forKey: "limitProgress_\(id)") ?? 0
+                    if minutes > current {
+                        shared?.set(minutes, forKey: "limitProgress_\(id)")
+                        shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(id)")
+                        shared?.synchronize()
                     }
                 }
             }
-        }
-    }
+        } else if raw.hasPrefix("limit_") {
+            // Final threshold: apply shield
+            let id = String(raw.dropFirst("limit_".count))
+            applyLimitShield(id: id)
 
-    // MARK: - Write usage progress to shared file
-
-    private func writeUsageProgress(limitId: String, minutesReached: Int?) {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: sharedSuiteName
-        ) else { return }
-
-        let fileURL = containerURL.appendingPathComponent("limitUsageProgress.json")
-
-        // Read existing progress
-        var progress: [String: LimitProgress] = [:]
-        if let data = try? Data(contentsOf: fileURL),
-           let existing = try? JSONDecoder().decode([String: LimitProgress].self, from: data) {
-            progress = existing
-        }
-
-        // Determine minutes to write
-        let minutes: Int
-        if let m = minutesReached {
-            minutes = m
-        } else {
-            // Final threshold — read limit minutes from config
+            // Also update progress to the limit value
             let limits = loadLimits()
-            if let limit = limits.first(where: { $0.id.uuidString == limitId }) {
-                minutes = limit.limitMinutes
-            } else {
-                minutes = progress[limitId]?.minutesUsed ?? 0
+            if let limit = limits.first(where: { $0.id.uuidString == id }) {
+                shared?.set(limit.limitMinutes, forKey: "limitProgress_\(id)")
+                shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(id)")
+                shared?.synchronize()
             }
-        }
-
-        // Only update if new value is higher (thresholds are cumulative within a day)
-        let existing = progress[limitId]?.minutesUsed ?? 0
-        if minutes >= existing {
-            progress[limitId] = LimitProgress(
-                minutesUsed: minutes,
-                timestamp: Date()
-            )
-        }
-
-        if let data = try? JSONEncoder().encode(progress) {
-            try? data.write(to: fileURL, options: .atomic)
-        }
-    }
-
-    private func clearUsageProgress(limitId: String) {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: sharedSuiteName
-        ) else { return }
-
-        let fileURL = containerURL.appendingPathComponent("limitUsageProgress.json")
-        var progress: [String: LimitProgress] = [:]
-        if let data = try? Data(contentsOf: fileURL),
-           let existing = try? JSONDecoder().decode([String: LimitProgress].self, from: data) {
-            progress = existing
-        }
-        progress.removeValue(forKey: limitId)
-        if let data = try? JSONEncoder().encode(progress) {
-            try? data.write(to: fileURL, options: .atomic)
         }
     }
 
@@ -156,24 +124,18 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
     // MARK: - Load data from shared UserDefaults
 
     private func loadRoutines() -> [BlockRoutineData] {
-        guard let defaults = UserDefaults(suiteName: sharedSuiteName),
+        guard let defaults = shared,
               let data = defaults.data(forKey: "blockRoutines"),
               let routines = try? JSONDecoder().decode([BlockRoutineData].self, from: data) else { return [] }
         return routines
     }
 
     private func loadLimits() -> [UsageLimitData] {
-        guard let defaults = UserDefaults(suiteName: sharedSuiteName),
+        guard let defaults = shared,
               let data = defaults.data(forKey: "usageLimits"),
               let limits = try? JSONDecoder().decode([UsageLimitData].self, from: data) else { return [] }
         return limits
     }
-}
-
-// Usage progress entry written by monitor, read by main app
-private struct LimitProgress: Codable {
-    let minutesUsed: Int
-    let timestamp: Date
 }
 
 // Minimal decodable structs (avoids importing host app module)
