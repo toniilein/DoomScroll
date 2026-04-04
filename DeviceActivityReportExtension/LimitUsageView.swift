@@ -98,7 +98,7 @@ struct LimitUsageView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.clear)
+        .background(BrainRotTheme.cardBackground)
     }
 
     // MARK: - Helpers
