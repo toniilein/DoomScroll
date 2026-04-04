@@ -256,20 +256,28 @@ struct BlockView: View {
             if blockingManager.usageLimits.isEmpty {
                 emptyLimitCard
             } else {
-                ForEach(blockingManager.usageLimits) { limit in
-                    limitCard(limit)
-                }
+                ForEach(Array(blockingManager.usageLimits.enumerated()), id: \.element.id) { index, limit in
+                    VStack(spacing: 0) {
+                        limitCard(limit)
 
-                // Extension-rendered usage bars under the cards
-                #if !targetEnvironment(simulator)
-                if showUsageReport {
-                    DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
-                        .allowsHitTesting(false)
+                        // Per-limit usage bar rendered by extension
+                        #if !targetEnvironment(simulator)
+                        if showUsageReport, index < 5 {
+                            DeviceActivityReport(limitSlotContext(index), filter: todayFilter)
+                                .id("\(reportID)_\(index)")
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .clipShape(
+                                    .rect(
+                                        topLeadingRadius: 0, bottomLeadingRadius: 20,
+                                        bottomTrailingRadius: 20, topTrailingRadius: 0
+                                    )
+                                )
+                                .allowsHitTesting(false)
+                        }
+                        #endif
+                    }
                 }
-                #endif
             }
         }
     }
@@ -555,6 +563,17 @@ struct BlockView: View {
     }
 
     #if !targetEnvironment(simulator)
+    private func limitSlotContext(_ index: Int) -> DeviceActivityReport.Context {
+        switch index {
+        case 0: return .limitSlot0
+        case 1: return .limitSlot1
+        case 2: return .limitSlot2
+        case 3: return .limitSlot3
+        case 4: return .limitSlot4
+        default: return .limitSlot0
+        }
+    }
+
     private var todayFilter: DeviceActivityFilter {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: .now)
