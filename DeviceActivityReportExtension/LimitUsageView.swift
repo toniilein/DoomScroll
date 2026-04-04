@@ -1,14 +1,14 @@
 import SwiftUI
 
 // MARK: - Extension-rendered usage cards
-// Matches the native limit card style: icon circle, name, usage subtitle.
+// Matches the native limit card style: icon circle, name, usage subtitle, progress bar.
 // Fixed card height so native overlay can align toggles on top.
-// Card: 76pt. Spacing: 12pt. Padding: 0pt (native handles outer padding).
+// Card: 90pt. Spacing: 12pt.
 
 struct LimitUsageView: View {
     let data: LimitUsageData
 
-    static let cardHeight: CGFloat = 76
+    static let cardHeight: CGFloat = 90
     static let cardSpacing: CGFloat = 12
 
     var body: some View {
@@ -25,48 +25,74 @@ struct LimitUsageView: View {
     private func limitCard(_ item: LimitUsageItem) -> some View {
         let usedMinutes = item.usedSeconds / 60.0
         let exceeded = usedMinutes >= Double(item.limitMinutes)
+        let progress = min(1.0, usedMinutes / Double(max(1, item.limitMinutes)))
         let remaining = max(0, Double(item.limitMinutes) - usedMinutes)
+
+        let textPrimary = Color(red: 0.239, green: 0.224, blue: 0.161)
+        let textSecondary = Color(red: 0.549, green: 0.522, blue: 0.467)
+        let bgColor = Color(red: 0.957, green: 0.953, blue: 0.933)
+        let barTrack = Color(red: 0.910, green: 0.898, blue: 0.863)
+        let purple = Color(red: 0.608, green: 0.420, blue: 0.769)
 
         return ZStack {
             Color.white
 
-            HStack(spacing: 14) {
-                // Icon circle
-                ZStack {
-                    Circle()
-                        .fill(Color(red: 0.957, green: 0.953, blue: 0.933)) // BrainRotTheme.background
-                        .frame(width: 48, height: 48)
-                    Image(systemName: iconForName(item.name))
-                        .font(.system(size: 18))
-                        .foregroundColor(Color(red: 0.549, green: 0.522, blue: 0.467)) // textSecondary
+            VStack(spacing: 0) {
+                HStack(spacing: 14) {
+                    // Icon circle
+                    ZStack {
+                        Circle()
+                            .fill(bgColor)
+                            .frame(width: 44, height: 44)
+                        Image(systemName: iconForName(item.name))
+                            .font(.system(size: 16))
+                            .foregroundColor(textSecondary)
+                    }
+
+                    // Name + usage info
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(item.name)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(textPrimary)
+                            .lineLimit(1)
+
+                        if exceeded {
+                            Text("\(formatMinutes(item.limitMinutes)) limit \u{2022} \(formatDuration(item.usedSeconds)) used \u{2022} Exceeded")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundColor(.red)
+                                .lineLimit(1)
+                        } else {
+                            Text("\(formatMinutes(item.limitMinutes)) limit \u{2022} \(formatDuration(remaining * 60)) remaining")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Spacer()
+
+                    // Reserve space for native toggle overlay
+                    Color.clear.frame(width: 56, height: 1)
                 }
+                .padding(.horizontal, 16)
 
-                // Name + usage info
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.name)
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.239, green: 0.224, blue: 0.161)) // textPrimary
-                        .lineLimit(1)
+                Spacer(minLength: 0)
 
-                    if exceeded {
-                        Text("\(formatMinutes(item.limitMinutes)) limit \u{2022} \(formatDuration(item.usedSeconds)) used \u{2022} Exceeded")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundColor(.red)
-                            .lineLimit(1)
-                    } else {
-                        Text("\(formatMinutes(item.limitMinutes)) limit \u{2022} \(formatDuration(remaining * 60)) remaining")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(Color(red: 0.549, green: 0.522, blue: 0.467)) // textSecondary
-                            .lineLimit(1)
+                // Progress bar at bottom
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(barTrack)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(exceeded ? Color.red : purple)
+                            .frame(width: geo.size.width * progress)
                     }
                 }
-
-                Spacer()
-
-                // Reserve space for native toggle overlay (~56pt)
-                Color.clear.frame(width: 56, height: 1)
+                .frame(height: 4)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
             }
-            .padding(.horizontal, 18)
+            .padding(.top, 14)
         }
         .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
     }
