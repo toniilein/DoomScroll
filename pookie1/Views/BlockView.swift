@@ -16,6 +16,7 @@ struct BlockView: View {
     @State private var showUnblockConfirm = false
     @State private var reportID = UUID()
     @State private var showDebugInfo = false
+    @State private var showUsageReport = false
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -57,17 +58,6 @@ struct BlockView: View {
 
             }
             .background(BrainRotTheme.background)
-            #if !targetEnvironment(simulator)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !blockingManager.usageLimits.isEmpty {
-                    DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
-                        .allowsHitTesting(false)
-                }
-            }
-            #endif
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -104,12 +94,14 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
-                reportID = UUID()
-                // Delayed refresh to ensure extension connects and runs makeConfiguration
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                // Show extension after delay so it has time to connect
+                showUsageReport = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    showUsageReport = true
                     reportID = UUID()
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                // Extra refresh to ensure makeConfiguration runs
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     reportID = UUID()
                 }
             }
@@ -267,6 +259,17 @@ struct BlockView: View {
                 ForEach(blockingManager.usageLimits) { limit in
                     limitCard(limit)
                 }
+
+                // Extension-rendered usage bars under the cards
+                #if !targetEnvironment(simulator)
+                if showUsageReport {
+                    DeviceActivityReport(.limitUsage, filter: todayFilter)
+                        .id(reportID)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
+                        .allowsHitTesting(false)
+                }
+                #endif
             }
         }
     }
