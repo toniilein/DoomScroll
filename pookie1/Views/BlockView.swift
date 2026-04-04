@@ -58,20 +58,21 @@ struct BlockView: View {
                     .padding(.top, 4)
                 }
 
-                #if !targetEnvironment(simulator)
+            }
+            .background(BrainRotTheme.background)
+            #if !targetEnvironment(simulator)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !blockingManager.usageLimits.isEmpty {
-                    // Extension needs real frame to trigger makeConfiguration.
-                    // Place it at bottom, visually hidden but with enough height for system to connect.
+                    // Extension rendered with real visible frame — only way makeConfiguration runs
                     DeviceActivityReport(.limitUsage, filter: todayFilter)
                         .id(reportID)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .opacity(0.01)
+                        .frame(height: 0.5)
+                        .clipped()
                         .allowsHitTesting(false)
                 }
-                #endif
             }
-            .background(BrainRotTheme.background)
+            #endif
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
