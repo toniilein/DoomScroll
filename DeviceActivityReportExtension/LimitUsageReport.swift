@@ -28,7 +28,7 @@ struct LimitUsageData: Sendable {
 }
 
 // Must match what the main app writes to usageLimits.json
-fileprivate struct CodableLimit: Codable {
+struct CodableLimit: Codable {
     let id: UUID
     let name: String
     let appSelectionData: Data?
@@ -173,13 +173,211 @@ struct LimitUsageReport: DeviceActivityReportScene {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.pookie1.shared")
     }
 
-    fileprivate static func readLimitsFromFile() -> [CodableLimit] {
+    static func readLimitsFromFile() -> [CodableLimit] {
         guard let url = containerURL?.appendingPathComponent("usageLimits.json"),
               let data = try? Data(contentsOf: url),
               let limits = try? JSONDecoder().decode([CodableLimit].self, from: data) else {
             return []
         }
         return limits
+    }
+}
+
+// MARK: - Per-limit slot reports (one bar per limit card)
+
+/// Data for a single limit bar
+struct SingleLimitData: Sendable {
+    let id: String
+    let name: String
+    let usedSeconds: Double
+    let limitMinutes: Int
+    let isEmpty: Bool
+}
+
+/// View for a single limit usage bar
+struct SingleLimitBarView: View {
+    let data: SingleLimitData
+
+    var body: some View {
+        if data.isEmpty {
+            Color.clear.frame(height: 1)
+        } else {
+            let usedMinutes = data.usedSeconds / 60.0
+            let exceeded = usedMinutes >= Double(data.limitMinutes)
+            let progress = min(1.0, usedMinutes / Double(max(1, data.limitMinutes)))
+
+            let textPrimary = Color(red: 0.239, green: 0.224, blue: 0.161)
+            let textSecondary = Color(red: 0.549, green: 0.522, blue: 0.467)
+            let barTrack = Color(red: 0.910, green: 0.898, blue: 0.863)
+            let purple = Color(red: 0.608, green: 0.420, blue: 0.769)
+
+            VStack(spacing: 8) {
+                HStack {
+                    if exceeded {
+                        HStack(spacing: 3) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 9))
+                            Text("\(formatDuration(data.usedSeconds)) / \(formatMinutes(data.limitMinutes))")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(.red)
+                    } else if usedMinutes > 0 {
+                        Text("\(formatDuration(data.usedSeconds)) used")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(textPrimary)
+                    } else {
+                        Text("0m used")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(textSecondary)
+                    }
+
+                    Spacer()
+
+                    if exceeded {
+                        Text("Exceeded")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(.red)
+                    } else {
+                        let remaining = max(0, Double(data.limitMinutes) - usedMinutes)
+                        Text("\(formatDuration(remaining * 60)) left")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundColor(usedMinutes > 0 ? purple : textSecondary)
+                    }
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(barTrack)
+                        if progress > 0 {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(exceeded ? Color.red : purple)
+                                .frame(width: max(4, geo.size.width * progress))
+                        }
+                    }
+                }
+                .frame(height: 6)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(Color(red: 0.957, green: 0.953, blue: 0.933).opacity(0.6))
+        }
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
+        let totalMinutes = Int(seconds / 60)
+        let h = totalMinutes / 60
+        let m = totalMinutes % 60
+        if h > 0 && m > 0 { return "\(h)h \(m)m" }
+        if h > 0 { return "\(h)h" }
+        return "\(m)m"
+    }
+
+    private func formatMinutes(_ minutes: Int) -> String {
+        let h = minutes / 60
+        let m = minutes % 60
+        if h > 0 && m > 0 { return "\(h)h \(m)m" }
+        if h > 0 { return "\(h)h" }
+        return "\(m)m"
+    }
+}
+
+/// Shared logic for per-slot reports
+struct LimitSlotHelper {
+    static func makeConfig(
+        slotIndex: Int,
+        data: DeviceActivityResults<DeviceActivityData>
+    ) async -> SingleLimitData {
+        let limits = LimitUsageReport.readLimitsFromFile()
+        guard slotIndex < limits.count else {
+            return SingleLimitData(id: "", name: "", usedSeconds: 0, limitMinutes: 0, isEmpty: true)
+        }
+
+        let limit = limits[slotIndex]
+        guard limit.limitMinutes > 0,
+              let selData = limit.appSelectionData,
+              let selection = try? JSONDecoder().decode(FamilyActivitySelection.self, from: selData)
+        else {
+            return SingleLimitData(id: "", name: "", usedSeconds: 0, limitMinutes: 0, isEmpty: true)
+        }
+
+        // Collect per-app durations and category mappings
+        var appTokenDurations: [ApplicationToken: TimeInterval] = [:]
+        var appToCatTokens: [ApplicationToken: Set<ActivityCategoryToken>] = [:]
+
+        for await dataItem in data {
+            for await segment in dataItem.activitySegments {
+                for await categoryActivity in segment.categories {
+                    let catToken = categoryActivity.category.token
+                    for await appActivity in categoryActivity.applications {
+                        let dur = appActivity.totalActivityDuration
+                        if dur > 0, let appToken = appActivity.application.token {
+                            appTokenDurations[appToken, default: 0] += dur
+                            if let catToken {
+                                appToCatTokens[appToken, default: []].insert(catToken)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Match apps from selection
+        var matchedApps = Set<ApplicationToken>()
+        for appToken in selection.applicationTokens {
+            if appTokenDurations[appToken] != nil { matchedApps.insert(appToken) }
+        }
+        for catToken in selection.categoryTokens {
+            for (appToken, cats) in appToCatTokens {
+                if cats.contains(catToken) { matchedApps.insert(appToken) }
+            }
+        }
+
+        var duration: TimeInterval = 0
+        for appToken in matchedApps {
+            duration += appTokenDurations[appToken] ?? 0
+        }
+
+        return SingleLimitData(
+            id: limit.id.uuidString, name: limit.name,
+            usedSeconds: duration, limitMinutes: limit.limitMinutes, isEmpty: false
+        )
+    }
+}
+
+struct LimitSlot0Report: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .limitSlot0
+    let content: (SingleLimitData) -> SingleLimitBarView
+    func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> SingleLimitData {
+        await LimitSlotHelper.makeConfig(slotIndex: 0, data: data)
+    }
+}
+struct LimitSlot1Report: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .limitSlot1
+    let content: (SingleLimitData) -> SingleLimitBarView
+    func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> SingleLimitData {
+        await LimitSlotHelper.makeConfig(slotIndex: 1, data: data)
+    }
+}
+struct LimitSlot2Report: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .limitSlot2
+    let content: (SingleLimitData) -> SingleLimitBarView
+    func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> SingleLimitData {
+        await LimitSlotHelper.makeConfig(slotIndex: 2, data: data)
+    }
+}
+struct LimitSlot3Report: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .limitSlot3
+    let content: (SingleLimitData) -> SingleLimitBarView
+    func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> SingleLimitData {
+        await LimitSlotHelper.makeConfig(slotIndex: 3, data: data)
+    }
+}
+struct LimitSlot4Report: DeviceActivityReportScene {
+    let context: DeviceActivityReport.Context = .limitSlot4
+    let content: (SingleLimitData) -> SingleLimitBarView
+    func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> SingleLimitData {
+        await LimitSlotHelper.makeConfig(slotIndex: 4, data: data)
     }
 }
 

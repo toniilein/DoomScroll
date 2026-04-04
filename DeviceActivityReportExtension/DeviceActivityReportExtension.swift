@@ -30,5 +30,10 @@ struct DoomScrollReportExtension: DeviceActivityReportExtension {
         LimitUsageDetailReport { detailData in
             LimitUsageDetailView(data: detailData)
         }
+        LimitSlot0Report { d in SingleLimitBarView(data: d) }
+        LimitSlot1Report { d in SingleLimitBarView(data: d) }
+        LimitSlot2Report { d in SingleLimitBarView(data: d) }
+        LimitSlot3Report { d in SingleLimitBarView(data: d) }
+        LimitSlot4Report { d in SingleLimitBarView(data: d) }
     }
 }
