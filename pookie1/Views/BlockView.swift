@@ -232,6 +232,8 @@ struct BlockView: View {
                             DeviceActivityReport(limitSlotContext(index), filter: todayFilter)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)
+                                .background(Color.clear)
+                                .scrollContentBackground(.hidden)
                                 .clipShape(
                                     .rect(
                                         topLeadingRadius: 0, bottomLeadingRadius: 20,
