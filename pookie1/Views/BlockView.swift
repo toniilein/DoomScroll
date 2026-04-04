@@ -53,13 +53,14 @@ struct BlockView: View {
                     .padding(.top, 4)
                 }
 
-                // Extension outside ScrollView with real frame — triggers makeConfiguration for shield enforcement
                 #if !targetEnvironment(simulator)
                 if !blockingManager.usageLimits.isEmpty {
+                    // Extension needs real frame to trigger makeConfiguration.
+                    // Place it at bottom, visually hidden but with enough height for system to connect.
                     DeviceActivityReport(.limitUsage, filter: todayFilter)
                         .id(reportID)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 1)
+                        .frame(height: 50)
                         .opacity(0.01)
                         .allowsHitTesting(false)
                 }
@@ -69,14 +70,9 @@ struct BlockView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "bubble.left.and.bubble.right.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(BrainRotTheme.neonPink)
-                        Text("DOOMSCROLL")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                    }
+                    Text("DOOMSCROLL")
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -547,6 +543,11 @@ struct BlockView: View {
 
             let lastThreshold = shared?.double(forKey: "monitor_lastThreshold") ?? 0
             let lastEvent = shared?.string(forKey: "monitor_lastThresholdEvent") ?? "none"
+            let reportLastRun = shared?.double(forKey: "report_lastRun") ?? 0
+            let reportItems = shared?.integer(forKey: "report_itemCount") ?? 0
+
+            Text("Report ext ran: \(reportLastRun > 0 ? Date(timeIntervalSince1970: reportLastRun).formatted() : "never") (\(reportItems) items)")
+                .font(.system(size: 11, design: .monospaced))
             Text("Last threshold: \(lastThreshold > 0 ? Date(timeIntervalSince1970: lastThreshold).formatted() : "never")")
                 .font(.system(size: 11, design: .monospaced))
             Text("Last event: \(lastEvent)")

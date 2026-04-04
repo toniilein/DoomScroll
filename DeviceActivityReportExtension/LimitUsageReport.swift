@@ -136,8 +136,8 @@ struct LimitUsageReport: DeviceActivityReportScene {
             ))
         }
 
-        // Write usage data to shared file so native cards can display it
-        Self.writeUsageToFile(items)
+        // Write usage data to shared UserDefaults so native cards can display it
+        Self.writeUsageToDefaults(items)
 
         return LimitUsageData(
             categories: [],
@@ -147,24 +147,24 @@ struct LimitUsageReport: DeviceActivityReportScene {
         )
     }
 
-    /// Writes per-limit usage to app group container for the native UI to read.
-    private static func writeUsageToFile(_ items: [LimitUsageItem]) {
-        guard let url = containerURL?.appendingPathComponent("limitUsageData.json") else { return }
+    /// Writes per-limit usage to shared UserDefaults for the native UI to read.
+    private static func writeUsageToDefaults(_ items: [LimitUsageItem]) {
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        // Mark that makeConfiguration ran
+        shared?.set(Date().timeIntervalSince1970, forKey: "report_lastRun")
+        shared?.set(items.count, forKey: "report_itemCount")
 
-        struct UsageEntry: Codable {
-            let id: String
-            let usedSeconds: Double
-            let limitMinutes: Int
-            let timestamp: Date
+        for item in items {
+            let usedMinutes = Int(item.usedSeconds / 60.0)
+            // Write per-limit usage (same key the monitor uses)
+            let currentProgress = shared?.integer(forKey: "limitProgress_\(item.id)") ?? 0
+            // Report has exact data — always overwrite if higher or if we have real data
+            if usedMinutes > 0 || currentProgress == 0 {
+                shared?.set(usedMinutes, forKey: "limitProgress_\(item.id)")
+                shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(item.id)")
+            }
         }
-
-        let entries = items.map {
-            UsageEntry(id: $0.id, usedSeconds: $0.usedSeconds, limitMinutes: $0.limitMinutes, timestamp: Date())
-        }
-
-        if let data = try? JSONEncoder().encode(entries) {
-            try? data.write(to: url, options: .atomic)
-        }
+        shared?.synchronize()
     }
 
     // MARK: - File I/O
