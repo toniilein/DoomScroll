@@ -104,15 +104,11 @@ struct BlockView: View {
                 #if !targetEnvironment(simulator)
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
-                // Show extension after delay so it has time to connect
-                showUsageReport = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    showUsageReport = true
-                    reportID = UUID()
-                }
-                // Extra refresh to ensure makeConfiguration runs
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    reportID = UUID()
+                // Only do initial setup once — don't destroy/recreate extension on tab switches
+                if !showUsageReport {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showUsageReport = true
+                    }
                 }
             }
             .sheet(item: $editingLimit) { limit in
