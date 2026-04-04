@@ -15,7 +15,6 @@ struct BlockView: View {
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
     @State private var reportID = UUID()
-    @State private var showDebugInfo = false
     @State private var showUsageReport = false
 
     #if !targetEnvironment(simulator)
@@ -31,24 +30,6 @@ struct BlockView: View {
                         quickBlockHero
                         usageLimitsSection
                         routinesSection
-
-                        // Debug: tap to show monitoring diagnostics
-                        if showDebugInfo {
-                            debugSection
-                        }
-
-                        Button {
-                            showDebugInfo.toggle()
-                        } label: {
-                            Text(showDebugInfo ? "Hide Debug" : "🔧 Show Debug Info")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(.orange)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Color.orange.opacity(0.1))
-                                .clipShape(Capsule())
-                        }
-                        .padding(.top, 10)
 
                         Spacer().frame(height: 60)
                     }
@@ -70,11 +51,6 @@ struct BlockView: View {
             .background(BrainRotTheme.background)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("DOOMSCROLL")
-                        .font(.system(size: 14, weight: .black, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showUnblockConfirm = true
@@ -462,65 +438,6 @@ struct BlockView: View {
             .shadow(color: Color.black.opacity(routine.isEnabled ? 0.04 : 0.02), radius: 8, y: 2)
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - Debug Section
-
-    private var debugSection: some View {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        shared?.synchronize()
-
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("Monitor Diagnostics")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundColor(.orange)
-
-            let lastThreshold = shared?.double(forKey: "monitor_lastThreshold") ?? 0
-            let lastEvent = shared?.string(forKey: "monitor_lastThresholdEvent") ?? "none"
-            let reportLastRun = shared?.double(forKey: "report_lastRun") ?? 0
-            let reportItems = shared?.integer(forKey: "report_itemCount") ?? 0
-
-            Text("Report ext ran: \(reportLastRun > 0 ? Date(timeIntervalSince1970: reportLastRun).formatted() : "never") (\(reportItems) items)")
-                .font(.system(size: 11, design: .monospaced))
-            Text("Last threshold: \(lastThreshold > 0 ? Date(timeIntervalSince1970: lastThreshold).formatted() : "never")")
-                .font(.system(size: 11, design: .monospaced))
-            Text("Last event: \(lastEvent)")
-                .font(.system(size: 11, design: .monospaced))
-                .lineLimit(2)
-
-            ForEach(blockingManager.usageLimits) { limit in
-                let id = limit.id.uuidString
-                let started = shared?.bool(forKey: "monitor_started_\(id)") ?? false
-                let eventCount = shared?.integer(forKey: "monitor_eventCount_\(id)") ?? 0
-                let appTokens = shared?.integer(forKey: "monitor_appTokens_\(id)") ?? 0
-                let catTokens = shared?.integer(forKey: "monitor_catTokens_\(id)") ?? 0
-                let progress = shared?.integer(forKey: "limitProgress_\(id)") ?? 0
-                let error = shared?.string(forKey: "monitor_error_\(id)")
-                let intervalStart = shared?.double(forKey: "monitor_lastIntervalStart_limit_\(id)") ?? 0
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("— \(limit.name) (\(limit.isEnabled ? "ON" : "OFF"))")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(limit.isEnabled ? .green : .gray)
-                    Text("  started=\(started ? "✅" : "❌") events=\(eventCount) apps=\(appTokens) cats=\(catTokens)")
-                        .font(.system(size: 10, design: .monospaced))
-                    Text("  progress=\(progress)m / \(limit.limitMinutes)m")
-                        .font(.system(size: 10, design: .monospaced))
-                    if intervalStart > 0 {
-                        Text("  intervalStart: \(Date(timeIntervalSince1970: intervalStart).formatted())")
-                            .font(.system(size: 10, design: .monospaced))
-                    }
-                    if let error = error {
-                        Text("  ERROR: \(error)")
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundColor(.red)
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(Color.black.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Active Routines
