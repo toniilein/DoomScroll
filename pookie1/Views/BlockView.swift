@@ -298,8 +298,8 @@ struct BlockView: View {
 
         return Button { editingLimit = limit } label: {
             VStack(spacing: 0) {
+                // Top card: icon, name, limit, toggle
                 HStack(spacing: 14) {
-                    // Icon circle
                     ZStack {
                         Circle()
                             .fill(BrainRotTheme.background)
@@ -309,35 +309,18 @@ struct BlockView: View {
                             .foregroundColor(BrainRotTheme.textSecondary)
                     }
 
-                    // Name + usage info
                     VStack(alignment: .leading, spacing: 3) {
                         Text(limit.name)
                             .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundColor(BrainRotTheme.textPrimary)
                             .lineLimit(1)
-
-                        if hasUsage {
-                            if exceeded {
-                                Text("\(limit.formattedLimit) limit \u{2022} \(formatMinutes(usedMinutes)) used \u{2022} Exceeded")
-                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                    .foregroundColor(.red)
-                                    .lineLimit(1)
-                            } else {
-                                Text("\(limit.formattedLimit) limit \u{2022} \(formatMinutes(remaining)) remaining")
-                                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                                    .foregroundColor(BrainRotTheme.textSecondary)
-                                    .lineLimit(1)
-                            }
-                        } else {
-                            Text("\(limit.formattedLimit) daily limit")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        }
+                        Text("\(limit.formattedLimit) daily limit")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textSecondary)
                     }
 
                     Spacer()
 
-                    // Toggle
                     Toggle("", isOn: Binding(
                         get: { limit.isEnabled },
                         set: { _ in
@@ -348,27 +331,61 @@ struct BlockView: View {
                     .labelsHidden()
                     .tint(BrainRotTheme.neonPurple)
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 14)
-                .padding(.bottom, 12)
+                .padding(18)
+                .background(BrainRotTheme.cardBackground)
 
-                // Progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(BrainRotTheme.cardBorder)
+                // Bottom box: usage + progress bar
+                VStack(spacing: 10) {
+                    HStack {
                         if hasUsage {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(exceeded ? Color.red : BrainRotTheme.neonPurple)
-                                .frame(width: geo.size.width * progress)
+                            Text(formatMinutes(usedMinutes))
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(exceeded ? .red : BrainRotTheme.textPrimary)
+                            Text("used")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        } else {
+                            Text("0m")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Text("used")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+
+                        Spacer()
+
+                        if hasUsage && exceeded {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 10))
+                                Text("Exceeded")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                            }
+                            .foregroundColor(.red)
+                        } else {
+                            Text("\(formatMinutes(remaining)) left")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundColor(hasUsage ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary)
                         }
                     }
+
+                    // Progress bar
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(BrainRotTheme.cardBorder)
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(exceeded ? Color.red : BrainRotTheme.neonPurple)
+                                .frame(width: geo.size.width * (hasUsage ? progress : 0))
+                        }
+                    }
+                    .frame(height: 6)
                 }
-                .frame(height: 4)
                 .padding(.horizontal, 18)
-                .padding(.bottom, 12)
+                .padding(.vertical, 12)
+                .background(BrainRotTheme.background.opacity(0.6))
             }
-            .background(BrainRotTheme.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
         }
