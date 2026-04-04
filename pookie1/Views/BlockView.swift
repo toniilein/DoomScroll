@@ -57,6 +57,17 @@ struct BlockView: View {
 
             }
             .background(BrainRotTheme.background)
+            #if !targetEnvironment(simulator)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !blockingManager.usageLimits.isEmpty {
+                    DeviceActivityReport(.limitUsage, filter: todayFilter)
+                        .id(reportID)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
+                        .allowsHitTesting(false)
+                }
+            }
+            #endif
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -94,6 +105,13 @@ struct BlockView: View {
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
                 reportID = UUID()
+                // Delayed refresh to ensure extension connects and runs makeConfiguration
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    reportID = UUID()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    reportID = UUID()
+                }
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -249,15 +267,6 @@ struct BlockView: View {
                 ForEach(blockingManager.usageLimits) { limit in
                     limitCard(limit)
                 }
-
-                // Extension-rendered usage bars appear right under the cards
-                #if !targetEnvironment(simulator)
-                DeviceActivityReport(.limitUsage, filter: todayFilter)
-                    .id(reportID)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
-                    .allowsHitTesting(false)
-                #endif
             }
         }
     }
