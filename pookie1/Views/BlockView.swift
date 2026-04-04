@@ -326,23 +326,25 @@ struct BlockView: View {
     private func limitCard(_ limit: UsageLimit) -> some View {
         return Button { editingLimit = limit } label: {
             HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(BrainRotTheme.background)
-                        .frame(width: 48, height: 48)
-                    Image(systemName: limitIcon(limit.name))
-                        .font(.system(size: 18))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                }
-
                 VStack(alignment: .leading, spacing: 3) {
                     Text(limit.name)
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
                         .lineLimit(1)
-                    Text("\(limit.formattedLimit) daily limit")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textSecondary)
+                    HStack(spacing: 8) {
+                        Text("\(limit.formattedLimit) daily limit")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                        HStack(spacing: 2) {
+                            ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
+                                Text(label)
+                                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                                    .foregroundColor(limit.activeDays.contains(weekday)
+                                        ? BrainRotTheme.neonPurple
+                                        : BrainRotTheme.textSecondary.opacity(0.25))
+                            }
+                        }
+                    }
                 }
 
                 Spacer()
@@ -352,7 +354,6 @@ struct BlockView: View {
                     set: { _ in
                         blockingManager.toggleUsageLimit(limit)
                         syncAllLimitConfigs()
-                        // Don't refresh reportID here — causes flicker
                     }
                 ))
                 .labelsHidden()
@@ -429,11 +430,6 @@ struct BlockView: View {
             showEditor = true
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: routineSystemIcon(routine.name))
-                    .font(.system(size: 26))
-                    .foregroundColor(routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary.opacity(0.4))
-                    .frame(width: 40)
-
                 VStack(alignment: .leading, spacing: 3) {
                     Text(routine.name)
                         .font(.system(size: 16, weight: .bold, design: .rounded))
