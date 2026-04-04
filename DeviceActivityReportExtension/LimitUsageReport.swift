@@ -199,69 +199,66 @@ struct SingleLimitBarView: View {
     let data: SingleLimitData
 
     var body: some View {
-        if data.isEmpty {
-            Color.clear.frame(height: 1)
-        } else {
-            let usedMinutes = data.usedSeconds / 60.0
-            let exceeded = usedMinutes >= Double(data.limitMinutes)
-            let progress = min(1.0, usedMinutes / Double(max(1, data.limitMinutes)))
+        let usedMinutes = data.usedSeconds / 60.0
+        let limitMins = data.isEmpty ? 60 : data.limitMinutes
+        let exceeded = !data.isEmpty && usedMinutes >= Double(limitMins)
+        let progress = data.isEmpty ? 0.0 : min(1.0, usedMinutes / Double(max(1, limitMins)))
 
-            let textPrimary = Color(red: 0.239, green: 0.224, blue: 0.161)
-            let textSecondary = Color(red: 0.549, green: 0.522, blue: 0.467)
-            let barTrack = Color(red: 0.910, green: 0.898, blue: 0.863)
-            let purple = Color(red: 0.608, green: 0.420, blue: 0.769)
+        let textPrimary = Color(red: 0.239, green: 0.224, blue: 0.161)
+        let textSecondary = Color(red: 0.549, green: 0.522, blue: 0.467)
+        let barTrack = Color(red: 0.910, green: 0.898, blue: 0.863)
+        let purple = Color(red: 0.608, green: 0.420, blue: 0.769)
 
-            VStack(spacing: 8) {
-                HStack {
-                    if exceeded {
-                        HStack(spacing: 3) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 9))
-                            Text("\(formatDuration(data.usedSeconds)) / \(formatMinutes(data.limitMinutes))")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                        }
+        VStack(spacing: 8) {
+            HStack {
+                if exceeded {
+                    HStack(spacing: 3) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9))
+                        Text("\(formatDuration(data.usedSeconds)) / \(formatMinutes(limitMins))")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.red)
+                } else if usedMinutes > 0 {
+                    Text("\(formatDuration(data.usedSeconds)) used")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(textPrimary)
+                } else {
+                    Text("0m used")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(textSecondary)
+                }
+
+                Spacer()
+
+                if exceeded {
+                    Text("Exceeded")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(.red)
-                    } else if usedMinutes > 0 {
-                        Text("\(formatDuration(data.usedSeconds)) used")
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundColor(textPrimary)
-                    } else {
-                        Text("0m used")
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundColor(textSecondary)
-                    }
-
-                    Spacer()
-
-                    if exceeded {
-                        Text("Exceeded")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.red)
-                    } else {
-                        let remaining = max(0, Double(data.limitMinutes) - usedMinutes)
-                        Text("\(formatDuration(remaining * 60)) left")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .foregroundColor(usedMinutes > 0 ? purple : textSecondary)
-                    }
+                } else {
+                    let remaining = max(0, Double(limitMins) - usedMinutes)
+                    Text("\(formatDuration(remaining * 60)) left")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(usedMinutes > 0 ? purple : textSecondary)
                 }
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(barTrack)
-                        if progress > 0 {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(exceeded ? Color.red : purple)
-                                .frame(width: max(4, geo.size.width * progress))
-                        }
-                    }
-                }
-                .frame(height: 6)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .background(Color(red: 0.957, green: 0.953, blue: 0.933).opacity(0.6))
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(barTrack)
+                    if progress > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(exceeded ? Color.red : purple)
+                            .frame(width: max(4, geo.size.width * progress))
+                    }
+                }
+            }
+            .frame(height: 6)
         }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.957, green: 0.953, blue: 0.933).opacity(0.6))
     }
 
     private func formatDuration(_ seconds: TimeInterval) -> String {
