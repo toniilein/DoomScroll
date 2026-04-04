@@ -1,4 +1,7 @@
 import SwiftUI
+#if !targetEnvironment(simulator)
+import DeviceActivity
+#endif
 
 struct ContentView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
@@ -16,6 +19,7 @@ struct ContentView: View {
 }
 
 struct MainTabView: View {
+    @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @State private var selectedTab = "Overview"
     @State private var scrollToTopTrigger = UUID()
 
@@ -36,13 +40,26 @@ struct MainTabView: View {
         }
         .tint(BrainRotTheme.neonPink)
         .environment(\.scrollToTopTrigger, scrollToTopTrigger)
-        .background(
-            // Invisible UIView that finds the UITabBar from the window and
-            // installs a tap gesture to detect same-tab re-taps
-            TabBarReselectionInstaller { scrollToTopTrigger = UUID() }
-                .frame(width: 0, height: 0)
-                .allowsHitTesting(false)
-        )
+        .background {
+            ZStack {
+                // Invisible UIView that finds the UITabBar from the window and
+                // installs a tap gesture to detect same-tab re-taps
+                TabBarReselectionInstaller { scrollToTopTrigger = UUID() }
+                    .frame(width: 0, height: 0)
+                    .allowsHitTesting(false)
+
+                // Pre-warm the BrainHealth report extension so it's already
+                // connected when the user navigates to that tab
+                #if !targetEnvironment(simulator)
+                if screenTimeManager.isAuthorized {
+                    DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
+                        .frame(width: 1, height: 1)
+                        .opacity(0.01)
+                        .allowsHitTesting(false)
+                }
+                #endif
+            }
+        }
     }
 }
 
