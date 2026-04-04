@@ -15,78 +15,43 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Custom Tab Bar with Liquid Glass
+// MARK: - Native TabView (Liquid Glass automatic on iOS 26)
 
 struct MainTabView: View {
     @State private var selectedTab = "Overview"
     @State private var scrollToTopTrigger = UUID()
-
-    private struct TabItem: Identifiable {
-        let id: String
-        let icon: String
-        let labelKey: String
-    }
-
-    private let tabs: [TabItem] = [
-        TabItem(id: "Shield", icon: "shield.fill", labelKey: "tab.shield"),
-        TabItem(id: "BrainHealth", icon: "chart.bar.fill", labelKey: "tab.brainHealth"),
-        TabItem(id: "Overview", icon: "brain.head.profile", labelKey: "tab.overview"),
-        TabItem(id: "Settings", icon: "gearshape.fill", labelKey: "tab.settings"),
-    ]
+    @State private var preloaded = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // All tab content — always alive
-            ZStack {
+        TabView(selection: $selectedTab) {
+            Tab(L("tab.shield"), systemImage: "shield.fill", value: "Shield") {
                 BlockView()
-                    .opacity(selectedTab == "Shield" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "Shield")
-
+            }
+            Tab(L("tab.brainHealth"), systemImage: "chart.bar.fill", value: "BrainHealth") {
                 BrainHealthView()
-                    .opacity(selectedTab == "BrainHealth" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "BrainHealth")
-
+            }
+            Tab(L("tab.overview"), systemImage: "brain.head.profile", value: "Overview") {
                 DashboardView()
-                    .opacity(selectedTab == "Overview" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "Overview")
-
+            }
+            Tab(L("tab.settings"), systemImage: "gearshape.fill", value: "Settings") {
                 SettingsView()
-                    .opacity(selectedTab == "Settings" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "Settings")
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            // Floating Liquid Glass tab bar
-            HStack(spacing: 0) {
-                ForEach(tabs) { tab in
-                    Button {
-                        if selectedTab == tab.id {
-                            scrollToTopTrigger = UUID()
-                        } else {
-                            selectedTab = tab.id
-                        }
-                    } label: {
-                        VStack(spacing: 3) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 21))
-                                .symbolRenderingMode(.monochrome)
-                                .frame(height: 24)
-                            Text(L(tab.labelKey))
-                                .font(.system(size: 10, weight: .medium))
-                                .lineLimit(1)
-                        }
-                        .foregroundStyle(selectedTab == tab.id ? BrainRotTheme.neonPink : .secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                    }
-                }
-            }
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22))
-            .padding(.horizontal, 16)
-            .padding(.bottom, 4)
-            .ignoresSafeArea(.keyboard)
         }
+        .tint(BrainRotTheme.neonPink)
         .environment(\.scrollToTopTrigger, scrollToTopTrigger)
+        .task {
+            // Pre-load all tabs by briefly cycling through them so
+            // DeviceActivityReport extensions connect on launch.
+            // Fixes BrainHealth blank screen on first visit.
+            guard !preloaded else { return }
+            preloaded = true
+            try? await Task.sleep(for: .milliseconds(100))
+            for tab in ["Shield", "BrainHealth", "Settings"] {
+                selectedTab = tab
+                try? await Task.sleep(for: .milliseconds(150))
+            }
+            selectedTab = "Overview"
+        }
     }
 }
 
