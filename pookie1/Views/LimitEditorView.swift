@@ -212,14 +212,13 @@ struct LimitEditorView: View {
         }
     }
 
-    // MARK: - Today's Usage — native cards, data from catMin_ keys (written by Overview tab)
+    // MARK: - Today's Usage — reads from limitProgress_{id} written by LimitUsageReport extension
 
     private var todayUsageSection: some View {
-        let categories = loadCategoryUsage()
-        let totalMinutes = categories.reduce(0.0) { $0 + $1.minutes }
+        let usedMinutes = loadLimitUsage()
         let limitMins = Double(limitHours * 60 + limitMinutes)
-        let exceeded = limitMins > 0 && totalMinutes >= limitMins
-        let progress = limitMins > 0 ? min(1.0, totalMinutes / limitMins) : 0
+        let exceeded = limitMins > 0 && usedMinutes >= limitMins
+        let progress = limitMins > 0 ? min(1.0, usedMinutes / limitMins) : 0
 
         return VStack(alignment: .leading, spacing: 10) {
             Text(L("limitEditor.todayUsage"))
@@ -229,7 +228,7 @@ struct LimitEditorView: View {
             // Total summary card
             VStack(spacing: 6) {
                 HStack {
-                    Text(formatMinutes(totalMinutes))
+                    Text(formatMinutes(usedMinutes))
                         .font(.system(size: 20, weight: .black, design: .rounded))
                         .foregroundColor(exceeded ? .red : BrainRotTheme.neonOrange)
 
@@ -264,112 +263,18 @@ struct LimitEditorView: View {
             .padding(14)
             .background(BrainRotTheme.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            // Per-category cards
-            if categories.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "chart.bar")
-                        .font(.system(size: 16))
-                        .foregroundColor(BrainRotTheme.textSecondary.opacity(0.4))
-                    Text(L("limitEditor.usageDataLoads"))
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(BrainRotTheme.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            } else {
-                ForEach(categories, id: \.name) { cat in
-                    HStack(spacing: 12) {
-                        Circle()
-                            .fill(BrainRotTheme.neonOrange.opacity(0.15))
-                            .frame(width: 36, height: 36)
-                            .overlay(
-                                Image(systemName: categoryIcon(cat.name))
-                                    .font(.system(size: 15))
-                                    .foregroundColor(BrainRotTheme.neonOrange)
-                            )
-
-                        Text(cat.name)
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                            .lineLimit(1)
-
-                        Spacer()
-
-                        Text(formatMinutes(cat.minutes))
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(BrainRotTheme.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
         }
     }
 
-    // MARK: - Read category data
+    // MARK: - Read limit-specific usage
 
-    private struct CategoryUsage {
-        let name: String
-        let minutes: Double
-    }
-
-    private func loadCategoryUsage() -> [CategoryUsage] {
-        // Primary: read from categoryUsage.json file (written by LimitUsageReport extension)
-        if let url = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
-        )?.appendingPathComponent("categoryUsage.json"),
-           let data = try? Data(contentsOf: url),
-           let dict = try? JSONDecoder().decode([String: Double].self, from: data) {
-            let results = dict.filter { $0.value > 0 }
-                .map { CategoryUsage(name: $0.key, minutes: $0.value) } // file stores minutes
-                .sorted { $0.minutes > $1.minutes }
-            if !results.isEmpty { return results }
-        }
-
-        // Fallback: read from UserDefaults catMin_ keys (written by TotalActivityReport)
+    /// Reads usage for this specific limit from shared UserDefaults
+    /// Written by LimitUsageReport extension as limitProgress_{limitId}
+    private func loadLimitUsage() -> Double {
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         shared?.synchronize()
-
-        var names: [String] = []
-        if let namesStr = shared?.string(forKey: "todayCategoryNamesStr"), !namesStr.isEmpty {
-            names = namesStr.components(separatedBy: "|||").filter { !$0.isEmpty }
-        }
-        if names.isEmpty, let arr = shared?.stringArray(forKey: "todayCategoryNames") {
-            names = arr
-        }
-
-        var results: [CategoryUsage] = []
-        for catName in names {
-            let mins = shared?.double(forKey: "catMin_\(catName)") ?? 0
-            if mins > 0 {
-                results.append(CategoryUsage(name: catName, minutes: mins))
-            }
-        }
-        return results.sorted { $0.minutes > $1.minutes }
-    }
-
-    private func categoryIcon(_ name: String) -> String {
-        let l = name.lowercased()
-        if l.contains("social") { return "person.2.fill" }
-        if l.contains("entertainment") { return "play.tv.fill" }
-        if l.contains("game") { return "gamecontroller.fill" }
-        if l.contains("product") { return "briefcase.fill" }
-        if l.contains("utilit") { return "wrench.fill" }
-        if l.contains("info") || l.contains("read") { return "newspaper.fill" }
-        if l.contains("shop") || l.contains("food") { return "cart.fill" }
-        if l.contains("health") || l.contains("fitness") { return "heart.fill" }
-        if l.contains("travel") { return "car.fill" }
-        if l.contains("creat") { return "paintbrush.fill" }
-        if l.contains("music") || l.contains("audio") { return "music.note" }
-        if l.contains("photo") || l.contains("video") { return "camera.fill" }
-        if l.contains("education") || l.contains("reference") { return "book.fill" }
-        if l.contains("news") { return "newspaper.fill" }
-        return "app.fill"
+        let usedMinutes = shared?.integer(forKey: "limitProgress_\(limitId.uuidString)") ?? 0
+        return Double(usedMinutes)
     }
 
     private func formatMinutes(_ mins: Double) -> String {
