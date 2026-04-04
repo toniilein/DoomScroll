@@ -21,7 +21,7 @@ class ThemeManager {
     var appTheme: String {
         get {
             access(keyPath: \.appTheme)
-            return UserDefaults.standard.string(forKey: "appTheme") ?? "system"
+            return UserDefaults.standard.string(forKey: "appTheme") ?? "light"
         }
         set {
             withMutation(keyPath: \.appTheme) {
