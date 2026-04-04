@@ -15,76 +15,129 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Custom Tab Bar (replaces SwiftUI TabView for re-tap detection)
-
 struct MainTabView: View {
     @State private var selectedTab = "Overview"
     @State private var scrollToTopTrigger = UUID()
 
-    private struct TabItem: Identifiable {
-        let id: String
-        let icon: String
-        let labelKey: String
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            Tab(L("tab.shield"), systemImage: "shield.fill", value: "Shield") {
+                BlockView()
+            }
+            Tab(L("tab.brainHealth"), systemImage: "chart.bar.fill", value: "BrainHealth") {
+                BrainHealthView()
+            }
+            Tab(L("tab.overview"), systemImage: "brain.head.profile", value: "Overview") {
+                DashboardView()
+            }
+            Tab(L("tab.settings"), systemImage: "gearshape.fill", value: "Settings") {
+                SettingsView()
+            }
+        }
+        .tint(BrainRotTheme.neonPink)
+        .environment(\.scrollToTopTrigger, scrollToTopTrigger)
+        .background(
+            // Invisible UIView that finds the UITabBar from the window and
+            // installs a tap gesture to detect same-tab re-taps
+            TabBarReselectionInstaller { scrollToTopTrigger = UUID() }
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
+        )
+    }
+}
+
+// MARK: - Tab Re-tap Detection (UIViewRepresentable — searches window for UITabBar)
+
+/// Finds UITabBar by traversing the entire window view hierarchy (not the VC chain).
+/// Adds a non-blocking tap gesture recognizer to detect same-tab re-taps.
+struct TabBarReselectionInstaller: UIViewRepresentable {
+    let onReselect: () -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let v = UIView()
+        v.isHidden = true
+        return v
     }
 
-    private let tabs: [TabItem] = [
-        TabItem(id: "Shield", icon: "shield.fill", labelKey: "tab.shield"),
-        TabItem(id: "BrainHealth", icon: "chart.bar.fill", labelKey: "tab.brainHealth"),
-        TabItem(id: "Overview", icon: "brain.head.profile", labelKey: "tab.overview"),
-        TabItem(id: "Settings", icon: "gearshape.fill", labelKey: "tab.settings"),
-    ]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // All tab content views are always alive — prevents BrainHealth first-render issue
-            ZStack {
-                BlockView()
-                    .opacity(selectedTab == "Shield" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "Shield")
-
-                BrainHealthView()
-                    .opacity(selectedTab == "BrainHealth" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "BrainHealth")
-
-                DashboardView()
-                    .opacity(selectedTab == "Overview" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "Overview")
-
-                SettingsView()
-                    .opacity(selectedTab == "Settings" ? 1 : 0)
-                    .allowsHitTesting(selectedTab == "Settings")
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.onReselect = onReselect
+        if !context.coordinator.installed {
+            // Try after a short delay to ensure view hierarchy is ready
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                context.coordinator.install(from: uiView)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
 
-            // Custom tab bar — Liquid Glass effect
-            HStack(spacing: 0) {
-                ForEach(tabs) { tab in
-                    Button {
-                        if selectedTab == tab.id {
-                            scrollToTopTrigger = UUID()
-                        } else {
-                            selectedTab = tab.id
-                        }
-                    } label: {
-                        VStack(spacing: 3) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 21))
-                                .frame(height: 24)
-                            Text(L(tab.labelKey))
-                                .font(.system(size: 10, weight: .medium))
-                                .lineLimit(1)
-                        }
-                        .foregroundStyle(selectedTab == tab.id ? AnyShapeStyle(BrainRotTheme.neonPink) : AnyShapeStyle(.secondary))
-                        .frame(maxWidth: .infinity)
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onReselect: onReselect)
+    }
+
+    class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var onReselect: () -> Void
+        var installed = false
+        private weak var tabBar: UITabBar?
+
+        init(onReselect: @escaping () -> Void) {
+            self.onReselect = onReselect
+        }
+
+        func install(from view: UIView) {
+            guard !installed, let window = view.window else { return }
+            guard let tabBar = Self.findTabBar(in: window) else {
+                // Retry once more
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                    guard let self, !self.installed, let window = view.window else { return }
+                    if let tabBar = Self.findTabBar(in: window) {
+                        self.addGesture(to: tabBar)
                     }
                 }
+                return
             }
-            .padding(.vertical, 8)
-            .glassEffect(.regular)
-            .padding(.horizontal, 8)
-            .padding(.bottom, 2)
+            addGesture(to: tabBar)
         }
-        .environment(\.scrollToTopTrigger, scrollToTopTrigger)
+
+        private func addGesture(to tabBar: UITabBar) {
+            guard !installed else { return }
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+            tap.cancelsTouchesInView = false
+            tap.delaysTouchesBegan = false
+            tap.delegate = self  // Allow simultaneous recognition
+            tabBar.addGestureRecognizer(tap)
+            self.tabBar = tabBar
+            installed = true
+        }
+
+        // Allow our gesture to work alongside the tab bar's built-in gestures
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            true
+        }
+
+        @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard gesture.state == .ended,
+                  let tabBar = gesture.view as? UITabBar,
+                  let items = tabBar.items, !items.isEmpty,
+                  let selectedItem = tabBar.selectedItem,
+                  let selectedIdx = items.firstIndex(of: selectedItem) else { return }
+
+            // Calculate which tab was tapped by location
+            let loc = gesture.location(in: tabBar)
+            let itemWidth = tabBar.bounds.width / CGFloat(items.count)
+            let tappedIdx = min(max(0, Int(loc.x / itemWidth)), items.count - 1)
+
+            if tappedIdx == selectedIdx {
+                onReselect()
+            }
+        }
+
+        static func findTabBar(in view: UIView) -> UITabBar? {
+            if let tabBar = view as? UITabBar { return tabBar }
+            for sub in view.subviews {
+                if let found = findTabBar(in: sub) { return found }
+            }
+            return nil
+        }
     }
 }
 
