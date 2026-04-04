@@ -365,6 +365,16 @@ struct LimitSlotHelper {
             store.clearAllSettings()
         }
 
+        // Persist usage to shared UserDefaults so native LimitEditor can display it
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let usedMins = Int(usedMinutes)
+        let currentProgress = shared?.integer(forKey: "limitProgress_\(limit.id.uuidString)") ?? 0
+        if usedMins > 0 || currentProgress == 0 {
+            shared?.set(usedMins, forKey: "limitProgress_\(limit.id.uuidString)")
+            shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(limit.id.uuidString)")
+            shared?.synchronize()
+        }
+
         return SingleLimitData(
             id: limit.id.uuidString, name: limit.name,
             usedSeconds: duration, limitMinutes: limit.limitMinutes, isEmpty: false

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct ContentView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
@@ -17,10 +18,10 @@ struct ContentView: View {
 
 struct MainTabView: View {
     @State private var selectedTab = "Overview"
-    @State private var scrollToTopID = UUID()
+    @StateObject private var tabReselect = TabReselectObserver()
 
     var body: some View {
-        TabView(selection: tabBinding) {
+        TabView(selection: $selectedTab) {
             Tab(L("tab.shield"), systemImage: "shield.fill", value: "Shield") {
                 BlockView()
             }
@@ -35,33 +36,64 @@ struct MainTabView: View {
             }
         }
         .tint(BrainRotTheme.neonPink)
-        .environment(\.scrollToTopID, scrollToTopID)
+        .onAppear { tabReselect.setup() }
+        .environment(\.scrollToTopTrigger, tabReselect.scrollTrigger)
+    }
+}
+
+// MARK: - Tab Reselect Observer (UIKit introspection)
+
+/// Listens for UITabBarController delegate calls to detect re-selecting the current tab
+class TabReselectObserver: NSObject, ObservableObject, UITabBarControllerDelegate {
+    @Published var scrollTrigger = UUID()
+    private weak var tabBarController: UITabBarController?
+
+    func setup() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            if let tbc = self.findTabBarController() {
+                self.tabBarController = tbc
+                tbc.delegate = self
+            }
+        }
     }
 
-    /// Custom binding that detects re-tapping the same tab
-    private var tabBinding: Binding<String> {
-        Binding(
-            get: { selectedTab },
-            set: { newValue in
-                if newValue == selectedTab {
-                    // Re-tapped same tab — trigger scroll to top
-                    scrollToTopID = UUID()
-                }
-                selectedTab = newValue
-            }
-        )
+    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
+        if viewController == tabBarController.selectedViewController {
+            // Same tab re-tapped — trigger scroll to top
+            scrollTrigger = UUID()
+        }
+        return true
+    }
+
+    private func findTabBarController() -> UITabBarController? {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first,
+              let root = window.rootViewController else { return nil }
+        return findTBC(in: root)
+    }
+
+    private func findTBC(in vc: UIViewController) -> UITabBarController? {
+        if let tbc = vc as? UITabBarController { return tbc }
+        for child in vc.children {
+            if let found = findTBC(in: child) { return found }
+        }
+        if let presented = vc.presentedViewController {
+            return findTBC(in: presented)
+        }
+        return nil
     }
 }
 
 // MARK: - Scroll-to-top Environment Key
 
-private struct ScrollToTopIDKey: EnvironmentKey {
+private struct ScrollToTopTriggerKey: EnvironmentKey {
     static let defaultValue = UUID()
 }
 
 extension EnvironmentValues {
-    var scrollToTopID: UUID {
-        get { self[ScrollToTopIDKey.self] }
-        set { self[ScrollToTopIDKey.self] = newValue }
+    var scrollToTopTrigger: UUID {
+        get { self[ScrollToTopTriggerKey.self] }
+        set { self[ScrollToTopTriggerKey.self] = newValue }
     }
 }

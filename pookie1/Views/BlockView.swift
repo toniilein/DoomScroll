@@ -9,7 +9,7 @@ import DeviceActivity
 struct BlockView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @StateObject private var blockingManager = BlockingManager.shared
-    @Environment(\.scrollToTopID) private var scrollToTopID
+    @Environment(\.scrollToTopTrigger) private var scrollToTopTrigger
     @State private var showEditor = false
     @State private var editingRoutine: BlockRoutine?
     @State private var editingLimit: UsageLimit?
@@ -37,7 +37,7 @@ struct BlockView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
                 }
-                .onChange(of: scrollToTopID) {
+                .onChange(of: scrollToTopTrigger) {
                     withAnimation { proxy.scrollTo("top", anchor: .top) }
                 }
                 }

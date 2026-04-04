@@ -5,7 +5,7 @@ import FamilyControls
 
 struct SettingsView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
-    @Environment(\.scrollToTopID) private var scrollToTopID
+    @Environment(\.scrollToTopTrigger) private var scrollToTopTrigger
 
     var body: some View {
         NavigationStack {
@@ -28,7 +28,7 @@ struct SettingsView: View {
                     .padding()
                     .padding(.top, 8)
                 }
-                .onChange(of: scrollToTopID) {
+                .onChange(of: scrollToTopTrigger) {
                     withAnimation { proxy.scrollTo("top", anchor: .top) }
                 }
                 }
