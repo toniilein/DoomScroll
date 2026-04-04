@@ -53,7 +53,7 @@ struct BlockView: View {
                 #endif
             }
             .background(BrainRotTheme.background)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(L("shield.title"))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -129,14 +129,9 @@ struct BlockView: View {
     // MARK: - Page Header
 
     private var pageHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(L("shield.title"))
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
-                .foregroundColor(BrainRotTheme.textPrimary)
-            Text(L("shield.subtitle"))
-                .font(.system(size: 16, weight: .medium, design: .rounded))
-                .foregroundColor(BrainRotTheme.textSecondary)
-        }
+        Text(L("shield.subtitle"))
+            .font(.system(size: 16, weight: .medium, design: .rounded))
+            .foregroundColor(BrainRotTheme.textSecondary)
     }
 
     // MARK: - Quick Block Hero
