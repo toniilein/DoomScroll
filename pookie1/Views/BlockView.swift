@@ -15,9 +15,7 @@ struct BlockView: View {
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
     @State private var reportID = UUID()
-    @State private var usageMinutes: [String: Int] = [:]
     @State private var showDebugInfo = false
-    @State private var refreshTimer: Timer?
 
     #if !targetEnvironment(simulator)
     @State private var quickBlockSelection = FamilyActivitySelection()
@@ -40,7 +38,6 @@ struct BlockView: View {
 
                         Button {
                             showDebugInfo.toggle()
-                            loadUsageProgress()
                         } label: {
                             Text(showDebugInfo ? "Hide Debug" : "🔧 Show Debug Info")
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -63,13 +60,19 @@ struct BlockView: View {
             #if !targetEnvironment(simulator)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !blockingManager.usageLimits.isEmpty {
-                    // Extension rendered with real visible frame — only way makeConfiguration runs
-                    DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 0.5)
-                        .clipped()
-                        .allowsHitTesting(false)
+                    VStack(spacing: 0) {
+                        // Subtle divider
+                        Rectangle()
+                            .fill(BrainRotTheme.cardBorder)
+                            .frame(height: 0.5)
+
+                        // Real extension view — renders actual usage data
+                        DeviceActivityReport(.limitUsage, filter: todayFilter)
+                            .id(reportID)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: CGFloat(blockingManager.usageLimits.count) * 62 + 24)
+                    }
+                    .background(BrainRotTheme.background)
                 }
             }
             #endif
@@ -110,18 +113,6 @@ struct BlockView: View {
                 quickBlockSelection = blockingManager.loadQuickBlockSelection()
                 #endif
                 reportID = UUID()
-                loadUsageProgress()
-                // Refresh usage progress every 30s
-                refreshTimer?.invalidate()
-                refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
-                    Task { @MainActor in
-                        loadUsageProgress()
-                    }
-                }
-            }
-            .onDisappear {
-                refreshTimer?.invalidate()
-                refreshTimer = nil
             }
             .sheet(item: $editingLimit) { limit in
                 LimitEditorView(
@@ -313,103 +304,42 @@ struct BlockView: View {
     }
 
     private func limitCard(_ limit: UsageLimit) -> some View {
-        let usedMins = usageMinutes[limit.id.uuidString] ?? 0
-        let usedMinutes = Double(usedMins)
-        let exceeded = usedMinutes >= Double(limit.limitMinutes)
-        let remaining = max(0, Double(limit.limitMinutes) - usedMinutes)
-        let progress = min(1.0, usedMinutes / Double(max(1, limit.limitMinutes)))
-        let hasUsage = usedMins > 0
-
         return Button { editingLimit = limit } label: {
-            VStack(spacing: 0) {
-                // Top card: icon, name, limit, toggle
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(BrainRotTheme.background)
-                            .frame(width: 48, height: 48)
-                        Image(systemName: limitIcon(limit.name))
-                            .font(.system(size: 18))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(limit.name)
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                            .lineLimit(1)
-                        Text("\(limit.formattedLimit) daily limit")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                    }
-
-                    Spacer()
-
-                    Toggle("", isOn: Binding(
-                        get: { limit.isEnabled },
-                        set: { _ in
-                            blockingManager.toggleUsageLimit(limit)
-                            syncAllLimitConfigs()
-                        }
-                    ))
-                    .labelsHidden()
-                    .tint(BrainRotTheme.neonPurple)
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(BrainRotTheme.background)
+                        .frame(width: 48, height: 48)
+                    Image(systemName: limitIcon(limit.name))
+                        .font(.system(size: 18))
+                        .foregroundColor(BrainRotTheme.textSecondary)
                 }
-                .padding(18)
-                .background(BrainRotTheme.cardBackground)
 
-                // Bottom box: usage + progress bar
-                VStack(spacing: 10) {
-                    HStack {
-                        if hasUsage {
-                            Text("~\(formatMinutes(usedMinutes))")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(exceeded ? .red : BrainRotTheme.textPrimary)
-                            Text("used")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        } else {
-                            Text("0m")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                            Text("used")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        }
-
-                        Spacer()
-
-                        if exceeded {
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 10))
-                                Text("Exceeded")
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                            }
-                            .foregroundColor(.red)
-                        } else {
-                            Text("\(formatMinutes(remaining)) left")
-                                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                .foregroundColor(hasUsage ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary)
-                        }
-                    }
-
-                    // Progress bar
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(BrainRotTheme.cardBorder)
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(exceeded ? Color.red : BrainRotTheme.neonPurple)
-                                .frame(width: geo.size.width * progress)
-                        }
-                    }
-                    .frame(height: 6)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(limit.name)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                        .lineLimit(1)
+                    Text("\(limit.formattedLimit) daily limit")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 12)
-                .background(BrainRotTheme.background.opacity(0.6))
+
+                Spacer()
+
+                Toggle("", isOn: Binding(
+                    get: { limit.isEnabled },
+                    set: { _ in
+                        blockingManager.toggleUsageLimit(limit)
+                        syncAllLimitConfigs()
+                        reportID = UUID() // Force extension refresh
+                    }
+                ))
+                .labelsHidden()
+                .tint(BrainRotTheme.neonPurple)
             }
+            .padding(18)
+            .background(BrainRotTheme.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
         }
@@ -423,20 +353,6 @@ struct BlockView: View {
         if h > 0 && m > 0 { return "\(h)h \(m)m" }
         if h > 0 { return "\(h)h" }
         return "\(m)m"
-    }
-
-    private func loadUsageProgress() {
-        let shared = UserDefaults(suiteName: "group.pookie1.shared")
-        shared?.synchronize() // Force read latest from disk
-        var result: [String: Int] = [:]
-        for limit in blockingManager.usageLimits {
-            let key = "limitProgress_\(limit.id.uuidString)"
-            let mins = shared?.integer(forKey: key) ?? 0
-            if mins > 0 {
-                result[limit.id.uuidString] = mins
-            }
-        }
-        usageMinutes = result
     }
 
     // MARK: - Block Routines
