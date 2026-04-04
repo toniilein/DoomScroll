@@ -98,8 +98,7 @@ struct LimitUsageView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(BrainRotTheme.background)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .background(Color.clear)
     }
 
     // MARK: - Helpers
