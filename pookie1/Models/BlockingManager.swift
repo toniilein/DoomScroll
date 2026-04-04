@@ -19,11 +19,24 @@ class BlockingManager: ObservableObject {
     #endif
 
     private init() {
+        removeOldDefaultRoutines()
         routines = SharedSettings.blockRoutines
         usageLimits = SharedSettings.usageLimits
         isQuickBlocking = UserDefaults.standard.bool(forKey: "quickBlockActive")
         // Ensure usageLimits.json exists for extension to read
         writeLimitsFile()
+    }
+
+    /// One-time cleanup: remove the old seeded default routines
+    private func removeOldDefaultRoutines() {
+        guard !UserDefaults.standard.bool(forKey: "defaultRoutinesRemoved") else { return }
+        UserDefaults.standard.set(true, forKey: "defaultRoutinesRemoved")
+
+        let defaultNames: Set<String> = ["Morning Focus", "Work Mode", "Night Wind Down"]
+        let existing = SharedSettings.blockRoutines
+        for routine in existing where defaultNames.contains(routine.name) && !routine.isEnabled {
+            SharedSettings.deleteRoutine(id: routine.id)
+        }
     }
 
     // MARK: - Emergency Unblock All
