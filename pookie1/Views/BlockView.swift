@@ -22,25 +22,27 @@ struct BlockView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
-                    VStack(spacing: 16) {
-                        quickBlockCard
+                    VStack(alignment: .leading, spacing: 28) {
+                        // Page header
+                        pageHeader
 
+                        // Quick Block hero
+                        quickBlockHero
+
+                        // Usage Limits
                         usageLimitsSection
 
-                        if !activeRoutines.isEmpty {
-                            activeNowSection
-                        }
-
+                        // Block Routines
                         routinesSection
 
-                        Spacer().frame(height: 40)
+                        Spacer().frame(height: 60)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 8)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
                 }
 
-                // Extension at bottom — must be outside ScrollView with real frame
-                // to connect out-of-process view. makeConfiguration applies shields.
+                // Extension at bottom — must be outside ScrollView to connect.
+                // makeConfiguration applies/removes shields.
                 #if !targetEnvironment(simulator)
                 if !blockingManager.usageLimits.isEmpty {
                     DeviceActivityReport(.limitUsage, filter: todayFilter)
@@ -53,19 +55,33 @@ struct BlockView: View {
                 #endif
             }
             .background(BrainRotTheme.background)
-            .navigationTitle("Shield")
-            .toolbarColorScheme(.light, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(BrainRotTheme.neonPink)
+                        Text("DOOMSCROLL")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showUnblockConfirm = true
                     } label: {
                         Text("Unblock All")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(.red)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(.red.opacity(0.8))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.red.opacity(0.08))
+                            .clipShape(Capsule())
                     }
                 }
             }
+            .toolbarColorScheme(.light, for: .navigationBar)
             .alert("Unblock All Apps?", isPresented: $showUnblockConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Unblock All", role: .destructive) {
@@ -124,103 +140,143 @@ struct BlockView: View {
         }
     }
 
-    // MARK: - Quick Block
+    // MARK: - Page Header
 
-    private var quickBlockCard: some View {
+    private var pageHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Shield")
+                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                .foregroundColor(BrainRotTheme.textPrimary)
+            Text("Your digital immune system. Stronger than your willpower.")
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .foregroundColor(BrainRotTheme.textSecondary)
+        }
+    }
+
+    // MARK: - Quick Block Hero
+
+    private var quickBlockHero: some View {
         let isBlocking = blockingManager.isQuickBlocking
 
-        return HStack(spacing: 12) {
-            Image(systemName: isBlocking ? "shield.checkered" : "shield.fill")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(
-                    isBlocking
-                        ? AnyShapeStyle(LinearGradient(colors: [BrainRotTheme.neonGreen, BrainRotTheme.neonGreen.opacity(0.7)], startPoint: .top, endPoint: .bottom))
-                        : AnyShapeStyle(LinearGradient(colors: [BrainRotTheme.neonPink, BrainRotTheme.neonOrange], startPoint: .top, endPoint: .bottom))
-                )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(isBlocking ? "Apps Blocked" : "Quick Block")
-                    .font(.system(size: 16, weight: .black, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textPrimary)
-
-                Button { showQuickBlockPicker = true } label: {
-                    HStack(spacing: 4) {
-                        #if !targetEnvironment(simulator)
-                        let apps = quickBlockSelection.applicationTokens.count
-                        let cats = quickBlockSelection.categoryTokens.count
-                        Text(apps > 0 || cats > 0
-                             ? "\(apps) app\(apps == 1 ? "" : "s"), \(cats) categor\(cats == 1 ? "y" : "ies")"
-                             : "Choose apps")
-                        #else
-                        Text("Choose apps")
-                        #endif
-                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold))
-                    }
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textSecondary)
+        return VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Quick Block")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                    Text("Going down a rabbit hole?\nCut the cord instantly.")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary.opacity(0.7))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                Spacer()
+                Image(systemName: isBlocking ? "bolt.shield.fill" : "bolt.fill")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [BrainRotTheme.neonPink, BrainRotTheme.neonOrange],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
             }
 
-            Spacer()
-
+            // Panic button
             Button {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                     blockingManager.toggleQuickBlock()
                 }
             } label: {
-                Text(isBlocking ? "Stop" : "Block")
-                    .font(.system(size: 14, weight: .black, design: .rounded))
+                Text(isBlocking ? "Unblock Apps" : "Panic Button")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
                     .background(
                         isBlocking
-                            ? AnyShapeStyle(LinearGradient(colors: [Color.gray, Color.gray.opacity(0.7)], startPoint: .leading, endPoint: .trailing))
+                            ? AnyShapeStyle(LinearGradient(colors: [.gray, .gray.opacity(0.7)], startPoint: .leading, endPoint: .trailing))
                             : AnyShapeStyle(LinearGradient(colors: [BrainRotTheme.neonPink, BrainRotTheme.neonOrange], startPoint: .leading, endPoint: .trailing))
                     )
                     .clipShape(Capsule())
+                    .shadow(color: (isBlocking ? Color.gray : BrainRotTheme.neonPink).opacity(0.3), radius: 8, y: 4)
+            }
+
+            // App picker link
+            Button { showQuickBlockPicker = true } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "apps.iphone").font(.system(size: 13))
+                    #if !targetEnvironment(simulator)
+                    let apps = quickBlockSelection.applicationTokens.count
+                    let cats = quickBlockSelection.categoryTokens.count
+                    Text(apps > 0 || cats > 0
+                         ? "\(apps) app\(apps == 1 ? "" : "s"), \(cats) categor\(cats == 1 ? "y" : "ies") selected"
+                         : "Choose apps to block")
+                    #else
+                    Text("Choose apps to block")
+                    #endif
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                }
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundColor(BrainRotTheme.textSecondary)
             }
         }
-        .padding(16)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(24)
+        .background(
+            BrainRotTheme.neonPink.opacity(0.06)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(BrainRotTheme.neonPink.opacity(0.12), lineWidth: 1)
+        )
     }
 
     // MARK: - Usage Limits
 
     private var usageLimitsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .lastTextBaseline) {
                 Text("Usage Limits")
-                    .font(.system(size: 14, weight: .black, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textSecondary)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
                 Button {
                     editingLimit = UsageLimit(name: "", limitMinutes: 60, isEnabled: false)
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(BrainRotTheme.neonOrange)
+                    Text("Add Limit")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.neonPink)
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 2)
 
             if blockingManager.usageLimits.isEmpty {
                 Button {
                     editingLimit = UsageLimit(name: "", limitMinutes: 60, isEnabled: false)
                 } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "plus.circle")
-                            .font(.system(size: 18))
-                            .foregroundColor(BrainRotTheme.neonOrange)
-                        Text("Add a usage limit")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textSecondary)
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(BrainRotTheme.cardBorder)
+                                .frame(width: 48, height: 48)
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Add a usage limit")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Text("Set daily time limits for app groups")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
                         Spacer()
                     }
-                    .padding(14)
+                    .padding(18)
                     .background(BrainRotTheme.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
                 }
                 .buttonStyle(.plain)
             } else {
@@ -233,23 +289,31 @@ struct BlockView: View {
 
     private func limitCard(_ limit: UsageLimit) -> some View {
         Button { editingLimit = limit } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 14) {
+                // Icon circle
+                ZStack {
+                    Circle()
+                        .fill(BrainRotTheme.background)
+                        .frame(width: 48, height: 48)
+                    Image(systemName: limitIcon(limit.name))
+                        .font(.system(size: 18))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+
+                // Name + limit info
+                VStack(alignment: .leading, spacing: 3) {
                     Text(limit.name)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
                         .lineLimit(1)
-                    Text("Limit: \(limit.formattedLimit)")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                    Text("\(limit.formattedLimit) daily limit")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
 
                 Spacer()
 
-                Image(systemName: "pencil")
-                    .font(.system(size: 12))
-                    .foregroundColor(BrainRotTheme.textSecondary)
-
+                // Toggle
                 Toggle("", isOn: Binding(
                     get: { limit.isEnabled },
                     set: { _ in
@@ -258,11 +322,131 @@ struct BlockView: View {
                     }
                 ))
                 .labelsHidden()
-                .tint(BrainRotTheme.neonOrange)
+                .tint(BrainRotTheme.neonPurple)
             }
-            .padding(14)
+            .padding(18)
             .background(BrainRotTheme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Routines
+
+    private var routinesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .lastTextBaseline) {
+                Text("Block Routines")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+                Button {
+                    editingRoutine = nil
+                    showEditor = true
+                } label: {
+                    Text("Schedule")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.neonPink)
+                }
+            }
+            .padding(.horizontal, 2)
+
+            // Active now banner
+            if !activeRoutines.isEmpty {
+                activeNowBanner
+            }
+
+            // Grid of routine cards
+            let columns = [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ]
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(blockingManager.routines) { routine in
+                    routineCard(routine)
+                }
+            }
+        }
+    }
+
+    private var activeNowBanner: some View {
+        HStack(spacing: 8) {
+            Circle().fill(BrainRotTheme.neonPink).frame(width: 8, height: 8)
+            Text(activeRoutines.map(\.name).joined(separator: ", "))
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundColor(BrainRotTheme.neonPink)
+                .lineLimit(1)
+            Spacer()
+            Text("Active Now")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(BrainRotTheme.neonPink.opacity(0.7))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(BrainRotTheme.neonPink.opacity(0.06))
+        .clipShape(Capsule())
+    }
+
+    private func routineCard(_ routine: BlockRoutine) -> some View {
+        Button {
+            editingRoutine = routine
+            showEditor = true
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                // Top row: icon + toggle
+                HStack(alignment: .top) {
+                    Image(systemName: routineSystemIcon(routine.name))
+                        .font(.system(size: 24))
+                        .foregroundColor(routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary.opacity(0.5))
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { routine.isEnabled },
+                        set: { _ in blockingManager.toggleRoutine(routine) }
+                    ))
+                    .labelsHidden()
+                    .tint(BrainRotTheme.neonPurple)
+                    .scaleEffect(0.85)
+                }
+                .padding(.bottom, 14)
+
+                // Name
+                Text(routine.name)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundColor(routine.isEnabled ? BrainRotTheme.textPrimary : BrainRotTheme.textPrimary.opacity(0.5))
+                    .lineLimit(1)
+
+                // Time range
+                Text(routine.formattedTimeRange)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(routine.isEnabled ? BrainRotTheme.textSecondary : BrainRotTheme.textSecondary.opacity(0.5))
+                    .padding(.top, 2)
+                    .padding(.bottom, 12)
+
+                // Day pills
+                HStack(spacing: 3) {
+                    ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { _ in }
+                    let dayLabels: [(Int, String)] = [(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")]
+                    ForEach(dayLabels, id: \.0) { weekday, label in
+                        Text(label)
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(routine.activeDays.contains(weekday)
+                                ? (routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary)
+                                : BrainRotTheme.textSecondary.opacity(0.3))
+                            .frame(width: 18, height: 18)
+                            .background(
+                                routine.activeDays.contains(weekday)
+                                    ? (routine.isEnabled ? BrainRotTheme.neonPurple.opacity(0.1) : BrainRotTheme.cardBorder.opacity(0.5))
+                                    : Color.clear
+                            )
+                            .clipShape(Circle())
+                    }
+                }
+            }
+            .padding(18)
+            .background(BrainRotTheme.cardBackground.opacity(routine.isEnabled ? 1 : 0.7))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: Color.black.opacity(routine.isEnabled ? 0.04 : 0.02), radius: 8, y: 2)
         }
         .buttonStyle(.plain)
     }
@@ -281,90 +465,31 @@ struct BlockView: View {
         }
     }
 
-    private var activeNowSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Circle().fill(BrainRotTheme.neonPink).frame(width: 8, height: 8)
-                Text("Active Now")
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundColor(BrainRotTheme.neonPink)
-            }
-            ForEach(activeRoutines) { routine in
-                HStack(spacing: 10) {
-                    Image(systemName: "shield.fill").font(.system(size: 14)).foregroundColor(BrainRotTheme.neonPink)
-                    Text(routine.name).font(.system(size: 13, weight: .bold, design: .rounded)).foregroundColor(BrainRotTheme.textPrimary)
-                    Spacer()
-                    Text("Until \(formatEndTime(routine))").font(.system(size: 11, weight: .medium)).foregroundColor(BrainRotTheme.textSecondary)
-                }
-            }
-        }
-        .padding(12)
-        .background(BrainRotTheme.neonPink.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(BrainRotTheme.neonPink.opacity(0.3), lineWidth: 1))
-    }
-
-    // MARK: - Routines
-
-    private var routinesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Routines")
-                    .font(.system(size: 14, weight: .black, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textSecondary)
-                Spacer()
-                Button {
-                    editingRoutine = nil
-                    showEditor = true
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(BrainRotTheme.neonPink)
-                }
-            }
-            .padding(.horizontal, 4)
-            ForEach(blockingManager.routines) { routine in
-                routineCard(routine)
-            }
-        }
-    }
-
-    private func routineCard(_ routine: BlockRoutine) -> some View {
-        let icon = routineIcon(routine.name)
-        return Button {
-            editingRoutine = routine
-            showEditor = true
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(routine.isEnabled ? BrainRotTheme.neonPink.opacity(0.15) : BrainRotTheme.cardBorder)
-                        .frame(width: 38, height: 38)
-                    Text(icon).font(.system(size: 18))
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(routine.name).font(.system(size: 14, weight: .bold, design: .rounded)).foregroundColor(BrainRotTheme.textPrimary)
-                    HStack(spacing: 6) {
-                        Label(routine.formattedTimeRange, systemImage: "clock")
-                            .font(.system(size: 11, weight: .medium)).foregroundColor(BrainRotTheme.textSecondary)
-                        Text(weekdaySummary(routine.activeDays))
-                            .font(.system(size: 11, weight: .medium)).foregroundColor(BrainRotTheme.textSecondary)
-                    }
-                }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { routine.isEnabled },
-                    set: { _ in blockingManager.toggleRoutine(routine) }
-                )).labelsHidden().tint(BrainRotTheme.neonPink)
-            }
-            .padding(12)
-            .background(BrainRotTheme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-        }
-        .buttonStyle(.plain)
-    }
-
     // MARK: - Helpers
+
+    private func limitIcon(_ name: String) -> String {
+        let l = name.lowercased()
+        if l.contains("all") { return "square.grid.2x2" }
+        if l.contains("social") { return "arrowshape.turn.up.right" }
+        if l.contains("game") || l.contains("gaming") { return "gamecontroller" }
+        if l.contains("entertainment") || l.contains("video") || l.contains("stream") { return "play.tv" }
+        if l.contains("news") || l.contains("read") { return "newspaper" }
+        if l.contains("shop") || l.contains("buy") { return "cart" }
+        if l.contains("message") || l.contains("chat") { return "message" }
+        if l.contains("music") || l.contains("audio") { return "music.note" }
+        return "square.grid.2x2" }
+
+    private func routineSystemIcon(_ name: String) -> String {
+        let l = name.lowercased()
+        if l.contains("morning") { return "sun.max.fill" }
+        if l.contains("work") || l.contains("focus") { return "briefcase.fill" }
+        if l.contains("night") || l.contains("evening") || l.contains("wind") { return "moon.fill" }
+        if l.contains("bed") || l.contains("sleep") { return "bed.double.fill" }
+        if l.contains("study") { return "book.fill" }
+        if l.contains("gym") || l.contains("exercise") || l.contains("fitness") { return "figure.run" }
+        if l.contains("meal") || l.contains("lunch") || l.contains("dinner") { return "fork.knife" }
+        return "shield.fill"
+    }
 
     #if !targetEnvironment(simulator)
     private var todayFilter: DeviceActivityFilter {
@@ -402,27 +527,6 @@ struct BlockView: View {
         if let jsonData = try? JSONEncoder().encode(codable) {
             try? jsonData.write(to: url, options: .atomic)
         }
-    }
-
-    private func routineIcon(_ name: String) -> String {
-        let l = name.lowercased()
-        if l.contains("morning") { return "\u{1F305}" }
-        if l.contains("work") || l.contains("focus") { return "\u{1F4BC}" }
-        if l.contains("night") || l.contains("evening") || l.contains("wind") { return "\u{1F319}" }
-        if l.contains("bed") || l.contains("sleep") { return "\u{1F634}" }
-        if l.contains("study") { return "\u{1F4DA}" }
-        if l.contains("gym") || l.contains("exercise") || l.contains("fitness") { return "\u{1F3CB}\u{FE0F}" }
-        if l.contains("meal") || l.contains("lunch") || l.contains("dinner") { return "\u{1F37D}\u{FE0F}" }
-        return "\u{1F6E1}\u{FE0F}"
-    }
-
-    private func weekdaySummary(_ days: Set<Int>) -> String {
-        if days.count == 7 { return "Every day" }
-        if days == [2, 3, 4, 5, 6] { return "Weekdays" }
-        if days == [1, 7] { return "Weekends" }
-        let labels: [Int: String] = [1: "Su", 2: "Mo", 3: "Tu", 4: "We", 5: "Th", 6: "Fr", 7: "Sa"]
-        let ordered = [2, 3, 4, 5, 6, 7, 1]
-        return ordered.filter { days.contains($0) }.compactMap { labels[$0] }.joined(separator: " ")
     }
 
     private func formatEndTime(_ r: BlockRoutine) -> String {
