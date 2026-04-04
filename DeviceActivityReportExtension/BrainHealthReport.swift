@@ -11,6 +11,7 @@ struct BrainHealthData {
     let longestSessionMinutes: Int
     let topApps: [AppUsageData]
     let allApps: [AppUsageData]
+    let categories: [CategoryUsageData]
     let smartKPIs: SmartKPIs
     let weeklyTrend: WeeklyTrendData
 }
@@ -33,6 +34,11 @@ struct BrainHealthReport: DeviceActivityReportScene {
         // Accumulate per-app data across all days (weekly aggregation)
         var appDurations: [String: TimeInterval] = [:]
         var appPickups: [String: Int] = [:]
+
+        // Accumulate per-category data
+        var catDurations: [String: TimeInterval] = [:]
+        var catPickups: [String: Int] = [:]
+        var catApps: [String: [String: TimeInterval]] = [:] // category -> (appName -> duration)
 
         // For weekly trend
         var dayDurations: [Date: TimeInterval] = [:]
@@ -58,6 +64,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
                 weeklyDuration += segmentDuration
 
                 for await categoryActivity in segment.categories {
+                    let catName = categoryActivity.category.localizedDisplayName ?? "Other"
                     for await appActivity in categoryActivity.applications {
                         let appName = appActivity.application.localizedDisplayName ?? "Unknown App"
                         let appDuration = appActivity.totalActivityDuration
@@ -71,6 +78,9 @@ struct BrainHealthReport: DeviceActivityReportScene {
                         if appDuration > 0 {
                             appDurations[appName, default: 0] += appDuration
                             appPickups[appName, default: 0] += pickups
+                            catDurations[catName, default: 0] += appDuration
+                            catPickups[catName, default: 0] += pickups
+                            catApps[catName, default: [:]][appName, default: 0] += appDuration
                         }
                     }
                 }
@@ -188,6 +198,27 @@ struct BrainHealthReport: DeviceActivityReportScene {
         shared?.set(achievementIDs, forKey: "unlockedAchievements")
         shared?.synchronize()
 
+        // Build category breakdown
+        var weeklyCategories: [CategoryUsageData] = catDurations.map { name, duration in
+            let apps = (catApps[name] ?? [:]).map { appName, appDur in
+                AppUsageData(
+                    displayName: appName,
+                    duration: appDur,
+                    formattedDuration: BrainRotCalculator.formatDuration(appDur),
+                    numberOfPickups: 0
+                )
+            }.sorted { $0.duration > $1.duration }
+
+            return CategoryUsageData(
+                categoryName: name,
+                duration: duration,
+                formattedDuration: BrainRotCalculator.formatDuration(duration),
+                pickups: catPickups[name] ?? 0,
+                apps: apps
+            )
+        }
+        weeklyCategories.sort { $0.duration > $1.duration }
+
         return BrainHealthData(
             totalDuration: weeklyDuration,
             brainRotScore: score,
@@ -196,6 +227,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
             longestSessionMinutes: longestMins,
             topApps: topApps,
             allApps: weeklyAppUsages,
+            categories: weeklyCategories,
             smartKPIs: smartKPIs,
             weeklyTrend: weeklyTrend
         )
