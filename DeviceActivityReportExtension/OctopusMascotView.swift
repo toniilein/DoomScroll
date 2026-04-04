@@ -206,7 +206,7 @@ struct OctopusMascotView: View {
             HStack(spacing: 6) {
                 Text("Screentime:")
                     .font(.system(size: 22, weight: .black, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textSecondary)
+                    .foregroundColor(BrainRotTheme.textPrimary)
                 Text(totalScreenTime)
                     .font(.system(size: 22, weight: .black, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
