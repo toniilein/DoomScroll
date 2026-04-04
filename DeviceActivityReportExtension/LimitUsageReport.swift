@@ -147,12 +147,14 @@ struct LimitUsageReport: DeviceActivityReportScene {
         )
     }
 
-    /// Writes per-limit usage to shared UserDefaults for the native UI to read.
+    /// Writes per-limit usage to shared UserDefaults AND file for the native UI to read.
     private static func writeUsageToDefaults(_ items: [LimitUsageItem]) {
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         // Mark that makeConfiguration ran
         shared?.set(Date().timeIntervalSince1970, forKey: "report_lastRun")
         shared?.set(items.count, forKey: "report_itemCount")
+
+        var fileDict: [String: Int] = [:]
 
         for item in items {
             let usedMinutes = Int(item.usedSeconds / 60.0)
@@ -163,8 +165,19 @@ struct LimitUsageReport: DeviceActivityReportScene {
                 shared?.set(usedMinutes, forKey: "limitProgress_\(item.id)")
                 shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(item.id)")
             }
+            fileDict[item.id] = max(usedMinutes, currentProgress)
         }
         shared?.synchronize()
+
+        // Also write to file (more reliable for cross-process reads)
+        writeUsageFile(fileDict)
+    }
+
+    /// Writes usage dict to limitUsage.json in the shared container
+    private static func writeUsageFile(_ dict: [String: Int]) {
+        guard let url = containerURL?.appendingPathComponent("limitUsage.json"),
+              let data = try? JSONEncoder().encode(dict) else { return }
+        try? data.write(to: url, options: .atomic)
     }
 
     // MARK: - File I/O
@@ -365,7 +378,7 @@ struct LimitSlotHelper {
             store.clearAllSettings()
         }
 
-        // Persist usage to shared UserDefaults so native LimitEditor can display it
+        // Persist usage to shared UserDefaults + file so native LimitEditor can display it
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         let usedMins = Int(usedMinutes)
         let currentProgress = shared?.integer(forKey: "limitProgress_\(limit.id.uuidString)") ?? 0
@@ -373,6 +386,21 @@ struct LimitSlotHelper {
             shared?.set(usedMins, forKey: "limitProgress_\(limit.id.uuidString)")
             shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(limit.id.uuidString)")
             shared?.synchronize()
+        }
+
+        // Also write to file (more reliable cross-process)
+        let idStr = limit.id.uuidString
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.pookie1.shared") {
+            let fileURL = containerURL.appendingPathComponent("limitUsage.json")
+            var existing: [String: Int] = [:]
+            if let data = try? Data(contentsOf: fileURL),
+               let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
+                existing = dict
+            }
+            existing[idStr] = max(usedMins, existing[idStr] ?? 0)
+            if let data = try? JSONEncoder().encode(existing) {
+                try? data.write(to: fileURL, options: .atomic)
+            }
         }
 
         return SingleLimitData(

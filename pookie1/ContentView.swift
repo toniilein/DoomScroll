@@ -18,12 +18,16 @@ struct ContentView: View {
 
 struct MainTabView: View {
     @State private var selectedTab = "Overview"
-    @StateObject private var tabReselect = TabReselectObserver()
+    @State private var scrollToTopTrigger = UUID()
 
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab(L("tab.shield"), systemImage: "shield.fill", value: "Shield") {
                 BlockView()
+                    .background(
+                        TabBarReselectionDetector { scrollToTopTrigger = UUID() }
+                            .frame(width: 0, height: 0)
+                    )
             }
             Tab(L("tab.brainHealth"), systemImage: "chart.bar.fill", value: "BrainHealth") {
                 BrainHealthView()
@@ -36,52 +40,69 @@ struct MainTabView: View {
             }
         }
         .tint(BrainRotTheme.neonPink)
-        .onAppear { tabReselect.setup() }
-        .environment(\.scrollToTopTrigger, tabReselect.scrollTrigger)
+        .environment(\.scrollToTopTrigger, scrollToTopTrigger)
     }
 }
 
-// MARK: - Tab Reselect Observer (UIKit introspection)
+// MARK: - Tab Reselect Detection (UIViewControllerRepresentable — walks UP parent chain)
 
-/// Listens for UITabBarController delegate calls to detect re-selecting the current tab
-class TabReselectObserver: NSObject, ObservableObject, UITabBarControllerDelegate {
-    @Published var scrollTrigger = UUID()
-    private weak var tabBarController: UITabBarController?
+/// Embeds a tiny UIViewController inside a tab. It uses `self.tabBarController` (which walks UP
+/// the parent VC chain) to find the UITabBarController and set a delegate to detect re-taps.
+struct TabBarReselectionDetector: UIViewControllerRepresentable {
+    let onReselect: () -> Void
 
-    func setup() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self else { return }
-            if let tbc = self.findTabBarController() {
-                self.tabBarController = tbc
-                tbc.delegate = self
+    func makeUIViewController(context: Context) -> ReselectionVC {
+        ReselectionVC(coordinator: context.coordinator)
+    }
+
+    func updateUIViewController(_ vc: ReselectionVC, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(onReselect: onReselect) }
+
+    class Coordinator: NSObject, UITabBarControllerDelegate {
+        let onReselect: () -> Void
+        init(onReselect: @escaping () -> Void) { self.onReselect = onReselect }
+
+        func tabBarController(_ tbc: UITabBarController, shouldSelect vc: UIViewController) -> Bool {
+            if vc == tbc.selectedViewController {
+                onReselect()
+            }
+            return true
+        }
+    }
+
+    class ReselectionVC: UIViewController {
+        private weak var coordinator: Coordinator?
+
+        init(coordinator: Coordinator) {
+            self.coordinator = coordinator
+            super.init(nibName: nil, bundle: nil)
+        }
+        required init?(coder: NSCoder) { fatalError() }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            findAndSetDelegate()
+        }
+
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            findAndSetDelegate()
+        }
+
+        private func findAndSetDelegate() {
+            // self.tabBarController walks UP the parent VC chain — much more reliable
+            if let tbc = self.tabBarController {
+                tbc.delegate = coordinator
+                return
+            }
+            // Fallback: try again shortly (SwiftUI may not have finished embedding yet)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                if let tbc = self?.tabBarController {
+                    tbc.delegate = self?.coordinator
+                }
             }
         }
-    }
-
-    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
-        if viewController == tabBarController.selectedViewController {
-            // Same tab re-tapped — trigger scroll to top
-            scrollTrigger = UUID()
-        }
-        return true
-    }
-
-    private func findTabBarController() -> UITabBarController? {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = scene.windows.first,
-              let root = window.rootViewController else { return nil }
-        return findTBC(in: root)
-    }
-
-    private func findTBC(in vc: UIViewController) -> UITabBarController? {
-        if let tbc = vc as? UITabBarController { return tbc }
-        for child in vc.children {
-            if let found = findTBC(in: child) { return found }
-        }
-        if let presented = vc.presentedViewController {
-            return findTBC(in: presented)
-        }
-        return nil
     }
 }
 

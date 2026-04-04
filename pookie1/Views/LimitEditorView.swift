@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 #if !targetEnvironment(simulator)
 import FamilyControls
 import DeviceActivity
@@ -15,6 +16,8 @@ struct LimitEditorView: View {
     @State private var activeDays: Set<Int>
     @State private var showAppPicker = false
     @State private var showDeleteConfirm = false
+    @State private var currentUsageMinutes: Double = 0
+    private let usageTimer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
     #if !targetEnvironment(simulator)
     @State private var appSelection: FamilyActivitySelection
@@ -84,6 +87,8 @@ struct LimitEditorView: View {
                 selection: $appSelection
             )
             #endif
+            .onAppear { currentUsageMinutes = loadLimitUsage() }
+            .onReceive(usageTimer) { _ in currentUsageMinutes = loadLimitUsage() }
         }
     }
 
@@ -215,7 +220,7 @@ struct LimitEditorView: View {
     // MARK: - Today's Usage — reads from limitProgress_{id} written by LimitUsageReport extension
 
     private var todayUsageSection: some View {
-        let usedMinutes = loadLimitUsage()
+        let usedMinutes = currentUsageMinutes
         let limitMins = Double(limitHours * 60 + limitMinutes)
         let exceeded = limitMins > 0 && usedMinutes >= limitMins
         let progress = limitMins > 0 ? min(1.0, usedMinutes / limitMins) : 0
@@ -268,13 +273,28 @@ struct LimitEditorView: View {
 
     // MARK: - Read limit-specific usage
 
-    /// Reads usage for this specific limit from shared UserDefaults
-    /// Written by LimitUsageReport extension as limitProgress_{limitId}
+    /// Reads usage for this specific limit from shared UserDefaults + file fallback.
+    /// Written by LimitUsageReport extension and DeviceActivityMonitor as limitProgress_{limitId}
     private func loadLimitUsage() -> Double {
+        let idStr = limitId.uuidString
         let shared = UserDefaults(suiteName: "group.pookie1.shared")
         shared?.synchronize()
-        let usedMinutes = shared?.integer(forKey: "limitProgress_\(limitId.uuidString)") ?? 0
-        return Double(usedMinutes)
+
+        // Try UserDefaults first (written by monitor extension + report extension)
+        let fromDefaults = shared?.integer(forKey: "limitProgress_\(idStr)") ?? 0
+
+        // Also try file-based usage data (more reliable cross-process)
+        var fromFile = 0
+        if let url = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.pookie1.shared"
+        )?.appendingPathComponent("limitUsage.json"),
+           let data = try? Data(contentsOf: url),
+           let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
+            fromFile = dict[idStr] ?? 0
+        }
+
+        // Return whichever is higher (both sources may have data)
+        return Double(max(fromDefaults, fromFile))
     }
 
     private func formatMinutes(_ mins: Double) -> String {
