@@ -11,6 +11,24 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
         UserDefaults(suiteName: sharedSuiteName)
     }
 
+    private var containerURL: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: sharedSuiteName)
+    }
+
+    /// Write usage to limitUsage.json file (more reliable cross-process than UserDefaults)
+    private func writeUsageToFile(id: String, minutes: Int) {
+        guard let fileURL = containerURL?.appendingPathComponent("limitUsage.json") else { return }
+        var existing: [String: Int] = [:]
+        if let data = try? Data(contentsOf: fileURL),
+           let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
+            existing = dict
+        }
+        existing[id] = max(minutes, existing[id] ?? 0)
+        if let data = try? JSONEncoder().encode(existing) {
+            try? data.write(to: fileURL, options: .atomic)
+        }
+    }
+
     // MARK: - Routine schedule callbacks
 
     override func intervalDidStart(for activity: DeviceActivityName) {
@@ -75,6 +93,7 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
                         shared?.set(minutes, forKey: "limitProgress_\(id)")
                         shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(id)")
                         shared?.synchronize()
+                        writeUsageToFile(id: id, minutes: minutes)
                     }
                 }
             }
@@ -89,6 +108,7 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
                 shared?.set(limit.limitMinutes, forKey: "limitProgress_\(id)")
                 shared?.set(Date().timeIntervalSince1970, forKey: "limitProgressTime_\(id)")
                 shared?.synchronize()
+                writeUsageToFile(id: id, minutes: limit.limitMinutes)
             }
         }
     }
