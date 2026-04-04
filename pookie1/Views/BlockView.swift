@@ -18,41 +18,36 @@ struct BlockView: View {
     @State private var quickBlockSelection = FamilyActivitySelection()
     #endif
 
+    // Must match LimitUsageView constants in extension
+    private let extCardHeight: CGFloat = 76
+    private let extCardSpacing: CGFloat = 12
+
+    private var extensionHeight: CGFloat {
+        let count = CGFloat(blockingManager.usageLimits.count)
+        guard count > 0 else { return 0 }
+        return count * extCardHeight + (count - 1) * extCardSpacing
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 28) {
-                        // Page header
-                        pageHeader
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    // Page header
+                    pageHeader
 
-                        // Quick Block hero
-                        quickBlockHero
+                    // Quick Block hero
+                    quickBlockHero
 
-                        // Usage Limits
-                        usageLimitsSection
+                    // Usage Limits with extension-rendered usage
+                    usageLimitsSection
 
-                        // Block Routines
-                        routinesSection
+                    // Block Routines (single column)
+                    routinesSection
 
-                        Spacer().frame(height: 60)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
+                    Spacer().frame(height: 60)
                 }
-
-                // Extension at bottom — must be outside ScrollView to connect.
-                // makeConfiguration applies/removes shields.
-                #if !targetEnvironment(simulator)
-                if !blockingManager.usageLimits.isEmpty {
-                    DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 1)
-                        .clipped()
-                        .allowsHitTesting(false)
-                }
-                #endif
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
             }
             .background(BrainRotTheme.background)
             .navigationBarTitleDisplayMode(.inline)
@@ -180,7 +175,6 @@ struct BlockView: View {
                     )
             }
 
-            // Panic button
             Button {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                     blockingManager.toggleQuickBlock()
@@ -200,7 +194,6 @@ struct BlockView: View {
                     .shadow(color: (isBlocking ? Color.gray : BrainRotTheme.neonPink).opacity(0.3), radius: 8, y: 4)
             }
 
-            // App picker link
             Button { showQuickBlockPicker = true } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "apps.iphone").font(.system(size: 13))
@@ -221,9 +214,7 @@ struct BlockView: View {
             }
         }
         .padding(24)
-        .background(
-            BrainRotTheme.neonPink.opacity(0.06)
-        )
+        .background(BrainRotTheme.neonPink.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay(
             RoundedRectangle(cornerRadius: 24)
@@ -235,6 +226,7 @@ struct BlockView: View {
 
     private var usageLimitsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Section header
             HStack(alignment: .lastTextBaseline) {
                 Text("Usage Limits")
                     .font(.system(size: 20, weight: .bold, design: .rounded))
@@ -251,46 +243,92 @@ struct BlockView: View {
             .padding(.horizontal, 2)
 
             if blockingManager.usageLimits.isEmpty {
-                Button {
-                    editingLimit = UsageLimit(name: "", limitMinutes: 60, isEnabled: false)
-                } label: {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle()
-                                .fill(BrainRotTheme.cardBorder)
-                                .frame(width: 48, height: 48)
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Add a usage limit")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                            Text("Set daily time limits for app groups")
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                        }
-                        Spacer()
-                    }
-                    .padding(18)
-                    .background(BrainRotTheme.cardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
-                }
-                .buttonStyle(.plain)
+                emptyLimitCard
             } else {
-                ForEach(blockingManager.usageLimits) { limit in
-                    limitCard(limit)
+                // Extension renders usage cards; native overlay adds toggles + tap to edit
+                #if !targetEnvironment(simulator)
+                ZStack(alignment: .top) {
+                    // Layer 1: Extension-rendered cards with usage data
+                    DeviceActivityReport(.limitUsage, filter: todayFilter)
+                        .id(reportID)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: extensionHeight)
+                        .clipped()
+                        .allowsHitTesting(false)
+
+                    // Layer 2: Native overlay — toggle + tap to edit per card
+                    VStack(spacing: extCardSpacing) {
+                        ForEach(blockingManager.usageLimits) { limit in
+                            HStack {
+                                // Tap to edit (transparent area covering left side)
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { editingLimit = limit }
+
+                                // Toggle (positioned over the reserved space in extension card)
+                                Toggle("", isOn: Binding(
+                                    get: { limit.isEnabled },
+                                    set: { _ in
+                                        blockingManager.toggleUsageLimit(limit)
+                                        syncAllLimitConfigs()
+                                    }
+                                ))
+                                .labelsHidden()
+                                .tint(BrainRotTheme.neonPurple)
+                            }
+                            .padding(.trailing, 18)
+                            .frame(height: extCardHeight)
+                        }
+                    }
+                    .padding(.horizontal, 20)
                 }
+                .frame(height: extensionHeight)
+                // Pull back the horizontal padding since extension has its own
+                .padding(.horizontal, -20)
+                #else
+                ForEach(blockingManager.usageLimits) { limit in
+                    simulatorLimitCard(limit)
+                }
+                #endif
             }
         }
     }
 
-    private func limitCard(_ limit: UsageLimit) -> some View {
+    private var emptyLimitCard: some View {
+        Button {
+            editingLimit = UsageLimit(name: "", limitMinutes: 60, isEnabled: false)
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(BrainRotTheme.cardBorder)
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Add a usage limit")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                    Text("Set daily time limits for app groups")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                Spacer()
+            }
+            .padding(18)
+            .background(BrainRotTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
+        }
+        .buttonStyle(.plain)
+    }
+
+    #if targetEnvironment(simulator)
+    private func simulatorLimitCard(_ limit: UsageLimit) -> some View {
         Button { editingLimit = limit } label: {
             HStack(spacing: 14) {
-                // Icon circle
                 ZStack {
                     Circle()
                         .fill(BrainRotTheme.background)
@@ -299,27 +337,18 @@ struct BlockView: View {
                         .font(.system(size: 18))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
-
-                // Name + limit info
                 VStack(alignment: .leading, spacing: 3) {
                     Text(limit.name)
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
-                        .lineLimit(1)
                     Text("\(limit.formattedLimit) daily limit")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
-
                 Spacer()
-
-                // Toggle
                 Toggle("", isOn: Binding(
                     get: { limit.isEnabled },
-                    set: { _ in
-                        blockingManager.toggleUsageLimit(limit)
-                        syncAllLimitConfigs()
-                    }
+                    set: { _ in blockingManager.toggleUsageLimit(limit) }
                 ))
                 .labelsHidden()
                 .tint(BrainRotTheme.neonPurple)
@@ -331,8 +360,9 @@ struct BlockView: View {
         }
         .buttonStyle(.plain)
     }
+    #endif
 
-    // MARK: - Routines
+    // MARK: - Block Routines (single column)
 
     private var routinesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -352,20 +382,12 @@ struct BlockView: View {
             }
             .padding(.horizontal, 2)
 
-            // Active now banner
             if !activeRoutines.isEmpty {
                 activeNowBanner
             }
 
-            // Grid of routine cards
-            let columns = [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ]
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(blockingManager.routines) { routine in
-                    routineCard(routine)
-                }
+            ForEach(blockingManager.routines) { routine in
+                routineCard(routine)
             }
         }
     }
@@ -393,57 +415,47 @@ struct BlockView: View {
             editingRoutine = routine
             showEditor = true
         } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                // Top row: icon + toggle
-                HStack(alignment: .top) {
-                    Image(systemName: routineSystemIcon(routine.name))
-                        .font(.system(size: 24))
-                        .foregroundColor(routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary.opacity(0.5))
-                    Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { routine.isEnabled },
-                        set: { _ in blockingManager.toggleRoutine(routine) }
-                    ))
-                    .labelsHidden()
-                    .tint(BrainRotTheme.neonPurple)
-                    .scaleEffect(0.85)
-                }
-                .padding(.bottom, 14)
+            HStack(spacing: 14) {
+                // Icon
+                Image(systemName: routineSystemIcon(routine.name))
+                    .font(.system(size: 26))
+                    .foregroundColor(routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary.opacity(0.4))
+                    .frame(width: 40)
 
-                // Name
-                Text(routine.name)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundColor(routine.isEnabled ? BrainRotTheme.textPrimary : BrainRotTheme.textPrimary.opacity(0.5))
-                    .lineLimit(1)
-
-                // Time range
-                Text(routine.formattedTimeRange)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(routine.isEnabled ? BrainRotTheme.textSecondary : BrainRotTheme.textSecondary.opacity(0.5))
-                    .padding(.top, 2)
-                    .padding(.bottom, 12)
-
-                // Day pills
-                HStack(spacing: 3) {
-                    ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { _ in }
-                    let dayLabels: [(Int, String)] = [(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")]
-                    ForEach(dayLabels, id: \.0) { weekday, label in
-                        Text(label)
-                            .font(.system(size: 9, weight: .bold, design: .rounded))
-                            .foregroundColor(routine.activeDays.contains(weekday)
-                                ? (routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary)
-                                : BrainRotTheme.textSecondary.opacity(0.3))
-                            .frame(width: 18, height: 18)
-                            .background(
-                                routine.activeDays.contains(weekday)
-                                    ? (routine.isEnabled ? BrainRotTheme.neonPurple.opacity(0.1) : BrainRotTheme.cardBorder.opacity(0.5))
-                                    : Color.clear
-                            )
-                            .clipShape(Circle())
+                // Info
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(routine.name)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(routine.isEnabled ? BrainRotTheme.textPrimary : BrainRotTheme.textPrimary.opacity(0.5))
+                        .lineLimit(1)
+                    HStack(spacing: 8) {
+                        Text(routine.formattedTimeRange)
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundColor(routine.isEnabled ? BrainRotTheme.textSecondary : BrainRotTheme.textSecondary.opacity(0.5))
+                        // Day dots
+                        HStack(spacing: 2) {
+                            ForEach([(2,"M"),(3,"T"),(4,"W"),(5,"T"),(6,"F"),(7,"S"),(1,"S")], id: \.0) { weekday, label in
+                                Text(label)
+                                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                                    .foregroundColor(routine.activeDays.contains(weekday)
+                                        ? (routine.isEnabled ? BrainRotTheme.neonPurple : BrainRotTheme.textSecondary)
+                                        : BrainRotTheme.textSecondary.opacity(0.25))
+                            }
+                        }
                     }
                 }
+
+                Spacer()
+
+                // Toggle
+                Toggle("", isOn: Binding(
+                    get: { routine.isEnabled },
+                    set: { _ in blockingManager.toggleRoutine(routine) }
+                ))
+                .labelsHidden()
+                .tint(BrainRotTheme.neonPurple)
             }
-            .padding(18)
+            .padding(16)
             .background(BrainRotTheme.cardBackground.opacity(routine.isEnabled ? 1 : 0.7))
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .shadow(color: Color.black.opacity(routine.isEnabled ? 0.04 : 0.02), radius: 8, y: 2)
@@ -477,7 +489,8 @@ struct BlockView: View {
         if l.contains("shop") || l.contains("buy") { return "cart" }
         if l.contains("message") || l.contains("chat") { return "message" }
         if l.contains("music") || l.contains("audio") { return "music.note" }
-        return "square.grid.2x2" }
+        return "square.grid.2x2"
+    }
 
     private func routineSystemIcon(_ name: String) -> String {
         let l = name.lowercased()
@@ -527,11 +540,5 @@ struct BlockView: View {
         if let jsonData = try? JSONEncoder().encode(codable) {
             try? jsonData.write(to: url, options: .atomic)
         }
-    }
-
-    private func formatEndTime(_ r: BlockRoutine) -> String {
-        let h = r.endHour % 12 == 0 ? 12 : r.endHour % 12
-        let p = r.endHour < 12 ? "AM" : "PM"
-        return r.endMinute == 0 ? "\(h) \(p)" : "\(h):\(String(format: "%02d", r.endMinute)) \(p)"
     }
 }
