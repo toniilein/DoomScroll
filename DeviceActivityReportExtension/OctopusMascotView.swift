@@ -283,17 +283,11 @@ struct OctopusMascotView: View {
                     let segmentStart = CGFloat(currentTierIdx) * (tierWidth + gap)
                     let xPos = segmentStart + tierWidth * progressInTier
 
-                    VStack(spacing: 0) {
-                        // Triangle pointer
-                        Image(systemName: "arrowtriangle.down.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(currentTier.mood.bodyColorDark)
-                        // Vertical line
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(currentTier.mood.bodyColorDark)
-                            .frame(width: 2.5, height: 14)
-                    }
-                    .offset(x: xPos - 5, y: -10)
+                    // Vertical line indicator
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(currentTier.mood.bodyColorDark)
+                        .frame(width: 2.5, height: 14)
+                        .offset(x: xPos - 1.25, y: -3)
                 }
             }
             .frame(height: 18)
@@ -302,16 +296,12 @@ struct OctopusMascotView: View {
             HStack(spacing: 3) {
                 ForEach(Array(Self.tiers.enumerated()), id: \.offset) { idx, tier in
                     let isCurrent = idx == currentTierIdx
-                    HStack(spacing: 2) {
-                        Text(tier.emoji)
-                            .font(.system(size: 10))
-                        Text(tier.name)
-                            .font(.system(size: 9, weight: isCurrent ? .black : .medium, design: .rounded))
-                            .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    Text(tier.name)
+                        .font(.system(size: 9, weight: isCurrent ? .black : .medium, design: .rounded))
+                        .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
             }
         }
