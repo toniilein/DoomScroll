@@ -24,8 +24,19 @@ struct BrainHealthView: View {
                     }
                 } else {
                     #if !targetEnvironment(simulator)
-                    DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ZStack {
+                        // Loading placeholder while extension connects
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .tint(BrainRotTheme.neonPurple)
+                            Text("Loading...")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+
+                        DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                     #endif
                 }
             }
