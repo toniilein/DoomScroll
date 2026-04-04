@@ -56,6 +56,16 @@ struct BlockView: View {
                     .padding(.top, 4)
                 }
 
+                // Hidden backup report outside ScrollView for shield enforcement
+                #if !targetEnvironment(simulator)
+                if !blockingManager.usageLimits.isEmpty {
+                    DeviceActivityReport(.limitUsage, filter: todayFilter)
+                        .id(reportID)
+                        .frame(width: 1, height: 1)
+                        .opacity(0.01)
+                        .allowsHitTesting(false)
+                }
+                #endif
             }
             .background(BrainRotTheme.background)
             .navigationBarTitleDisplayMode(.inline)
