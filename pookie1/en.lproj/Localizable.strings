@@ -1,0 +1,195 @@
+/* Tabs */
+"tab.shield" = "Shield";
+"tab.brainHealth" = "Brain Health";
+"tab.overview" = "Overview";
+"tab.settings" = "Settings";
+
+/* Onboarding */
+"onboarding.appName" = "ScreenRot";
+"onboarding.subtitle" = "your screen time guardian";
+"onboarding.trackUsage" = "Track Usage";
+"onboarding.blockApps" = "Block Apps";
+"onboarding.brainHealth" = "Brain Health";
+"onboarding.permission" = "We need Screen Time access to help you take control of your screen habits";
+"onboarding.getStarted" = "Get Started";
+"onboarding.denied" = "Authorization denied.";
+"onboarding.enableScreenTime" = "Make sure Screen Time is enabled in Settings > Screen Time";
+
+/* Shield Tab */
+"shield.title" = "Shield";
+"shield.subtitle" = "Your digital immune system. Stronger than your willpower.";
+"shield.unblockAll" = "Unblock All";
+"shield.unblockAllTitle" = "Unblock All Apps?";
+"shield.unblockAllMessage" = "This will disable all shields, routines, and usage limits.";
+"shield.cancel" = "Cancel";
+
+/* Usage Limits */
+"limits.title" = "Usage Limits";
+"limits.addLimit" = "Add Limit";
+"limits.addUsageLimit" = "Add a usage limit";
+"limits.addUsageLimitDesc" = "Set daily time limits for app groups";
+"limits.dailyLimit" = "daily limit";
+"limits.used" = "used";
+"limits.left" = "left";
+"limits.exceeded" = "Exceeded";
+
+/* Routines */
+"routines.title" = "Block Routines";
+"routines.schedule" = "Schedule";
+"routines.addRoutine" = "Add a routine";
+"routines.addRoutineDesc" = "Schedule app blocking by time of day";
+"routines.activeNow" = "Active Now";
+
+/* Routine Editor */
+"routineEditor.editTitle" = "Edit Routine";
+"routineEditor.newTitle" = "New Routine";
+"routineEditor.cancel" = "Cancel";
+"routineEditor.save" = "Save";
+"routineEditor.name" = "Name";
+"routineEditor.namePlaceholder" = "Evening Routine";
+"routineEditor.schedule" = "Schedule";
+"routineEditor.start" = "Start";
+"routineEditor.end" = "End";
+"routineEditor.overnight" = "Overnight schedule";
+"routineEditor.appsToBlock" = "Apps to Block";
+"routineEditor.selectApps" = "Select Apps";
+"routineEditor.tapToChoose" = "Tap to choose apps and categories";
+"routineEditor.deleteRoutine" = "Delete Routine";
+"routineEditor.deleteTitle" = "Delete Routine?";
+"routineEditor.deleteMessage" = "This will permanently remove \"%@\".";
+"routineEditor.delete" = "Delete";
+
+/* Limit Editor */
+"limitEditor.editTitle" = "Edit Limit";
+"limitEditor.newTitle" = "New Usage Limit";
+"limitEditor.name" = "Name";
+"limitEditor.namePlaceholder" = "Social Media";
+"limitEditor.dailyLimit" = "Daily Limit";
+"limitEditor.activeDays" = "Active Days";
+"limitEditor.appsToLimit" = "Apps to Limit";
+"limitEditor.selectApps" = "Select Apps";
+"limitEditor.tapToChoose" = "Tap to choose apps and categories";
+"limitEditor.deleteLimit" = "Delete Limit";
+
+/* Quick Block */
+"quickBlock.title" = "Quick Block";
+"quickBlock.tapToBlock" = "Tap to block selected apps instantly";
+"quickBlock.chooseApps" = "Choose Apps";
+"quickBlock.blocking" = "Blocking Active";
+"quickBlock.tapToUnblock" = "Tap to unblock";
+
+/* Overview / Dashboard */
+"overview.title" = "Overview";
+"overview.loading" = "Loading...";
+"overview.screenTimeRequired" = "Screen Time Required";
+"overview.enableScreenTime" = "Enable Screen Time on the Overview tab to see your brain health data";
+
+/* Octopus */
+"octopus.screentime" = "Screentime:";
+"octopus.ecstatic.timeLeft" = "I'm so happy! You have %@ before I get worried";
+"octopus.happy.timeLeft" = "Feeling good! %@ left before I start worrying";
+"octopus.sad.timeLeft" = "I'm not great... only %@ before it gets worse";
+"octopus.ecstatic.noTime" = "I'm living my best life! %@ today";
+"octopus.happy.noTime" = "Pretty good day! %@ so far";
+"octopus.sad.noTime" = "I'm hurting... %@ today";
+"octopus.zombie.noTime" = "%@... I can't even talk anymore";
+
+/* Tiers */
+"tier.digitalMonk" = "Digital Monk";
+"tier.grassToucher" = "Grass Toucher";
+"tier.doomscroller" = "Doomscroller";
+"tier.brainrot" = "Brainrot";
+"tier.current" = "CURRENT";
+"tier.krakenTiers" = "Kraken Tiers";
+"tier.done" = "Done";
+
+/* Quick Stats */
+"stats.pickups" = "Pickups";
+"stats.avgSession" = "Avg Session";
+"stats.frequency" = "Frequency";
+
+/* App Breakdown */
+"breakdown.appBreakdown" = "App Breakdown";
+"breakdown.categoryBreakdown" = "Category Breakdown";
+"breakdown.apps" = "apps";
+"breakdown.groups" = "groups";
+"breakdown.pickups" = "pickups";
+"breakdown.duration" = "Duration";
+"breakdown.avgSession" = "Avg Session";
+"breakdown.screenTimeShare" = "Screen Time Share";
+
+/* Brain Health */
+"brainHealth.title" = "Brain Health";
+"brainHealth.recommendations" = "Recommendations";
+"brainHealth.setLimit" = "Set a limit for %@";
+"brainHealth.setLimitDetail" = "You average ~%dm/day on %@. Go to Shield tab and add a %dm usage limit to stay in control.";
+"brainHealth.addLimit" = "Add a usage limit";
+"brainHealth.addLimitDetail" = "Go to the Shield tab and set a daily usage limit for your most-used apps.";
+"brainHealth.goToShield" = "Go to Shield tab";
+"brainHealth.screenTimeHigh" = "Screen time is very high";
+"brainHealth.screenTimeHighDetail" = "Try setting app timers to limit your heaviest apps.";
+"brainHealth.roomToImprove" = "Room to improve";
+"brainHealth.roomToImproveDetail" = "You're halfway there. Try putting your phone in another room during meals.";
+"brainHealth.greatJob" = "Great job this week!";
+"brainHealth.greatJobDetail" = "Your screen time is well under control. Keep up the healthy habits.";
+"brainHealth.tooManyPickups" = "Too many pickups";
+"brainHealth.tooManyPickupsDetail" = "You picked up your phone %d times. Try turning off non-essential notifications.";
+"brainHealth.watchPickups" = "Watch your pickups";
+"brainHealth.watchPickupsDetail" = "%d pickups this week. Batch-check notifications at set times instead of reacting to every buzz.";
+"brainHealth.biggestDrain" = "%@ is your biggest drain";
+"brainHealth.biggestDrainDetail" = "%dh+ this week. Consider setting a daily limit for this app.";
+
+/* Weekly Trend */
+"trend.weeklyTrend" = "Weekly Trend";
+"trend.weeklyAvg" = "Weekly Avg";
+"trend.improving" = "Improving";
+"trend.worsening" = "Worsening";
+"trend.stable" = "Stable";
+"trend.bestDay" = "Best";
+"trend.worstDay" = "Worst";
+"trend.weeklyTotal" = "Weekly Total";
+"trend.streak" = "day streak under control";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.language" = "Language";
+"settings.system" = "System";
+"settings.english" = "English";
+"settings.german" = "Deutsch";
+"settings.krakenTiers" = "Kraken Tiers";
+"settings.krakenTiersDesc" = "Your daily screen time determines your kraken's mood:";
+"settings.about" = "About ScreenRot";
+"settings.aboutDesc1" = "ScreenRot tracks your daily screen time and visualizes it through a kraken mascot that reacts to your usage.";
+"settings.aboutDesc2" = "Use the Shield tab to set usage limits and block routines for specific apps. The Overview tab shows your daily breakdown, and Brain Health tracks your weekly trends.";
+
+/* Weekday Picker */
+"weekday.mon" = "M";
+"weekday.tue" = "T";
+"weekday.wed" = "W";
+"weekday.thu" = "T";
+"weekday.fri" = "F";
+"weekday.sat" = "S";
+"weekday.sun" = "S";
+
+/* Limit Editor (extended) */
+"limitEditor.cancel" = "Cancel";
+"limitEditor.save" = "Save";
+"limitEditor.hours" = "Hours";
+"limitEditor.minutes" = "Minutes";
+"limitEditor.todayUsage" = "Today's Usage";
+"limitEditor.exceeded" = "Exceeded";
+"limitEditor.usageDataLoads" = "Usage data loads from Overview tab";
+"limitEditor.deleteTitle" = "Delete \"%@\"?";
+"limitEditor.deleteMessage" = "This limit and its settings will be permanently removed.";
+
+/* Weekly Trend (extended) */
+"trend.thisWeek" = "This Week";
+"trend.total" = "Total: %@";
+
+/* Common */
+"common.cancel" = "Cancel";
+"common.delete" = "Delete";
+"common.save" = "Save";
+"common.done" = "Done";
+"common.apps" = "Apps";
+"common.notAvailableSimulator" = "Not available in simulator";

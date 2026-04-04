@@ -26,7 +26,7 @@ struct DashboardView: View {
                         VStack(spacing: 12) {
                             ProgressView()
                                 .tint(BrainRotTheme.neonPink)
-                            Text("Loading...")
+                            Text(L("overview.loading"))
                                 .font(.system(size: 13, weight: .medium, design: .rounded))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         }
@@ -37,7 +37,7 @@ struct DashboardView: View {
                     #endif
                 }
             }
-            .navigationTitle("Overview")
+            .navigationTitle(L("overview.title"))
             .toolbarColorScheme(.light, for: .navigationBar)
             .onAppear {
                 // Reset to today so Overview always opens on the current day

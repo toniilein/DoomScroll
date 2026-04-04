@@ -52,7 +52,7 @@ struct BlockView: View {
                     Button {
                         showUnblockConfirm = true
                     } label: {
-                        Text("Unblock All")
+                        Text(L("shield.unblockAll"))
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundColor(.red.opacity(0.8))
                             .padding(.horizontal, 12)
@@ -63,13 +63,13 @@ struct BlockView: View {
                 }
             }
             .toolbarColorScheme(.light, for: .navigationBar)
-            .alert("Unblock All Apps?", isPresented: $showUnblockConfirm) {
-                Button("Cancel", role: .cancel) {}
-                Button("Unblock All", role: .destructive) {
+            .alert(L("shield.unblockAllTitle"), isPresented: $showUnblockConfirm) {
+                Button(L("shield.cancel"), role: .cancel) {}
+                Button(L("shield.unblockAll"), role: .destructive) {
                     blockingManager.unblockEverything()
                 }
             } message: {
-                Text("This will disable all shields, routines, and usage limits.")
+                Text(L("shield.unblockAllMessage"))
             }
             .onAppear {
                 blockingManager.syncAllSchedules()
@@ -124,10 +124,10 @@ struct BlockView: View {
 
     private var pageHeader: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Shield")
+            Text(L("shield.title"))
                 .font(.system(size: 34, weight: .heavy, design: .rounded))
                 .foregroundColor(BrainRotTheme.textPrimary)
-            Text("Your digital immune system. Stronger than your willpower.")
+            Text(L("shield.subtitle"))
                 .font(.system(size: 16, weight: .medium, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
         }
@@ -212,14 +212,14 @@ struct BlockView: View {
     private var usageLimitsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .lastTextBaseline) {
-                Text("Usage Limits")
+                Text(L("limits.title"))
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
                 Button {
                     editingLimit = UsageLimit(name: "", limitMinutes: 60, isEnabled: false)
                 } label: {
-                    Text("Add Limit")
+                    Text(L("limits.addLimit"))
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.neonPink)
                 }
@@ -268,10 +268,10 @@ struct BlockView: View {
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Add a usage limit")
+                    Text(L("limits.addUsageLimit"))
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
-                    Text("Set daily time limits for app groups")
+                    Text(L("limits.addUsageLimitDesc"))
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
@@ -300,10 +300,10 @@ struct BlockView: View {
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Add a routine")
+                    Text(L("routines.addRoutine"))
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
-                    Text("Schedule app blocking by time of day")
+                    Text(L("routines.addRoutineDesc"))
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
@@ -325,7 +325,7 @@ struct BlockView: View {
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textPrimary)
                         .lineLimit(1)
-                    Text("\(limit.formattedLimit) daily limit")
+                    Text("\(limit.formattedLimit) \(L("limits.dailyLimit"))")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
@@ -376,7 +376,7 @@ struct BlockView: View {
     private var routinesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .lastTextBaseline) {
-                Text("Block Routines")
+                Text(L("routines.title"))
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
@@ -384,7 +384,7 @@ struct BlockView: View {
                     editingRoutine = nil
                     showEditor = true
                 } label: {
-                    Text("Schedule")
+                    Text(L("routines.schedule"))
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.neonPink)
                 }
@@ -413,7 +413,7 @@ struct BlockView: View {
                 .foregroundColor(BrainRotTheme.neonPink)
                 .lineLimit(1)
             Spacer()
-            Text("Active Now")
+            Text(L("routines.activeNow"))
                 .font(.system(size: 11, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.neonPink.opacity(0.7))
         }

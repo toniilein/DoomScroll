@@ -172,13 +172,13 @@ struct OnboardingView: View {
                 Spacer().frame(height: 24)
 
                 // App name
-                Text("ScreenRot")
+                Text(L("onboarding.appName"))
                     .font(.system(size: 42, weight: .black, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
 
                 Spacer().frame(height: 8)
 
-                Text("your screen time guardian")
+                Text(L("onboarding.subtitle"))
                     .font(.system(size: 18, weight: .medium, design: .rounded))
                     .foregroundColor(BrainRotTheme.textSecondary)
 
@@ -188,12 +188,12 @@ struct OnboardingView: View {
                 VStack(spacing: 20) {
                     // Feature pills
                     HStack(spacing: 10) {
-                        featurePill(icon: "chart.bar.fill", text: "Track Usage")
-                        featurePill(icon: "shield.fill", text: "Block Apps")
-                        featurePill(icon: "brain.fill", text: "Brain Health")
+                        featurePill(icon: "chart.bar.fill", text: L("onboarding.trackUsage"))
+                        featurePill(icon: "shield.fill", text: L("onboarding.blockApps"))
+                        featurePill(icon: "brain.fill", text: L("onboarding.brainHealth"))
                     }
 
-                    Text("We need Screen Time access to help you take control of your screen habits")
+                    Text(L("onboarding.permission"))
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                         .multilineTextAlignment(.center)
@@ -205,7 +205,7 @@ struct OnboardingView: View {
                         }
                     } label: {
                         HStack(spacing: 8) {
-                            Text("Get Started")
+                            Text(L("onboarding.getStarted"))
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 16, weight: .bold))
@@ -227,7 +227,7 @@ struct OnboardingView: View {
 
                     if screenTimeManager.authorizationStatus == .denied {
                         VStack(spacing: 8) {
-                            Text("Authorization denied.")
+                            Text(L("onboarding.denied"))
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundColor(BrainRotTheme.neonPink)
 
@@ -237,7 +237,7 @@ struct OnboardingView: View {
                                     .foregroundColor(BrainRotTheme.textSecondary)
                             }
 
-                            Text("Make sure Screen Time is enabled in Settings > Screen Time")
+                            Text(L("onboarding.enableScreenTime"))
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         }

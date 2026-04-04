@@ -38,7 +38,7 @@ struct BrainHealthReportView: View {
             HStack(spacing: 6) {
                 Image(systemName: "lightbulb.fill")
                     .foregroundColor(BrainRotTheme.neonOrange)
-                Text("Recommendations")
+                Text(L("brainHealth.recommendations"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
             }
@@ -61,7 +61,7 @@ struct BrainHealthReportView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "shield.fill")
                                     .font(.system(size: 10))
-                                Text("Go to Shield tab")
+                                Text(L("brainHealth.goToShield"))
                                     .font(.system(size: 12, weight: .bold, design: .rounded))
                             }
                             .foregroundColor(BrainRotTheme.neonPurple)
@@ -118,15 +118,15 @@ struct BrainHealthReportView: View {
             let suggestedLimit = max(15, (dailyAvgMinutes / 15) * 15) // round down to nearest 15m
             tips.append(Tip(
                 icon: "\u{1F6E1}\u{FE0F}",
-                title: "Set a limit for \(app.displayName)",
-                detail: "You average ~\(dailyAvgMinutes)m/day on \(app.displayName). Go to Shield tab and add a \(suggestedLimit)m usage limit to stay in control.",
+                title: String(format: L("brainHealth.setLimit"), app.displayName),
+                detail: String(format: L("brainHealth.setLimitDetail"), dailyAvgMinutes, app.displayName, suggestedLimit),
                 isAction: true
             ))
         } else {
             tips.append(Tip(
                 icon: "\u{1F6E1}\u{FE0F}",
-                title: "Add a usage limit",
-                detail: "Go to the Shield tab and set a daily usage limit for your most-used apps.",
+                title: L("brainHealth.addLimit"),
+                detail: L("brainHealth.addLimitDetail"),
                 isAction: true
             ))
         }
@@ -135,20 +135,20 @@ struct BrainHealthReportView: View {
         if score >= 80 {
             tips.append(Tip(
                 icon: "\u{1F6A8}",
-                title: "Screen time is very high",
-                detail: "Try setting app timers in Settings \u{2192} Screen Time to limit your heaviest apps."
+                title: L("brainHealth.screenTimeHigh"),
+                detail: L("brainHealth.screenTimeHighDetail")
             ))
         } else if score >= 50 {
             tips.append(Tip(
                 icon: "\u{26A0}\u{FE0F}",
-                title: "Room to improve",
-                detail: "You're halfway there. Try putting your phone in another room during meals."
+                title: L("brainHealth.roomToImprove"),
+                detail: L("brainHealth.roomToImproveDetail")
             ))
         } else {
             tips.append(Tip(
                 icon: "\u{2705}",
-                title: "Great job this week!",
-                detail: "Your screen time is well under control. Keep up the healthy habits."
+                title: L("brainHealth.greatJob"),
+                detail: L("brainHealth.greatJobDetail")
             ))
         }
 
@@ -156,14 +156,14 @@ struct BrainHealthReportView: View {
         if pickups > 200 {
             tips.append(Tip(
                 icon: "\u{1F4F1}",
-                title: "Too many pickups",
-                detail: "You picked up your phone \(pickups) times. Try turning off non-essential notifications."
+                title: L("brainHealth.tooManyPickups"),
+                detail: String(format: L("brainHealth.tooManyPickupsDetail"), pickups)
             ))
         } else if pickups > 100 {
             tips.append(Tip(
                 icon: "\u{1F514}",
-                title: "Watch your pickups",
-                detail: "\(pickups) pickups this week. Batch-check notifications at set times instead of reacting to every buzz."
+                title: L("brainHealth.watchPickups"),
+                detail: String(format: L("brainHealth.watchPickupsDetail"), pickups)
             ))
         }
 
@@ -172,8 +172,8 @@ struct BrainHealthReportView: View {
             let hours = Int(app.duration / 3600)
             tips.append(Tip(
                 icon: "\u{23F0}",
-                title: "\(app.displayName) is your biggest drain",
-                detail: "\(hours)h+ this week. Consider setting a daily limit for this app."
+                title: String(format: L("brainHealth.biggestDrain"), app.displayName),
+                detail: String(format: L("brainHealth.biggestDrainDetail"), hours)
             ))
         }
 
@@ -188,11 +188,11 @@ struct BrainHealthReportView: View {
             HStack(spacing: 6) {
                 Image(systemName: "chart.pie.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("App Breakdown")
+                Text(L("breakdown.appBreakdown"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
-                Text("\(healthData.allApps.count) apps")
+                Text("\(healthData.allApps.count) \(L("breakdown.apps"))")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }
@@ -240,7 +240,7 @@ struct BrainHealthReportView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "hand.tap")
                                 .font(.system(size: 9))
-                            Text("\(app.numberOfPickups) pickups")
+                            Text("\(app.numberOfPickups) \(L("breakdown.pickups"))")
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(BrainRotTheme.textSecondary)
@@ -283,7 +283,7 @@ struct BrainHealthReportView: View {
             // Percentage bar
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text("Screen Time Share")
+                    Text(L("breakdown.screenTimeShare"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(BrainRotTheme.textSecondary)
                     Spacer()
@@ -310,9 +310,9 @@ struct BrainHealthReportView: View {
 
             // Stats row
             HStack(spacing: 0) {
-                miniStat(icon: "clock.fill", title: "Duration", value: app.formattedDuration)
-                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(app.numberOfPickups)")
-                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+                miniStat(icon: "clock.fill", title: L("breakdown.duration"), value: app.formattedDuration)
+                miniStat(icon: "hand.tap.fill", title: L("breakdown.pickups"), value: "\(app.numberOfPickups)")
+                miniStat(icon: "timer", title: L("breakdown.avgSession"), value: BrainRotCalculator.formatDuration(avgSession))
             }
         }
         .padding(.horizontal, 14)
@@ -377,11 +377,11 @@ struct BrainHealthReportView: View {
             HStack(spacing: 6) {
                 Image(systemName: "square.grid.2x2.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("Category Breakdown")
+                Text(L("breakdown.categoryBreakdown"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
-                Text("\(healthData.categories.count) groups")
+                Text("\(healthData.categories.count) \(L("breakdown.groups"))")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }
@@ -434,7 +434,7 @@ struct BrainHealthReportView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "app.fill")
                                 .font(.system(size: 9))
-                            Text("\(category.apps.count) apps")
+                            Text("\(category.apps.count) \(L("breakdown.apps"))")
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(BrainRotTheme.textSecondary)
@@ -472,14 +472,14 @@ struct BrainHealthReportView: View {
 
         return VStack(spacing: 10) {
             HStack(spacing: 0) {
-                miniStat(icon: "clock.fill", title: "Duration", value: category.formattedDuration)
-                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(category.pickups)")
-                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+                miniStat(icon: "clock.fill", title: L("breakdown.duration"), value: category.formattedDuration)
+                miniStat(icon: "hand.tap.fill", title: L("breakdown.pickups"), value: "\(category.pickups)")
+                miniStat(icon: "timer", title: L("breakdown.avgSession"), value: BrainRotCalculator.formatDuration(avgSession))
             }
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text("Screen Time Share")
+                    Text(L("breakdown.screenTimeShare"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(BrainRotTheme.textSecondary)
                     Spacer()
@@ -504,7 +504,7 @@ struct BrainHealthReportView: View {
             // App list within category
             if !category.apps.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Apps")
+                    Text(L("common.apps"))
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                         .padding(.bottom, 6)

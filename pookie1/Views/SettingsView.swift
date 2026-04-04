@@ -13,6 +13,9 @@ struct SettingsView: View {
 
                 ScrollView {
                     VStack(spacing: 24) {
+                        // Language
+                        languageCard
+
                         // Tier Breakdown
                         tierBreakdownCard
 
@@ -23,8 +26,35 @@ struct SettingsView: View {
                     .padding(.top, 8)
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(L("settings.title"))
         }
+    }
+
+    // MARK: - Language
+
+    @ObservedObject private var localization = LocalizationManager.shared
+
+    private var languageCard: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Image(systemName: "globe")
+                    .foregroundColor(BrainRotTheme.neonBlue)
+                Text(L("settings.language"))
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+            }
+
+            Picker("", selection: $localization.appLanguage) {
+                Text(L("settings.system")).tag("system")
+                Text(L("settings.english")).tag("en")
+                Text(L("settings.german")).tag("de")
+            }
+            .pickerStyle(.segmented)
+        }
+        .padding(16)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Tier Breakdown
@@ -34,21 +64,21 @@ struct SettingsView: View {
             HStack {
                 Image(systemName: "chart.bar.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("Kraken Tiers")
+                Text(L("settings.krakenTiers"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
             }
 
-            Text("Your daily screen time determines your kraken's mood:")
+            Text(L("settings.krakenTiersDesc"))
                 .font(.caption)
                 .foregroundColor(BrainRotTheme.textSecondary)
 
             VStack(spacing: 8) {
-                tierRow(name: "Digital Monk", range: "0 - 2h", color: Color(red: 0.55, green: 0.88, blue: 0.70))
-                tierRow(name: "Grass Toucher", range: "2h - 4h", color: Color(red: 0.52, green: 0.82, blue: 0.78))
-                tierRow(name: "Doomscroller", range: "4h - 6h", color: Color(red: 0.75, green: 0.62, blue: 0.88))
-                tierRow(name: "Brainrot", range: "6h+", color: Color(red: 0.68, green: 0.65, blue: 0.63))
+                tierRow(name: L("tier.digitalMonk"), range: "0 - 2h", color: Color(red: 0.55, green: 0.88, blue: 0.70))
+                tierRow(name: L("tier.grassToucher"), range: "2h - 4h", color: Color(red: 0.52, green: 0.82, blue: 0.78))
+                tierRow(name: L("tier.doomscroller"), range: "4h - 6h", color: Color(red: 0.75, green: 0.62, blue: 0.88))
+                tierRow(name: L("tier.brainrot"), range: "6h+", color: Color(red: 0.68, green: 0.65, blue: 0.63))
             }
         }
         .padding(16)
@@ -88,18 +118,18 @@ struct SettingsView: View {
             HStack {
                 Image(systemName: "info.circle")
                     .foregroundColor(BrainRotTheme.neonGreen)
-                Text("About ScreenRot")
+                Text(L("settings.about"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("ScreenRot tracks your daily screen time and visualizes it through a kraken mascot that reacts to your usage.")
+                Text(L("settings.aboutDesc1"))
                     .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundColor(BrainRotTheme.textSecondary)
 
-                Text("Use the Shield tab to set usage limits and block routines for specific apps. The Overview tab shows your daily breakdown, and Brain Health tracks your weekly trends.")
+                Text(L("settings.aboutDesc2"))
                     .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }

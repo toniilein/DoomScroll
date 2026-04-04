@@ -204,7 +204,7 @@ struct OctopusMascotView: View {
 
             // Daily screen time with label
             HStack(spacing: 6) {
-                Text("Screentime:")
+                Text(L("octopus.screentime"))
                     .font(.system(size: 22, weight: .black, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Text(totalScreenTime)
@@ -224,12 +224,14 @@ struct OctopusMascotView: View {
 
     // MARK: - Tier Definitions
 
-    private static let tiers: [(name: String, emoji: String, minMinutes: Double, maxMinutes: Double, mood: OctopusMood)] = [
-        ("Digital Monk",  "\u{2728}", 0,   120, .ecstatic),
-        ("Grass Toucher", "\u{1F33F}", 120, 240, .happy),
-        ("Doomscroller",  "\u{1F4F1}", 240, 360, .sad),
-        ("Brainrot",      "\u{1F480}", 360, .infinity, .zombie),
-    ]
+    private static var tiers: [(name: String, emoji: String, minMinutes: Double, maxMinutes: Double, mood: OctopusMood)] {
+        [
+            (L("tier.digitalMonk"),  "\u{2728}", 0,   120, .ecstatic),
+            (L("tier.grassToucher"), "\u{1F33F}", 120, 240, .happy),
+            (L("tier.doomscroller"),  "\u{1F4F1}", 240, 360, .sad),
+            (L("tier.brainrot"),      "\u{1F480}", 360, .infinity, .zombie),
+        ]
+    }
 
     private static func formatHM(_ minutes: Double) -> String {
         let h = Int(minutes) / 60
@@ -344,7 +346,7 @@ struct OctopusMascotView: View {
                                         .font(.system(size: 15, weight: .bold, design: .rounded))
                                         .foregroundColor(isCurrent ? tier.mood.bodyColorDark : BrainRotTheme.textPrimary)
                                     if isCurrent {
-                                        Text("CURRENT")
+                                        Text(L("tier.current"))
                                             .font(.system(size: 9, weight: .black, design: .rounded))
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 6)
@@ -386,11 +388,11 @@ struct OctopusMascotView: View {
                 .padding()
             }
             .background(BrainRotTheme.background)
-            .navigationTitle("Kraken Tiers")
+            .navigationTitle(L("tier.krakenTiers"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { showTierSheet = false }
+                    Button(L("tier.done")) { showTierSheet = false }
                 }
             }
         }
@@ -410,11 +412,11 @@ struct OctopusMascotView: View {
                 let fmt = BrainRotCalculator.formatDuration(remaining * 60)
                 switch mood {
                 case .ecstatic:
-                    return "I'm so happy! You have \(fmt) before I get worried"
+                    return String(format: L("octopus.ecstatic.timeLeft"), fmt)
                 case .happy:
-                    return "Feeling good! \(fmt) left before I start worrying"
+                    return String(format: L("octopus.happy.timeLeft"), fmt)
                 case .sad:
-                    return "I'm not great... only \(fmt) before it gets worse"
+                    return String(format: L("octopus.sad.timeLeft"), fmt)
                 case .zombie:
                     return "..."
                 }
@@ -423,10 +425,10 @@ struct OctopusMascotView: View {
 
         // Already at worst or no time remaining
         switch mood {
-        case .ecstatic: return "I'm living my best life! \(totalScreenTime) today"
-        case .happy:    return "Pretty good day! \(totalScreenTime) so far"
-        case .sad:      return "I'm hurting... \(totalScreenTime) today"
-        case .zombie:   return "\(totalScreenTime)... I can't even talk anymore"
+        case .ecstatic: return String(format: L("octopus.ecstatic.noTime"), totalScreenTime)
+        case .happy:    return String(format: L("octopus.happy.noTime"), totalScreenTime)
+        case .sad:      return String(format: L("octopus.sad.noTime"), totalScreenTime)
+        case .zombie:   return String(format: L("octopus.zombie.noTime"), totalScreenTime)
         }
     }
 

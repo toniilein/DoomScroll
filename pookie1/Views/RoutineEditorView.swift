@@ -89,15 +89,15 @@ struct RoutineEditorView: View {
                     .padding()
                 }
             }
-            .navigationTitle(isEditing ? "Edit Routine" : "New Routine")
+            .navigationTitle(isEditing ? L("routineEditor.editTitle") : L("routineEditor.newTitle"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("routineEditor.cancel")) { dismiss() }
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") { save() }
+                    Button(L("routineEditor.save")) { save() }
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(canSave ? BrainRotTheme.neonPink : BrainRotTheme.textSecondary)
                         .disabled(!canSave)
@@ -125,11 +125,11 @@ struct RoutineEditorView: View {
 
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Name")
+            Text(L("routineEditor.name"))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
-            TextField("Evening Routine", text: $name)
+            TextField(L("routineEditor.namePlaceholder"), text: $name)
                 .font(.system(size: 16, weight: .medium))
                 .padding(14)
                 .background(BrainRotTheme.cardBackground)
@@ -141,13 +141,13 @@ struct RoutineEditorView: View {
 
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Schedule")
+            Text(L("routineEditor.schedule"))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
             VStack(spacing: 0) {
                 HStack {
-                    Label("Start", systemImage: "play.fill")
+                    Label(L("routineEditor.start"), systemImage: "play.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(BrainRotTheme.textPrimary)
                     Spacer()
@@ -160,7 +160,7 @@ struct RoutineEditorView: View {
                 Divider().padding(.leading, 14)
 
                 HStack {
-                    Label("End", systemImage: "stop.fill")
+                    Label(L("routineEditor.end"), systemImage: "stop.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(BrainRotTheme.textPrimary)
                     Spacer()
@@ -180,7 +180,7 @@ struct RoutineEditorView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "moon.fill")
                         .font(.system(size: 10))
-                    Text("Overnight schedule")
+                    Text(L("routineEditor.overnight"))
                         .font(.system(size: 11, weight: .medium))
                 }
                 .foregroundColor(BrainRotTheme.neonPurple)
@@ -193,7 +193,7 @@ struct RoutineEditorView: View {
 
     private var appsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Apps to Block")
+            Text(L("routineEditor.appsToBlock"))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundColor(BrainRotTheme.textSecondary)
 
@@ -206,7 +206,7 @@ struct RoutineEditorView: View {
                         .foregroundColor(BrainRotTheme.neonPink)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Select Apps")
+                        Text(L("routineEditor.selectApps"))
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundColor(BrainRotTheme.textPrimary)
 
@@ -218,7 +218,7 @@ struct RoutineEditorView: View {
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         } else {
-                            Text("Tap to choose apps and categories")
+                            Text(L("routineEditor.tapToChoose"))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         }
@@ -251,7 +251,7 @@ struct RoutineEditorView: View {
         } label: {
             HStack {
                 Image(systemName: "trash")
-                Text("Delete Routine")
+                Text(L("routineEditor.deleteRoutine"))
             }
             .font(.system(size: 15, weight: .bold))
             .foregroundColor(.red)
@@ -260,14 +260,14 @@ struct RoutineEditorView: View {
             .background(Color.red.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
-        .alert("Delete Routine?", isPresented: $showDeleteConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
+        .alert(L("routineEditor.deleteTitle"), isPresented: $showDeleteConfirm) {
+            Button(L("routineEditor.cancel"), role: .cancel) {}
+            Button(L("routineEditor.delete"), role: .destructive) {
                 let routine = buildRoutine()
                 onDelete?(routine)
             }
         } message: {
-            Text("This will permanently remove \"\(name)\".")
+            Text(String(format: L("routineEditor.deleteMessage"), name))
         }
     }
 

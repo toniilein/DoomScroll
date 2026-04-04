@@ -20,16 +20,16 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            Tab("Shield", systemImage: "shield.fill", value: "Shield") {
+            Tab(L("tab.shield"), systemImage: "shield.fill", value: "Shield") {
                 BlockView()
             }
-            Tab("Brain Health", systemImage: "chart.bar.fill", value: "BrainHealth") {
+            Tab(L("tab.brainHealth"), systemImage: "chart.bar.fill", value: "BrainHealth") {
                 BrainHealthView()
             }
-            Tab("Overview", systemImage: "brain.head.profile", value: "Overview") {
+            Tab(L("tab.overview"), systemImage: "brain.head.profile", value: "Overview") {
                 DashboardView()
             }
-            Tab("Settings", systemImage: "gearshape.fill", value: "Settings") {
+            Tab(L("tab.settings"), systemImage: "gearshape.fill", value: "Settings") {
                 SettingsView()
             }
         }

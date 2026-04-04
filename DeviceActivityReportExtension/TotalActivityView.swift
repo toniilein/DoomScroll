@@ -175,11 +175,11 @@ struct TotalActivityView: View {
             HStack(spacing: 6) {
                 Image(systemName: "square.grid.2x2.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("Category Breakdown")
+                Text(L("breakdown.categoryBreakdown"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
-                Text("\(currentDay.categories.count) groups")
+                Text("\(currentDay.categories.count) \(L("breakdown.groups"))")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }
@@ -222,7 +222,7 @@ struct TotalActivityView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "app.fill")
                                 .font(.system(size: 9))
-                            Text("\(category.apps.count) apps")
+                            Text("\(category.apps.count) \(L("breakdown.apps"))")
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(BrainRotTheme.textSecondary)
@@ -263,15 +263,15 @@ struct TotalActivityView: View {
         return VStack(spacing: 10) {
             // Stats row
             HStack(spacing: 0) {
-                miniStat(icon: "clock.fill", title: "Duration", value: category.formattedDuration)
-                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(category.pickups)")
-                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+                miniStat(icon: "clock.fill", title: L("breakdown.duration"), value: category.formattedDuration)
+                miniStat(icon: "hand.tap.fill", title: L("breakdown.pickups"), value: "\(category.pickups)")
+                miniStat(icon: "timer", title: L("breakdown.avgSession"), value: BrainRotCalculator.formatDuration(avgSession))
             }
 
             // Percentage bar
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text("Screen Time Share")
+                    Text(L("breakdown.screenTimeShare"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(BrainRotTheme.textSecondary)
                     Spacer()
@@ -296,7 +296,7 @@ struct TotalActivityView: View {
             // App list within category
             if !category.apps.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Apps")
+                    Text(L("common.apps"))
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(BrainRotTheme.textSecondary)
                         .padding(.bottom, 6)
@@ -394,11 +394,11 @@ struct TotalActivityView: View {
             HStack(spacing: 6) {
                 Image(systemName: "app.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("App Breakdown")
+                Text(L("breakdown.appBreakdown"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
-                Text("\(currentDay.apps.count) apps")
+                Text("\(currentDay.apps.count) \(L("breakdown.apps"))")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }
@@ -451,7 +451,7 @@ struct TotalActivityView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "hand.tap.fill")
                                 .font(.system(size: 9))
-                            Text("\(app.numberOfPickups) pickups")
+                            Text("\(app.numberOfPickups) \(L("breakdown.pickups"))")
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(BrainRotTheme.textSecondary)
@@ -489,14 +489,14 @@ struct TotalActivityView: View {
 
         return VStack(spacing: 10) {
             HStack(spacing: 0) {
-                miniStat(icon: "clock.fill", title: "Duration", value: app.formattedDuration)
-                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(app.numberOfPickups)")
-                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+                miniStat(icon: "clock.fill", title: L("breakdown.duration"), value: app.formattedDuration)
+                miniStat(icon: "hand.tap.fill", title: L("breakdown.pickups"), value: "\(app.numberOfPickups)")
+                miniStat(icon: "timer", title: L("breakdown.avgSession"), value: BrainRotCalculator.formatDuration(avgSession))
             }
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
-                    Text("Screen Time Share")
+                    Text(L("breakdown.screenTimeShare"))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(BrainRotTheme.textSecondary)
                     Spacer()
