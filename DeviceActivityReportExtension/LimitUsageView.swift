@@ -16,7 +16,7 @@ struct LimitUsageView: View {
                 HStack {
                     Text(L("limitEditor.todayUsage"))
                         .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.549, green: 0.522, blue: 0.467))
+                        .foregroundColor(BrainRotTheme.textSecondary)
                     Spacer()
                 }
                 .padding(.bottom, 8)
@@ -28,6 +28,7 @@ struct LimitUsageView: View {
                 }
             }
             .padding(.horizontal, 0)
+            .preferredColorScheme(SharedTheme.colorScheme)
         }
     }
 
@@ -37,17 +38,17 @@ struct LimitUsageView: View {
         let progress = min(1.0, usedMinutes / Double(max(1, item.limitMinutes)))
         let remaining = max(0, Double(item.limitMinutes) - usedMinutes)
 
-        let textPrimary = Color(red: 0.239, green: 0.224, blue: 0.161)
-        let textSecondary = Color(red: 0.549, green: 0.522, blue: 0.467)
-        let barTrack = Color(red: 0.910, green: 0.898, blue: 0.863)
-        let purple = Color(red: 0.608, green: 0.420, blue: 0.769)
+        let textPrimary = BrainRotTheme.textPrimary
+        let textSecondary = BrainRotTheme.textSecondary
+        let barTrack = BrainRotTheme.cardBorder
+        let purple = BrainRotTheme.neonPurple
 
         return VStack(spacing: 8) {
             HStack {
                 HStack(spacing: 8) {
                     ZStack {
                         Circle()
-                            .fill(Color(red: 0.957, green: 0.953, blue: 0.933))
+                            .fill(BrainRotTheme.background)
                             .frame(width: 28, height: 28)
                         Image(systemName: iconForName(item.name))
                             .font(.system(size: 11))
@@ -97,9 +98,8 @@ struct LimitUsageView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.white)
+        .background(BrainRotTheme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.04), radius: 6, y: 2)
     }
 
     // MARK: - Helpers

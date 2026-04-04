@@ -27,7 +27,6 @@ struct BlockView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
                         Color.clear.frame(height: 0).id("top")
-                        pageHeader
                         quickBlockHero
                         usageLimitsSection
                         routinesSection
@@ -124,14 +123,6 @@ struct BlockView: View {
             }
             #endif
         }
-    }
-
-    // MARK: - Page Header
-
-    private var pageHeader: some View {
-        Text(L("shield.subtitle"))
-            .font(.system(size: 16, weight: .medium, design: .rounded))
-            .foregroundColor(BrainRotTheme.textSecondary)
     }
 
     // MARK: - Quick Block Hero
