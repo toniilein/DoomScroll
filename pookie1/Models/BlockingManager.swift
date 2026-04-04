@@ -110,14 +110,6 @@ class BlockingManager: ObservableObject {
         for routine in defaults {
             SharedSettings.saveRoutine(routine)
         }
-
-        // Pre-seed a Social Media usage limit (1 hour)
-        let socialLimit = UsageLimit(
-            name: "Social Media",
-            limitMinutes: 60,
-            isEnabled: false
-        )
-        SharedSettings.saveUsageLimit(socialLimit)
     }
 
     // MARK: - Quick Block (instant on/off with custom selection)
