@@ -152,6 +152,9 @@
 
 /* Settings */
 "settings.title" = "Einstellungen";
+"settings.theme" = "Erscheinungsbild";
+"settings.light" = "Hell";
+"settings.dark" = "Dunkel";
 "settings.language" = "Sprache";
 "settings.system" = "System";
 "settings.english" = "English";

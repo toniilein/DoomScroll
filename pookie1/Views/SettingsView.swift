@@ -16,6 +16,9 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         Color.clear.frame(height: 0).id("top")
+                        // Theme
+                        themeCard
+
                         // Language
                         languageCard
 
@@ -35,6 +38,33 @@ struct SettingsView: View {
             }
             .navigationTitle(L("settings.title"))
         }
+    }
+
+    // MARK: - Theme
+
+    @Bindable private var themeManager = ThemeManager.shared
+
+    private var themeCard: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Image(systemName: "moon.circle.fill")
+                    .foregroundColor(BrainRotTheme.neonPurple)
+                Text(L("settings.theme"))
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+            }
+
+            Picker("", selection: $themeManager.appTheme) {
+                Text(L("settings.system")).tag("system")
+                Text(L("settings.light")).tag("light")
+                Text(L("settings.dark")).tag("dark")
+            }
+            .pickerStyle(.segmented)
+        }
+        .padding(16)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Language
