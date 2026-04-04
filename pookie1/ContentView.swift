@@ -57,7 +57,7 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Floating Liquid Glass tab bar
-            HStack(spacing: 0) {
+            GlassEffectContainer {
                 ForEach(tabs) { tab in
                     Button {
                         if selectedTab == tab.id {
@@ -77,12 +77,11 @@ struct MainTabView: View {
                         }
                         .foregroundStyle(selectedTab == tab.id ? BrainRotTheme.neonPink : .secondary)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
                     }
+                    .glassEffect(selectedTab == tab.id ? .regular : .clear, in: .capsule)
                 }
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 4)
-            .glassEffect(.regular, in: .capsule)
             .padding(.horizontal, 16)
             .padding(.bottom, 2)
         }
