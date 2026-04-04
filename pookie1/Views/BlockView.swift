@@ -60,19 +60,11 @@ struct BlockView: View {
             #if !targetEnvironment(simulator)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !blockingManager.usageLimits.isEmpty {
-                    VStack(spacing: 0) {
-                        // Subtle divider
-                        Rectangle()
-                            .fill(BrainRotTheme.cardBorder)
-                            .frame(height: 0.5)
-
-                        // Real extension view — renders actual usage data
-                        DeviceActivityReport(.limitUsage, filter: todayFilter)
-                            .id(reportID)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: CGFloat(blockingManager.usageLimits.count) * 62 + 24)
-                    }
-                    .background(BrainRotTheme.background)
+                    // Extension view with real usage data — the only way to show it
+                    DeviceActivityReport(.limitUsage, filter: todayFilter)
+                        .id(reportID)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
                 }
             }
             #endif
