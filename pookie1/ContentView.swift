@@ -56,43 +56,33 @@ struct MainTabView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Custom tab bar — native glass effect
-            VStack(spacing: 0) {
-                // Subtle separator like native tab bar
-                Rectangle()
-                    .fill(Color(.separator).opacity(0.3))
-                    .frame(height: 1.0 / UIScreen.main.scale)
-
-                HStack(spacing: 0) {
-                    ForEach(tabs) { tab in
-                        Button {
-                            if selectedTab == tab.id {
-                                scrollToTopTrigger = UUID()
-                            } else {
-                                selectedTab = tab.id
-                            }
-                        } label: {
-                            VStack(spacing: 3) {
-                                Image(systemName: tab.icon)
-                                    .font(.system(size: 21))
-                                    .frame(height: 24)
-                                Text(L(tab.labelKey))
-                                    .font(.system(size: 10, weight: .medium))
-                                    .lineLimit(1)
-                            }
-                            .foregroundColor(selectedTab == tab.id ? BrainRotTheme.neonPink : Color(.secondaryLabel))
-                            .frame(maxWidth: .infinity)
+            // Custom tab bar — Liquid Glass effect
+            HStack(spacing: 0) {
+                ForEach(tabs) { tab in
+                    Button {
+                        if selectedTab == tab.id {
+                            scrollToTopTrigger = UUID()
+                        } else {
+                            selectedTab = tab.id
                         }
+                    } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 21))
+                                .frame(height: 24)
+                            Text(L(tab.labelKey))
+                                .font(.system(size: 10, weight: .medium))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(selectedTab == tab.id ? AnyShapeStyle(BrainRotTheme.neonPink) : AnyShapeStyle(.secondary))
+                        .frame(maxWidth: .infinity)
                     }
                 }
-                .padding(.top, 6)
-                .padding(.bottom, 2)
             }
-            .background {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .ignoresSafeArea(edges: .bottom)
-            }
+            .padding(.vertical, 8)
+            .glassEffect(.regular)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 2)
         }
         .environment(\.scrollToTopTrigger, scrollToTopTrigger)
     }
