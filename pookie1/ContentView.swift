@@ -57,7 +57,7 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Floating Liquid Glass tab bar
-            GlassEffectContainer {
+            HStack(spacing: 0) {
                 ForEach(tabs) { tab in
                     Button {
                         if selectedTab == tab.id {
@@ -79,11 +79,12 @@ struct MainTabView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                     }
-                    .glassEffect(selectedTab == tab.id ? .regular : .clear, in: .capsule)
                 }
             }
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22))
             .padding(.horizontal, 16)
-            .padding(.bottom, 2)
+            .padding(.bottom, 4)
+            .ignoresSafeArea(.keyboard)
         }
         .environment(\.scrollToTopTrigger, scrollToTopTrigger)
     }
