@@ -56,39 +56,41 @@ struct MainTabView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Custom tab bar
+            // Custom tab bar — native glass effect
             VStack(spacing: 0) {
-                Divider()
+                // Subtle separator like native tab bar
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.3))
+                    .frame(height: 1.0 / UIScreen.main.scale)
+
                 HStack(spacing: 0) {
                     ForEach(tabs) { tab in
                         Button {
                             if selectedTab == tab.id {
-                                // Re-tap — scroll to top
                                 scrollToTopTrigger = UUID()
                             } else {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    selectedTab = tab.id
-                                }
+                                selectedTab = tab.id
                             }
                         } label: {
-                            VStack(spacing: 4) {
+                            VStack(spacing: 3) {
                                 Image(systemName: tab.icon)
-                                    .font(.system(size: 22))
+                                    .font(.system(size: 21))
                                     .frame(height: 24)
                                 Text(L(tab.labelKey))
                                     .font(.system(size: 10, weight: .medium))
+                                    .lineLimit(1)
                             }
-                            .foregroundColor(selectedTab == tab.id ? BrainRotTheme.neonPink : Color(.systemGray))
+                            .foregroundColor(selectedTab == tab.id ? BrainRotTheme.neonPink : Color(.secondaryLabel))
                             .frame(maxWidth: .infinity)
                         }
                     }
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 4)
+                .padding(.top, 6)
+                .padding(.bottom, 2)
             }
             .background {
                 Rectangle()
-                    .fill(.bar)
+                    .fill(.ultraThinMaterial)
                     .ignoresSafeArea(edges: .bottom)
             }
         }
