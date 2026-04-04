@@ -101,11 +101,11 @@ struct BlockView: View {
                         showEditor = false
                         editingRoutine = nil
                     },
-                    onDelete: editingRoutine != nil ? { routine in
+                    onDelete: { routine in
                         blockingManager.deleteRoutine(routine)
                         showEditor = false
                         editingRoutine = nil
-                    } : nil
+                    }
                 )
             }
             #if !targetEnvironment(simulator)
