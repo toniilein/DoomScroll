@@ -193,3 +193,8 @@
 "common.done" = "Done";
 "common.apps" = "Apps";
 "common.notAvailableSimulator" = "Not available in simulator";
+
+/* Validation */
+"validation.nameRequired" = "Please enter a name";
+"validation.appsRequired" = "Please select at least one app or category";
+"validation.timeRequired" = "Please set a time limit";

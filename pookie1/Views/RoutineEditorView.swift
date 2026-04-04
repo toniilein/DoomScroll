@@ -15,6 +15,7 @@ struct RoutineEditorView: View {
     @State private var activeDays: Set<Int>
     @State private var showAppPicker = false
     @State private var showDeleteConfirm = false
+    @State private var showValidation = false
 
     #if !targetEnvironment(simulator)
     @State private var appSelection: FamilyActivitySelection
@@ -68,6 +69,9 @@ struct RoutineEditorView: View {
                     VStack(spacing: 20) {
                         // Name
                         nameSection
+                        if showValidation && !hasName {
+                            validationWarning(L("validation.nameRequired"))
+                        }
 
                         // Time
                         timeSection
@@ -77,6 +81,11 @@ struct RoutineEditorView: View {
 
                         // Apps
                         appsSection
+                        #if !targetEnvironment(simulator)
+                        if showValidation && !hasApps {
+                            validationWarning(L("validation.appsRequired"))
+                        }
+                        #endif
 
                         // Delete
                         if isEditing {
@@ -97,10 +106,15 @@ struct RoutineEditorView: View {
                         .foregroundColor(BrainRotTheme.textSecondary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(L("routineEditor.save")) { save() }
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(canSave ? BrainRotTheme.neonPink : BrainRotTheme.textSecondary)
-                        .disabled(!canSave)
+                    Button(L("routineEditor.save")) {
+                        if canSave {
+                            save()
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.3)) { showValidation = true }
+                        }
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(canSave ? BrainRotTheme.neonPink : BrainRotTheme.textSecondary)
                 }
             }
             #if !targetEnvironment(simulator)
@@ -112,13 +126,24 @@ struct RoutineEditorView: View {
         }
     }
 
-    private var canSave: Bool {
-        #if !targetEnvironment(simulator)
-        return !name.trimmingCharacters(in: .whitespaces).isEmpty
-            && (!appSelection.applicationTokens.isEmpty || !appSelection.categoryTokens.isEmpty)
-        #else
-        return !name.trimmingCharacters(in: .whitespaces).isEmpty
-        #endif
+    private var hasName: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    #if !targetEnvironment(simulator)
+    private var hasApps: Bool { !appSelection.applicationTokens.isEmpty || !appSelection.categoryTokens.isEmpty }
+    private var canSave: Bool { hasName && hasApps }
+    #else
+    private var canSave: Bool { hasName }
+    #endif
+
+    private func validationWarning(_ text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 11))
+            Text(text)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+        }
+        .foregroundColor(.red)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, -12)
     }
 
     // MARK: - Name Section
