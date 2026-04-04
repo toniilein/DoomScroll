@@ -41,6 +41,7 @@ struct BrainHealthView: View {
                 }
             }
             .navigationTitle(L("brainHealth.title"))
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 
