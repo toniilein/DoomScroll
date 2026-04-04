@@ -258,16 +258,20 @@ class BlockingManager: ObservableObject {
         var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
 
         // Progress events: "limitprog_<UUID>_<minutes>" — monitor writes to UserDefaults
-        // Use fewer checkpoints to stay well under Apple's 20-event limit
-        let checkpoints: [Int]
-        if limit.limitMinutes <= 5 {
+        // Always include 1-min checkpoint for quick feedback, then spaced out
+        var checkpoints: [Int] = [1] // Always track from minute 1
+        if limit.limitMinutes <= 10 {
             checkpoints = Array(1...limit.limitMinutes)
-        } else if limit.limitMinutes <= 30 {
-            checkpoints = stride(from: 5, through: limit.limitMinutes, by: 5).map { $0 }
+        } else if limit.limitMinutes <= 60 {
+            // 1, 5, 10, 15, ... up to limit
+            checkpoints.append(contentsOf: stride(from: 5, through: limit.limitMinutes, by: 5))
         } else {
-            // Every 10 minutes for longer limits
-            checkpoints = stride(from: 10, through: limit.limitMinutes, by: 10).map { $0 }
+            // 1, 5, 10, 20, 30, ... up to limit
+            checkpoints.append(5)
+            checkpoints.append(contentsOf: stride(from: 10, through: limit.limitMinutes, by: 10))
         }
+        // Deduplicate and sort
+        checkpoints = Array(Set(checkpoints)).sorted()
 
         for mins in checkpoints {
             let eventName = DeviceActivityEvent.Name("limitprog_\(limit.id.uuidString)_\(mins)")
@@ -319,6 +323,11 @@ class BlockingManager: ObservableObject {
         #if !targetEnvironment(simulator)
         let activityName = DeviceActivityName("limit_\(limit.id.uuidString)")
         center.stopMonitoring([activityName])
+        // Clear debug flags
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        shared?.set(false, forKey: "monitor_started_\(limit.id.uuidString)")
+        shared?.set(0, forKey: "limitProgress_\(limit.id.uuidString)")
+        shared?.synchronize()
         #endif
     }
 
