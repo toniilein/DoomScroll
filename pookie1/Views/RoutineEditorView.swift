@@ -14,6 +14,7 @@ struct RoutineEditorView: View {
     @State private var createdAt: Date
     @State private var activeDays: Set<Int>
     @State private var showAppPicker = false
+    @State private var showDeleteConfirm = false
 
     #if !targetEnvironment(simulator)
     @State private var appSelection: FamilyActivitySelection
@@ -246,8 +247,7 @@ struct RoutineEditorView: View {
 
     private var deleteButton: some View {
         Button {
-            let routine = buildRoutine()
-            onDelete?(routine)
+            showDeleteConfirm = true
         } label: {
             HStack {
                 Image(systemName: "trash")
@@ -259,6 +259,15 @@ struct RoutineEditorView: View {
             .padding(.vertical, 14)
             .background(Color.red.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .alert("Delete Routine?", isPresented: $showDeleteConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                let routine = buildRoutine()
+                onDelete?(routine)
+            }
+        } message: {
+            Text("This will permanently remove \"\(name)\".")
         }
     }
 
