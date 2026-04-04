@@ -204,12 +204,12 @@ struct OctopusMascotView: View {
 
             // Daily screen time with label
             HStack(spacing: 6) {
+                Text("Screentime:")
+                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .foregroundColor(BrainRotTheme.textSecondary)
                 Text(totalScreenTime)
                     .font(.system(size: 22, weight: .black, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
-                Text("daily screentime")
-                    .font(.system(size: 22, weight: .black, design: .rounded))
-                    .foregroundColor(BrainRotTheme.textSecondary)
             }
 
             // Tier status bar
@@ -284,9 +284,12 @@ struct OctopusMascotView: View {
 
                     // Dot indicator
                     Circle()
-                        .fill(currentTier.mood.bodyColorDark)
+                        .fill(Color.black.opacity(0.85))
                         .frame(width: 10, height: 10)
-                        .shadow(color: currentTier.mood.bodyColorDark.opacity(0.5), radius: 3)
+                        .overlay(
+                            Circle().stroke(Color.white, lineWidth: 1.5)
+                        )
+                        .shadow(color: Color.black.opacity(0.3), radius: 2)
                         .offset(x: xPos - 5, y: 0)
                 }
             }
