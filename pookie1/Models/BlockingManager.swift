@@ -19,7 +19,6 @@ class BlockingManager: ObservableObject {
     #endif
 
     private init() {
-        seedDefaultRoutinesIfNeeded()
         routines = SharedSettings.blockRoutines
         usageLimits = SharedSettings.usageLimits
         isQuickBlocking = UserDefaults.standard.bool(forKey: "quickBlockActive")
@@ -78,38 +77,6 @@ class BlockingManager: ObservableObject {
         routines = SharedSettings.blockRoutines
         usageLimits = SharedSettings.usageLimits
         isQuickBlocking = UserDefaults.standard.bool(forKey: "quickBlockActive")
-    }
-
-    // MARK: - Seed default routines on first launch
-
-    private func seedDefaultRoutinesIfNeeded() {
-        guard !UserDefaults.standard.bool(forKey: "blockRoutinesSeeded2") else { return }
-        UserDefaults.standard.set(true, forKey: "blockRoutinesSeeded2")
-
-        let defaults: [BlockRoutine] = [
-            BlockRoutine(
-                name: "Morning Focus",
-                startHour: 6, startMinute: 0,
-                endHour: 9, endMinute: 0,
-                isEnabled: false
-            ),
-            BlockRoutine(
-                name: "Work Mode",
-                startHour: 9, startMinute: 0,
-                endHour: 17, endMinute: 0,
-                isEnabled: false
-            ),
-            BlockRoutine(
-                name: "Night Wind Down",
-                startHour: 21, startMinute: 0,
-                endHour: 7, endMinute: 0,
-                isEnabled: false
-            ),
-        ]
-
-        for routine in defaults {
-            SharedSettings.saveRoutine(routine)
-        }
     }
 
     // MARK: - Quick Block (instant on/off with custom selection)
