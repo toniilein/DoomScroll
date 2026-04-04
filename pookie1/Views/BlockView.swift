@@ -285,6 +285,38 @@ struct BlockView: View {
         .buttonStyle(.plain)
     }
 
+    private var emptyRoutineCard: some View {
+        Button {
+            editingRoutine = nil
+            showEditor = true
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(BrainRotTheme.cardBorder)
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Add a routine")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                    Text("Schedule app blocking by time of day")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                Spacer()
+            }
+            .padding(18)
+            .background(BrainRotTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func limitCard(_ limit: UsageLimit) -> some View {
         return Button { editingLimit = limit } label: {
             HStack(spacing: 14) {
@@ -363,8 +395,12 @@ struct BlockView: View {
                 activeNowBanner
             }
 
-            ForEach(blockingManager.routines) { routine in
-                routineCard(routine)
+            if blockingManager.routines.isEmpty {
+                emptyRoutineCard
+            } else {
+                ForEach(blockingManager.routines) { routine in
+                    routineCard(routine)
+                }
             }
         }
     }
