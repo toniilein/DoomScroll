@@ -298,41 +298,52 @@ struct LimitSlotHelper {
             return SingleLimitData(id: "", name: "", usedSeconds: 0, limitMinutes: 0, isEmpty: true)
         }
 
-        // Collect per-app durations and category mappings
+        // Collect per-app durations and per-category durations
         var appTokenDurations: [ApplicationToken: TimeInterval] = [:]
+        var catTokenDurations: [ActivityCategoryToken: TimeInterval] = [:]
         var appToCatTokens: [ApplicationToken: Set<ActivityCategoryToken>] = [:]
 
         for await dataItem in data {
             for await segment in dataItem.activitySegments {
                 for await categoryActivity in segment.categories {
                     let catToken = categoryActivity.category.token
+                    var catDur: TimeInterval = 0
                     for await appActivity in categoryActivity.applications {
                         let dur = appActivity.totalActivityDuration
-                        if dur > 0, let appToken = appActivity.application.token {
+                        if let appToken = appActivity.application.token {
                             appTokenDurations[appToken, default: 0] += dur
                             if let catToken {
                                 appToCatTokens[appToken, default: []].insert(catToken)
                             }
+                            catDur += dur
                         }
+                    }
+                    if let catToken {
+                        catTokenDurations[catToken, default: 0] += catDur
                     }
                 }
             }
         }
 
-        // Match apps from selection
-        var matchedApps = Set<ApplicationToken>()
+        // Calculate duration: sum selected app tokens + selected category tokens
+        var duration: TimeInterval = 0
+        var countedApps = Set<ApplicationToken>()
+
+        // Direct app selections
         for appToken in selection.applicationTokens {
-            if appTokenDurations[appToken] != nil { matchedApps.insert(appToken) }
-        }
-        for catToken in selection.categoryTokens {
-            for (appToken, cats) in appToCatTokens {
-                if cats.contains(catToken) { matchedApps.insert(appToken) }
-            }
+            let dur = appTokenDurations[appToken] ?? 0
+            duration += dur
+            countedApps.insert(appToken)
         }
 
-        var duration: TimeInterval = 0
-        for appToken in matchedApps {
-            duration += appTokenDurations[appToken] ?? 0
+        // Category selections — add apps in those categories (avoid double-counting)
+        for catToken in selection.categoryTokens {
+            for (appToken, cats) in appToCatTokens {
+                if cats.contains(catToken) && !countedApps.contains(appToken) {
+                    duration += appTokenDurations[appToken] ?? 0
+                    countedApps.insert(appToken)
+                }
+            }
         }
 
         // Apply/remove shield based on usage

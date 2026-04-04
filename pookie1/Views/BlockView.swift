@@ -236,23 +236,16 @@ struct BlockView: View {
                         // Per-limit usage bar rendered by extension
                         #if !targetEnvironment(simulator)
                         if index < 5 {
-                            ZStack {
-                                // Native fallback bar (visible if extension hasn't rendered)
-                                nativeFallbackBar(limit: limit)
-
-                                // Extension bar (renders on top when ready)
-                                DeviceActivityReport(limitSlotContext(index), filter: todayFilter)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 52)
-                            }
-                            .frame(height: 52)
-                            .clipShape(
-                                .rect(
-                                    topLeadingRadius: 0, bottomLeadingRadius: 20,
-                                    bottomTrailingRadius: 20, topTrailingRadius: 0
+                            DeviceActivityReport(limitSlotContext(index), filter: todayFilter)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .clipShape(
+                                    .rect(
+                                        topLeadingRadius: 0, bottomLeadingRadius: 20,
+                                        bottomTrailingRadius: 20, topTrailingRadius: 0
+                                    )
                                 )
-                            )
-                            .allowsHitTesting(false)
+                                .allowsHitTesting(false)
                         }
                         #endif
                     }
@@ -472,32 +465,6 @@ struct BlockView: View {
         if l.contains("gym") || l.contains("exercise") || l.contains("fitness") { return "figure.run" }
         if l.contains("meal") || l.contains("lunch") || l.contains("dinner") { return "fork.knife" }
         return "shield.fill"
-    }
-
-    private func nativeFallbackBar(limit: UsageLimit) -> some View {
-        let textSecondary = Color(red: 0.549, green: 0.522, blue: 0.467)
-        let barTrack = Color(red: 0.910, green: 0.898, blue: 0.863)
-
-        return VStack(spacing: 8) {
-            HStack {
-                Text("0m used")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(textSecondary)
-                Spacer()
-                let h = limit.limitMinutes / 60
-                let m = limit.limitMinutes % 60
-                let remaining = h > 0 && m > 0 ? "\(h)h \(m)m" : h > 0 ? "\(h)h" : "\(m)m"
-                Text("\(remaining) left")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundColor(textSecondary)
-            }
-            RoundedRectangle(cornerRadius: 3)
-                .fill(barTrack)
-                .frame(height: 6)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 10)
-        .background(Color(red: 0.957, green: 0.953, blue: 0.933).opacity(0.6))
     }
 
     #if !targetEnvironment(simulator)
