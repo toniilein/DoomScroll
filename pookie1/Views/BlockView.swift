@@ -352,7 +352,7 @@ struct BlockView: View {
                     set: { _ in
                         blockingManager.toggleUsageLimit(limit)
                         syncAllLimitConfigs()
-                        reportID = UUID() // Force extension refresh
+                        // Don't refresh reportID here — causes flicker
                     }
                 ))
                 .labelsHidden()
