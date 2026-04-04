@@ -16,9 +16,9 @@ struct BrainHealthReportView: View {
                 recommendationsCard
                     .padding(.horizontal)
 
-                // 3. App Breakdown
-                if !healthData.allApps.isEmpty {
-                    appBreakdownSection
+                // 3. Category Breakdown
+                if !healthData.categories.isEmpty {
+                    categoryBreakdownSection
                         .padding(.horizontal)
                 }
 
@@ -319,5 +319,189 @@ struct BrainHealthReportView: View {
         case 5:  return BrainRotTheme.neonGreen
         default: return BrainRotTheme.textSecondary
         }
+    }
+
+    // MARK: - Category Breakdown
+
+    private var categoryBreakdownSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Image(systemName: "square.grid.2x2.fill")
+                    .foregroundColor(BrainRotTheme.neonPurple)
+                Text("Category Breakdown")
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+                Text("\(healthData.categories.count) groups")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
+
+            ForEach(Array(healthData.categories.enumerated()), id: \.element.id) { index, category in
+                categoryRow(category: category, rank: index + 1)
+
+                if index < healthData.categories.count - 1 {
+                    Divider().padding(.leading, 60)
+                }
+            }
+
+            Spacer().frame(height: 6)
+        }
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func categoryRow(category: CategoryUsageData, rank: Int) -> some View {
+        let isExpanded = expandedAppID == category.id
+        let color = iconColor(for: rank)
+
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    expandedAppID = isExpanded ? nil : category.id
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                colors: [color, color.opacity(0.7)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 36, height: 36)
+                        Image(systemName: categorySystemIcon(category.categoryName))
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(category.categoryName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                            .lineLimit(1)
+                        HStack(spacing: 4) {
+                            Image(systemName: "app.fill")
+                                .font(.system(size: 9))
+                            Text("\(category.apps.count) apps")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Text(category.formattedDuration)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(color)
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                categoryExpandedDetail(category: category, rank: rank)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private func categoryExpandedDetail(category: CategoryUsageData, rank: Int) -> some View {
+        let percentage = healthData.totalDuration > 0
+            ? (category.duration / healthData.totalDuration) * 100 : 0
+        let avgSession = category.pickups > 0
+            ? category.duration / Double(category.pickups) : category.duration
+        let color = iconColor(for: rank)
+
+        return VStack(spacing: 10) {
+            HStack(spacing: 0) {
+                miniStat(icon: "clock.fill", title: "Duration", value: category.formattedDuration)
+                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(category.pickups)")
+                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text("Screen Time Share")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                    Spacer()
+                    Text(String(format: "%.1f%%", percentage))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(color)
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(BrainRotTheme.cardBorder)
+                            .frame(height: 6)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(color)
+                            .frame(width: geo.size.width * min(percentage / 100, 1.0), height: 6)
+                    }
+                }
+                .frame(height: 6)
+            }
+
+            // App list within category
+            if !category.apps.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Apps")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                        .padding(.bottom, 6)
+
+                    ForEach(category.apps) { app in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(color.opacity(0.3))
+                                .frame(width: 6, height: 6)
+                            Text(app.displayName)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(app.formattedDuration)
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                        }
+                        .padding(.vertical, 3)
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
+        .padding(.top, 2)
+        .background(color.opacity(0.04))
+    }
+
+    private func categorySystemIcon(_ name: String) -> String {
+        let lower = name.lowercased()
+        if lower.contains("social") { return "bubble.left.and.bubble.right.fill" }
+        if lower.contains("entertainment") || lower.contains("video") { return "play.tv.fill" }
+        if lower.contains("game") { return "gamecontroller.fill" }
+        if lower.contains("productivity") { return "briefcase.fill" }
+        if lower.contains("education") { return "graduationcap.fill" }
+        if lower.contains("health") || lower.contains("fitness") { return "heart.fill" }
+        if lower.contains("shopping") { return "cart.fill" }
+        if lower.contains("news") || lower.contains("reading") { return "newspaper.fill" }
+        if lower.contains("photo") || lower.contains("creative") { return "camera.fill" }
+        if lower.contains("music") { return "music.note" }
+        if lower.contains("travel") || lower.contains("navigation") { return "map.fill" }
+        if lower.contains("finance") || lower.contains("business") { return "chart.line.uptrend.xyaxis" }
+        if lower.contains("utility") || lower.contains("utilities") { return "wrench.fill" }
+        if lower.contains("communication") || lower.contains("message") { return "message.fill" }
+        return "square.grid.2x2.fill"
     }
 }

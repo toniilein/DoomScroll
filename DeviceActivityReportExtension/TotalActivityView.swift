@@ -33,9 +33,9 @@ struct TotalActivityView: View {
                 )
                 .padding(.horizontal)
 
-                // 4. Category Breakdown
-                if !currentDay.categories.isEmpty {
-                    categoryBreakdownSection
+                // 4. App Breakdown
+                if !currentDay.apps.isEmpty {
+                    appBreakdownSection
                         .padding(.horizontal)
                 }
 
@@ -385,5 +385,142 @@ struct TotalActivityView: View {
     private func categoryColor(rank: Int) -> Color {
         let colors: [Color] = [BrainRotTheme.neonPink, BrainRotTheme.neonPurple, BrainRotTheme.neonOrange, BrainRotTheme.neonBlue, BrainRotTheme.neonGreen]
         return rank <= colors.count ? colors[rank - 1] : BrainRotTheme.textSecondary
+    }
+
+    // MARK: - App Breakdown
+
+    private var appBreakdownSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Image(systemName: "app.fill")
+                    .foregroundColor(BrainRotTheme.neonPurple)
+                Text("App Breakdown")
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+                Text("\(currentDay.apps.count) apps")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
+
+            ForEach(Array(currentDay.apps.enumerated()), id: \.element.id) { index, app in
+                overviewAppRow(app: app, rank: index + 1)
+
+                if index < currentDay.apps.count - 1 {
+                    Divider().padding(.leading, 60)
+                }
+            }
+
+            Spacer().frame(height: 6)
+        }
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func overviewAppRow(app: AppUsageData, rank: Int) -> some View {
+        let isExpanded = expandedAppID == app.id
+        let color = categoryColor(rank: rank)
+
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    expandedAppID = isExpanded ? nil : app.id
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                colors: [color, color.opacity(0.7)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 36, height: 36)
+                        Text(String(app.displayName.prefix(1)).uppercased())
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(app.displayName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                            .lineLimit(1)
+                        HStack(spacing: 4) {
+                            Image(systemName: "hand.tap.fill")
+                                .font(.system(size: 9))
+                            Text("\(app.numberOfPickups) pickups")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Text(app.formattedDuration)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(color)
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                overviewAppExpandedDetail(app: app, rank: rank)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private func overviewAppExpandedDetail(app: AppUsageData, rank: Int) -> some View {
+        let percentage = currentDay.duration > 0
+            ? (app.duration / currentDay.duration) * 100 : 0
+        let avgSession = app.numberOfPickups > 0
+            ? app.duration / Double(app.numberOfPickups) : app.duration
+        let color = categoryColor(rank: rank)
+
+        return VStack(spacing: 10) {
+            HStack(spacing: 0) {
+                miniStat(icon: "clock.fill", title: "Duration", value: app.formattedDuration)
+                miniStat(icon: "hand.tap.fill", title: "Pickups", value: "\(app.numberOfPickups)")
+                miniStat(icon: "timer", title: "Avg Session", value: BrainRotCalculator.formatDuration(avgSession))
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text("Screen Time Share")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                    Spacer()
+                    Text(String(format: "%.1f%%", percentage))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(color)
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(BrainRotTheme.cardBorder)
+                            .frame(height: 6)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(color)
+                            .frame(width: geo.size.width * min(percentage / 100, 1.0), height: 6)
+                    }
+                }
+                .frame(height: 6)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
+        .padding(.top, 2)
+        .background(color.opacity(0.04))
     }
 }
