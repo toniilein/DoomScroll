@@ -44,63 +44,72 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - Tab Reselect Detection (UIViewControllerRepresentable — walks UP parent chain)
+// MARK: - Tab Reselect Detection via UITabBar gesture recognizer
+// Does NOT replace the UITabBarController delegate (which SwiftUI needs).
+// Instead, adds a tap gesture recognizer to the UITabBar to detect re-taps.
 
-/// Embeds a tiny UIViewController inside a tab. It uses `self.tabBarController` (which walks UP
-/// the parent VC chain) to find the UITabBarController and set a delegate to detect re-taps.
 struct TabBarReselectionDetector: UIViewControllerRepresentable {
     let onReselect: () -> Void
 
     func makeUIViewController(context: Context) -> ReselectionVC {
-        ReselectionVC(coordinator: context.coordinator)
+        ReselectionVC(onReselect: onReselect)
     }
 
-    func updateUIViewController(_ vc: ReselectionVC, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(onReselect: onReselect) }
-
-    class Coordinator: NSObject, UITabBarControllerDelegate {
-        let onReselect: () -> Void
-        init(onReselect: @escaping () -> Void) { self.onReselect = onReselect }
-
-        func tabBarController(_ tbc: UITabBarController, shouldSelect vc: UIViewController) -> Bool {
-            if vc == tbc.selectedViewController {
-                onReselect()
-            }
-            return true
-        }
+    func updateUIViewController(_ vc: ReselectionVC, context: Context) {
+        vc.onReselect = onReselect
     }
+
+    func makeCoordinator() -> Void { () }
 
     class ReselectionVC: UIViewController {
-        private weak var coordinator: Coordinator?
+        var onReselect: () -> Void
+        private var tapRecognizer: UITapGestureRecognizer?
 
-        init(coordinator: Coordinator) {
-            self.coordinator = coordinator
+        init(onReselect: @escaping () -> Void) {
+            self.onReselect = onReselect
             super.init(nibName: nil, bundle: nil)
         }
         required init?(coder: NSCoder) { fatalError() }
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
-            findAndSetDelegate()
+            installGestureRecognizer()
         }
 
         override func didMove(toParent parent: UIViewController?) {
             super.didMove(toParent: parent)
-            findAndSetDelegate()
+            installGestureRecognizer()
         }
 
-        private func findAndSetDelegate() {
-            // self.tabBarController walks UP the parent VC chain — much more reliable
-            if let tbc = self.tabBarController {
-                tbc.delegate = coordinator
+        private func installGestureRecognizer() {
+            guard tapRecognizer == nil else { return }
+            guard let tbc = self.tabBarController else {
+                // Retry shortly
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                    self?.installGestureRecognizer()
+                }
                 return
             }
-            // Fallback: try again shortly (SwiftUI may not have finished embedding yet)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                if let tbc = self?.tabBarController {
-                    tbc.delegate = self?.coordinator
-                }
+
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleTabBarTap(_:)))
+            tap.cancelsTouchesInView = false  // Don't block normal tab selection
+            tbc.tabBar.addGestureRecognizer(tap)
+            tapRecognizer = tap
+        }
+
+        @objc private func handleTabBarTap(_ recognizer: UITapGestureRecognizer) {
+            guard let tbc = self.tabBarController,
+                  let items = tbc.tabBar.items,
+                  !items.isEmpty else { return }
+
+            let location = recognizer.location(in: tbc.tabBar)
+            let tabBar = tbc.tabBar
+            let itemWidth = tabBar.bounds.width / CGFloat(items.count)
+            let tappedIndex = min(Int(location.x / itemWidth), items.count - 1)
+
+            if tappedIndex == tbc.selectedIndex {
+                // Same tab re-tapped — scroll to top
+                onReselect()
             }
         }
     }
