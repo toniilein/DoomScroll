@@ -5,14 +5,17 @@ import FamilyControls
 
 struct SettingsView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
+    @Environment(\.scrollToTopID) private var scrollToTopID
 
     var body: some View {
         NavigationStack {
             ZStack {
                 BrainRotTheme.background.ignoresSafeArea()
 
+                ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 24) {
+                        Color.clear.frame(height: 0).id("top")
                         // Language
                         languageCard
 
@@ -24,6 +27,10 @@ struct SettingsView: View {
                     }
                     .padding()
                     .padding(.top, 8)
+                }
+                .onChange(of: scrollToTopID) {
+                    withAnimation { proxy.scrollTo("top", anchor: .top) }
+                }
                 }
             }
             .navigationTitle(L("settings.title"))

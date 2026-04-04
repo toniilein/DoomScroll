@@ -9,6 +9,7 @@ import DeviceActivity
 struct BlockView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @StateObject private var blockingManager = BlockingManager.shared
+    @Environment(\.scrollToTopID) private var scrollToTopID
     @State private var showEditor = false
     @State private var editingRoutine: BlockRoutine?
     @State private var editingLimit: UsageLimit?
@@ -22,8 +23,10 @@ struct BlockView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
+                        Color.clear.frame(height: 0).id("top")
                         pageHeader
                         quickBlockHero
                         usageLimitsSection
@@ -33,6 +36,10 @@ struct BlockView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
+                }
+                .onChange(of: scrollToTopID) {
+                    withAnimation { proxy.scrollTo("top", anchor: .top) }
+                }
                 }
 
                 // Hidden backup report outside ScrollView for shield enforcement
