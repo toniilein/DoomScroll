@@ -251,25 +251,44 @@ class BlockingManager: ObservableObject {
             repeats: true
         )
 
-        let eventName = DeviceActivityEvent.Name("limit_\(limit.id.uuidString)")
-        let threshold = DateComponents(minute: limit.limitMinutes)
+        let activityName = DeviceActivityName("limit_\(limit.id.uuidString)")
+        center.stopMonitoring([activityName])
 
-        let event = DeviceActivityEvent(
+        // Create multiple threshold events so monitor extension can track usage progress.
+        // The monitor CAN write files (unlike report extension), so each threshold
+        // writes progress to a shared file the main app reads for display.
+        var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
+
+        // Progress tracking events every 5 minutes (or 1 min for small limits)
+        let step = limit.limitMinutes <= 10 ? 1 : 5
+        var m = step
+        while m <= limit.limitMinutes {
+            let eventName = DeviceActivityEvent.Name("limit_\(limit.id.uuidString)_\(m)")
+            let event = DeviceActivityEvent(
+                applications: selection.applicationTokens,
+                categories: selection.categoryTokens,
+                webDomains: selection.webDomainTokens,
+                threshold: DateComponents(minute: m)
+            )
+            events[eventName] = event
+            m += step
+        }
+
+        // Ensure we always have the exact limit threshold (for shield enforcement)
+        let limitEventName = DeviceActivityEvent.Name("limit_\(limit.id.uuidString)")
+        let limitEvent = DeviceActivityEvent(
             applications: selection.applicationTokens,
             categories: selection.categoryTokens,
             webDomains: selection.webDomainTokens,
-            threshold: threshold
+            threshold: DateComponents(minute: limit.limitMinutes)
         )
-
-        let activityName = DeviceActivityName("limit_\(limit.id.uuidString)")
-
-        center.stopMonitoring([activityName])
+        events[limitEventName] = limitEvent
 
         do {
             try center.startMonitoring(
                 activityName,
                 during: schedule,
-                events: [eventName: event]
+                events: events
             )
         } catch {
             print("Failed to start limit monitoring \(limit.name): \(error)")

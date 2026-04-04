@@ -26,10 +26,11 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
             store.clearAllSettings()
         }
         if raw.hasPrefix("limit_") {
-            // Daily reset: clear the limit shield at end of day
+            // Daily reset: clear the limit shield and usage progress
             let id = String(raw.dropFirst("limit_".count))
             let store = ManagedSettingsStore(named: .init("limit_\(id)"))
             store.clearAllSettings()
+            clearUsageProgress(limitId: id)
         }
     }
 
@@ -38,8 +39,89 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         let raw = event.rawValue
         if raw.hasPrefix("limit_") {
-            let id = String(raw.dropFirst("limit_".count))
-            applyLimitShield(id: id)
+            // Parse event name: "limit_<UUID>_<minutes>" for progress, "limit_<UUID>" for final threshold
+            let suffix = String(raw.dropFirst("limit_".count))
+            let parts = suffix.split(separator: "_", maxSplits: 1)
+
+            if parts.count == 1 {
+                // Final threshold: "limit_<UUID>" — apply shield
+                let id = String(parts[0])
+                applyLimitShield(id: id)
+                // Also write progress
+                writeUsageProgress(limitId: id, minutesReached: nil)
+            } else {
+                // Progress threshold: "limit_<36-char-UUID>_<minutes>"
+                // UUID is 36 chars, so split differently
+                let uuidLength = 36
+                if suffix.count > uuidLength + 1 {
+                    let id = String(suffix.prefix(uuidLength))
+                    let minuteStr = String(suffix.dropFirst(uuidLength + 1))
+                    if let minutes = Int(minuteStr) {
+                        writeUsageProgress(limitId: id, minutesReached: minutes)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Write usage progress to shared file
+
+    private func writeUsageProgress(limitId: String, minutesReached: Int?) {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: sharedSuiteName
+        ) else { return }
+
+        let fileURL = containerURL.appendingPathComponent("limitUsageProgress.json")
+
+        // Read existing progress
+        var progress: [String: LimitProgress] = [:]
+        if let data = try? Data(contentsOf: fileURL),
+           let existing = try? JSONDecoder().decode([String: LimitProgress].self, from: data) {
+            progress = existing
+        }
+
+        // Determine minutes to write
+        let minutes: Int
+        if let m = minutesReached {
+            minutes = m
+        } else {
+            // Final threshold — read limit minutes from config
+            let limits = loadLimits()
+            if let limit = limits.first(where: { $0.id.uuidString == limitId }) {
+                minutes = limit.limitMinutes
+            } else {
+                minutes = progress[limitId]?.minutesUsed ?? 0
+            }
+        }
+
+        // Only update if new value is higher (thresholds are cumulative within a day)
+        let existing = progress[limitId]?.minutesUsed ?? 0
+        if minutes >= existing {
+            progress[limitId] = LimitProgress(
+                minutesUsed: minutes,
+                timestamp: Date()
+            )
+        }
+
+        if let data = try? JSONEncoder().encode(progress) {
+            try? data.write(to: fileURL, options: .atomic)
+        }
+    }
+
+    private func clearUsageProgress(limitId: String) {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: sharedSuiteName
+        ) else { return }
+
+        let fileURL = containerURL.appendingPathComponent("limitUsageProgress.json")
+        var progress: [String: LimitProgress] = [:]
+        if let data = try? Data(contentsOf: fileURL),
+           let existing = try? JSONDecoder().decode([String: LimitProgress].self, from: data) {
+            progress = existing
+        }
+        progress.removeValue(forKey: limitId)
+        if let data = try? JSONEncoder().encode(progress) {
+            try? data.write(to: fileURL, options: .atomic)
         }
     }
 
@@ -88,6 +170,12 @@ class DoomScrollMonitorExtension: DeviceActivityMonitor {
     }
 }
 
+// Usage progress entry written by monitor, read by main app
+private struct LimitProgress: Codable {
+    let minutesUsed: Int
+    let timestamp: Date
+}
+
 // Minimal decodable structs (avoids importing host app module)
 
 private struct BlockRoutineData: Codable, Identifiable {
@@ -108,4 +196,5 @@ private struct UsageLimitData: Codable, Identifiable {
     var appSelectionData: Data?
     var limitMinutes: Int
     var isEnabled: Bool
+    var activeDays: Set<Int>?
 }
