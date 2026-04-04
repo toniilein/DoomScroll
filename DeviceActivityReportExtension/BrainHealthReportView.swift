@@ -44,21 +44,50 @@ struct BrainHealthReportView: View {
             }
 
             ForEach(tips, id: \.icon) { tip in
-                HStack(alignment: .top, spacing: 10) {
-                    Text(tip.icon)
-                        .font(.system(size: 22))
+                if tip.isAction {
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(tip.icon)
+                            .font(.system(size: 22))
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(tip.title)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                        Text(tip.detail)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(tip.title)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Text(tip.detail)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            HStack(spacing: 4) {
+                                Image(systemName: "shield.fill")
+                                    .font(.system(size: 10))
+                                Text("Go to Shield tab")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                            }
+                            .foregroundColor(BrainRotTheme.neonPurple)
+                            .padding(.top, 2)
+                        }
                     }
+                    .padding(12)
+                    .background(BrainRotTheme.neonPurple.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(tip.icon)
+                            .font(.system(size: 22))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(tip.title)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Text(tip.detail)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
             }
         }
         .padding(16)
@@ -74,6 +103,7 @@ struct BrainHealthReportView: View {
         let icon: String
         let title: String
         let detail: String
+        var isAction: Bool = false
     }
 
     private func generateTips() -> [Tip] {
@@ -81,6 +111,25 @@ struct BrainHealthReportView: View {
         let score = healthData.brainRotScore
         let pickups = healthData.totalPickups
         let topApp = healthData.topApps.first
+
+        // Always show usage limit recommendation first
+        if let app = topApp {
+            let dailyAvgMinutes = Int(app.duration / 60.0 / 7.0)
+            let suggestedLimit = max(15, (dailyAvgMinutes / 15) * 15) // round down to nearest 15m
+            tips.append(Tip(
+                icon: "\u{1F6E1}\u{FE0F}",
+                title: "Set a limit for \(app.displayName)",
+                detail: "You average ~\(dailyAvgMinutes)m/day on \(app.displayName). Go to Shield tab and add a \(suggestedLimit)m usage limit to stay in control.",
+                isAction: true
+            ))
+        } else {
+            tips.append(Tip(
+                icon: "\u{1F6E1}\u{FE0F}",
+                title: "Add a usage limit",
+                detail: "Go to the Shield tab and set a daily usage limit for your most-used apps.",
+                isAction: true
+            ))
+        }
 
         // Tip based on score range
         if score >= 80 {
