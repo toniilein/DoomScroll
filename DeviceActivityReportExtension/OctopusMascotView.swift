@@ -203,13 +203,12 @@ struct OctopusMascotView: View {
             .frame(height: 220)
 
             // Daily screen time with label
-            VStack(spacing: 2) {
+            HStack(spacing: 6) {
                 Text(totalScreenTime)
                     .font(.system(size: 22, weight: .black, design: .rounded))
                     .foregroundColor(BrainRotTheme.textPrimary)
-
                 Text("daily screentime")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 22, weight: .black, design: .rounded))
                     .foregroundColor(BrainRotTheme.textSecondary)
             }
 
@@ -283,11 +282,12 @@ struct OctopusMascotView: View {
                     let segmentStart = CGFloat(currentTierIdx) * (tierWidth + gap)
                     let xPos = segmentStart + tierWidth * progressInTier
 
-                    // Vertical line indicator
-                    RoundedRectangle(cornerRadius: 1)
+                    // Dot indicator
+                    Circle()
                         .fill(currentTier.mood.bodyColorDark)
-                        .frame(width: 2.5, height: 14)
-                        .offset(x: xPos - 1.25, y: -3)
+                        .frame(width: 10, height: 10)
+                        .shadow(color: currentTier.mood.bodyColorDark.opacity(0.5), radius: 3)
+                        .offset(x: xPos - 5, y: 0)
                 }
             }
             .frame(height: 18)
