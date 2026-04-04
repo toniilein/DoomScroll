@@ -7,6 +7,7 @@ import DeviceActivity
 struct BrainHealthView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @State private var selectedDayOffset = 0
+    @State private var reportReady = false
 
     private var selectedDate: Date {
         Calendar.current.date(byAdding: .day, value: selectedDayOffset, to: Calendar.current.startOfDay(for: .now))!
@@ -34,8 +35,18 @@ struct BrainHealthView: View {
                                 .foregroundColor(BrainRotTheme.textSecondary)
                         }
 
-                        DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        if reportReady {
+                            DeviceActivityReport(.brainHealth, filter: screenTimeManager.weeklyFilter())
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                    }
+                    .task {
+                        // Brief delay so the view hierarchy is fully set up before
+                        // creating the DeviceActivityReport — fixes blank on first visit
+                        if !reportReady {
+                            try? await Task.sleep(for: .milliseconds(300))
+                            reportReady = true
+                        }
                     }
                     #endif
                 }
