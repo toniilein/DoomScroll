@@ -41,7 +41,6 @@ struct BrainHealthView: View {
                 }
             }
             .navigationTitle(L("brainHealth.title"))
-            .toolbarColorScheme(.light, for: .navigationBar)
         }
     }
 

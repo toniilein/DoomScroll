@@ -1,18 +1,74 @@
 import SwiftUI
 
+// MARK: - Color Light/Dark Helper
+
+extension Color {
+    init(light: Color, dark: Color) {
+        self.init(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(dark)
+                : UIColor(light)
+        })
+    }
+}
+
+// MARK: - Theme Manager
+
+@Observable
+class ThemeManager {
+    static let shared = ThemeManager()
+
+    var appTheme: String {
+        get {
+            access(keyPath: \.appTheme)
+            return UserDefaults.standard.string(forKey: "appTheme") ?? "system"
+        }
+        set {
+            withMutation(keyPath: \.appTheme) {
+                UserDefaults.standard.set(newValue, forKey: "appTheme")
+            }
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch appTheme {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil  // system
+        }
+    }
+}
+
+// MARK: - Theme Colors (adaptive light/dark)
+
 enum BrainRotTheme {
-    // MARK: - Claude Brand Palette
+    // MARK: - Adaptive Colors
 
     // Backgrounds
-    static let background = Color(red: 0.957, green: 0.953, blue: 0.933)       // #F4F3EE warm cream
-    static let cardBackground = Color.white                                       // #FFFFFF
-    static let cardBorder = Color(red: 0.910, green: 0.898, blue: 0.863)        // #E8E5DC subtle border
+    static let background = Color(
+        light: Color(red: 0.957, green: 0.953, blue: 0.933),
+        dark: Color(red: 0.11, green: 0.11, blue: 0.12)
+    )
+    static let cardBackground = Color(
+        light: .white,
+        dark: Color(red: 0.17, green: 0.17, blue: 0.18)
+    )
+    static let cardBorder = Color(
+        light: Color(red: 0.910, green: 0.898, blue: 0.863),
+        dark: Color(red: 0.25, green: 0.25, blue: 0.27)
+    )
 
     // Text
-    static let textPrimary = Color(red: 0.239, green: 0.224, blue: 0.161)       // #3D3929 charcoal brown
-    static let textSecondary = Color(red: 0.549, green: 0.522, blue: 0.467)     // #8C8577 warm gray
+    static let textPrimary = Color(
+        light: Color(red: 0.239, green: 0.224, blue: 0.161),
+        dark: Color(red: 0.93, green: 0.93, blue: 0.91)
+    )
+    static let textSecondary = Color(
+        light: Color(red: 0.549, green: 0.522, blue: 0.467),
+        dark: Color(red: 0.62, green: 0.60, blue: 0.56)
+    )
 
-    // Accent colors (softer tones for light background)
+    // Accent colors (same in both modes — vibrant enough for dark backgrounds)
     static let neonPink = Color(red: 0.855, green: 0.467, blue: 0.337)          // #DA7756 Claude orange (primary)
     static let neonGreen = Color(red: 0.357, green: 0.663, blue: 0.482)         // #5BA97B soft green
     static let neonPurple = Color(red: 0.608, green: 0.420, blue: 0.769)        // #9B6BC4 soft purple

@@ -38,7 +38,6 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle(L("overview.title"))
-            .toolbarColorScheme(.light, for: .navigationBar)
             .onAppear {
                 // Reset to today so Overview always opens on the current day
                 let shared = UserDefaults(suiteName: "group.pookie1.shared")

@@ -152,6 +152,9 @@
 
 /* Settings */
 "settings.title" = "Settings";
+"settings.theme" = "Theme";
+"settings.light" = "Light";
+"settings.dark" = "Dark";
 "settings.language" = "Language";
 "settings.system" = "System";
 "settings.english" = "English";

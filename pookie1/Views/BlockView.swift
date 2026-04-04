@@ -69,7 +69,6 @@ struct BlockView: View {
                     }
                 }
             }
-            .toolbarColorScheme(.light, for: .navigationBar)
             .alert(L("shield.unblockAllTitle"), isPresented: $showUnblockConfirm) {
                 Button(L("shield.cancel"), role: .cancel) {}
                 Button(L("shield.unblockAll"), role: .destructive) {

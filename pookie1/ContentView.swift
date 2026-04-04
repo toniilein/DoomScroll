@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
+    private var themeManager = ThemeManager.shared
 
     var body: some View {
         Group {
@@ -11,7 +12,7 @@ struct ContentView: View {
                 OnboardingView()
             }
         }
-        .preferredColorScheme(.light)
+        .preferredColorScheme(themeManager.colorScheme)
     }
 }
 
