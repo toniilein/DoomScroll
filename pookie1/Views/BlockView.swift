@@ -30,24 +30,86 @@ struct BlockView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    // Page header
-                    pageHeader
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 28) {
+                        // Page header
+                        pageHeader
 
-                    // Quick Block hero
-                    quickBlockHero
+                        // Quick Block hero
+                        quickBlockHero
 
-                    // Usage Limits with extension-rendered usage
-                    usageLimitsSection
-
-                    // Block Routines (single column)
-                    routinesSection
-
-                    Spacer().frame(height: 60)
+                        // Usage Limits header + empty state (cards rendered below outside ScrollView)
+                        usageLimitsHeader
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, blockingManager.usageLimits.isEmpty ? 0 : 8)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
+
+                // Extension-rendered limit cards OUTSIDE ScrollView so they actually render
+                #if !targetEnvironment(simulator)
+                if !blockingManager.usageLimits.isEmpty {
+                    ZStack(alignment: .top) {
+                        // Extension: usage cards (not tappable)
+                        DeviceActivityReport(.limitUsage, filter: todayFilter)
+                            .id(reportID)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: extensionHeight)
+                            .clipped()
+                            .allowsHitTesting(false)
+
+                        // Native overlay: tap to edit + toggle per card
+                        VStack(spacing: extCardSpacing) {
+                            ForEach(blockingManager.usageLimits) { limit in
+                                HStack(spacing: 0) {
+                                    // Tap to edit — covers the whole card except toggle
+                                    Color.clear
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { editingLimit = limit }
+
+                                    // Toggle on the right
+                                    Toggle("", isOn: Binding(
+                                        get: { limit.isEnabled },
+                                        set: { _ in
+                                            blockingManager.toggleUsageLimit(limit)
+                                            syncAllLimitConfigs()
+                                        }
+                                    ))
+                                    .labelsHidden()
+                                    .tint(BrainRotTheme.neonPurple)
+                                    .padding(.trailing, 18)
+                                }
+                                .frame(height: extCardHeight)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    .frame(height: extensionHeight)
+                }
+                #endif
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 28) {
+                        // Simulator limit cards
+                        #if targetEnvironment(simulator)
+                        if !blockingManager.usageLimits.isEmpty {
+                            VStack(spacing: 12) {
+                                ForEach(blockingManager.usageLimits) { limit in
+                                    simulatorLimitCard(limit)
+                                }
+                            }
+                        }
+                        #endif
+
+                        // Block Routines (single column)
+                        routinesSection
+
+                        Spacer().frame(height: 60)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                }
             }
             .background(BrainRotTheme.background)
             .navigationBarTitleDisplayMode(.inline)
@@ -222,11 +284,10 @@ struct BlockView: View {
         )
     }
 
-    // MARK: - Usage Limits
+    // MARK: - Usage Limits Header
 
-    private var usageLimitsSection: some View {
+    private var usageLimitsHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Section header
             HStack(alignment: .lastTextBaseline) {
                 Text("Usage Limits")
                     .font(.system(size: 20, weight: .bold, design: .rounded))
@@ -244,52 +305,6 @@ struct BlockView: View {
 
             if blockingManager.usageLimits.isEmpty {
                 emptyLimitCard
-            } else {
-                // Extension renders usage cards; native overlay adds toggles + tap to edit
-                #if !targetEnvironment(simulator)
-                ZStack(alignment: .top) {
-                    // Layer 1: Extension-rendered cards with usage data
-                    DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: extensionHeight)
-                        .clipped()
-                        .allowsHitTesting(false)
-
-                    // Layer 2: Native overlay — toggle + tap to edit per card
-                    VStack(spacing: extCardSpacing) {
-                        ForEach(blockingManager.usageLimits) { limit in
-                            HStack {
-                                // Tap to edit (transparent area covering left side)
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { editingLimit = limit }
-
-                                // Toggle (positioned over the reserved space in extension card)
-                                Toggle("", isOn: Binding(
-                                    get: { limit.isEnabled },
-                                    set: { _ in
-                                        blockingManager.toggleUsageLimit(limit)
-                                        syncAllLimitConfigs()
-                                    }
-                                ))
-                                .labelsHidden()
-                                .tint(BrainRotTheme.neonPurple)
-                            }
-                            .padding(.trailing, 18)
-                            .frame(height: extCardHeight)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
-                .frame(height: extensionHeight)
-                // Pull back the horizontal padding since extension has its own
-                .padding(.horizontal, -20)
-                #else
-                ForEach(blockingManager.usageLimits) { limit in
-                    simulatorLimitCard(limit)
-                }
-                #endif
             }
         }
     }
