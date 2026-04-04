@@ -57,17 +57,6 @@ struct BlockView: View {
 
             }
             .background(BrainRotTheme.background)
-            #if !targetEnvironment(simulator)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !blockingManager.usageLimits.isEmpty {
-                    // Extension view with real usage data — the only way to show it
-                    DeviceActivityReport(.limitUsage, filter: todayFilter)
-                        .id(reportID)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
-                }
-            }
-            #endif
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -260,6 +249,15 @@ struct BlockView: View {
                 ForEach(blockingManager.usageLimits) { limit in
                     limitCard(limit)
                 }
+
+                // Extension-rendered usage bars appear right under the cards
+                #if !targetEnvironment(simulator)
+                DeviceActivityReport(.limitUsage, filter: todayFilter)
+                    .id(reportID)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: CGFloat(blockingManager.usageLimits.count) * 70 + 40)
+                    .allowsHitTesting(false)
+                #endif
             }
         }
     }
