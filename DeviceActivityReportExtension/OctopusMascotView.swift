@@ -167,11 +167,6 @@ struct MiniOctopusView: View {
             let s = min(geo.size.width, geo.size.height)
 
             ZStack {
-                // Tentacles
-                MiniTentacles(mood: mood)
-                    .frame(width: s * 0.55, height: s * 0.3)
-                    .offset(y: s * 0.25)
-
                 // Round body (matches big octopus Circle + RadialGradient)
                 Circle()
                     .fill(
