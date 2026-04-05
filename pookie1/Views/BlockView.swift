@@ -272,40 +272,67 @@ struct BlockView: View {
 
     private func generateTips(score: Int, pickups: Int, topAppName: String?, topAppDuration: TimeInterval) -> [Tip] {
         var tips: [Tip] = []
+        let hasLimits = !blockingManager.usageLimits.isEmpty
+        let hasRoutines = !blockingManager.routines.isEmpty
 
-        if let appName = topAppName, topAppDuration > 0 {
-            let dailyAvgMinutes = Int(topAppDuration / 60.0 / 7.0)
-            let suggestedLimit = max(15, (dailyAvgMinutes / 15) * 15)
+        // Usage limit tip — adapts based on whether limits already exist
+        if hasLimits {
+            if let appName = topAppName, topAppDuration > 0 {
+                let dailyAvgMinutes = Int(topAppDuration / 60.0 / 7.0)
+                tips.append(Tip(
+                    icon: "",
+                    title: "Limits active — review \(appName)",
+                    detail: "You have limits set up. \(appName) still averages ~\(dailyAvgMinutes)min/day — consider tightening its limit.",
+                    isAction: true
+                ))
+            } else {
+                tips.append(Tip(
+                    icon: "",
+                    title: "Limits active",
+                    detail: "Your usage limits are running. Check if they need adjusting for your top apps.",
+                    isAction: true
+                ))
+            }
+        } else {
+            if let appName = topAppName, topAppDuration > 0 {
+                let dailyAvgMinutes = Int(topAppDuration / 60.0 / 7.0)
+                let suggestedLimit = max(15, (dailyAvgMinutes / 15) * 15)
+                tips.append(Tip(
+                    icon: "",
+                    title: "Add a usage limit for \(appName)",
+                    detail: "You use \(appName) ~\(dailyAvgMinutes)min/day. Set a \(suggestedLimit)min daily limit to keep it in check.",
+                    isAction: true
+                ))
+            } else {
+                tips.append(Tip(
+                    icon: "",
+                    title: "Add a usage limit",
+                    detail: "Set daily limits on your most-used apps or categories to control screen time.",
+                    isAction: true
+                ))
+            }
+        }
+
+        // Routine tip — adapts based on whether routines already exist
+        if hasRoutines {
             tips.append(Tip(
-                icon: "🛡️",
-                title: String(format: L("brainHealth.setLimit"), appName),
-                detail: String(format: L("brainHealth.setLimitDetail"), dailyAvgMinutes, appName, suggestedLimit),
-                isAction: true
+                icon: "🔁",
+                title: "Routines active",
+                detail: "Your block routines are running. Adjust times or add more apps to block during focus hours."
             ))
         } else {
             tips.append(Tip(
-                icon: "🛡️",
-                title: L("brainHealth.addLimit"),
-                detail: L("brainHealth.addLimitDetail"),
-                isAction: true
+                icon: "🔁",
+                title: "Set up a block routine",
+                detail: "Schedule automatic blocks during work, sleep, or study hours to stay focused."
             ))
         }
 
+        // Score-based tips
         if score >= 80 {
             tips.append(Tip(icon: "🚨", title: L("brainHealth.screenTimeHigh"), detail: L("brainHealth.screenTimeHighDetail")))
         } else if score >= 50 {
             tips.append(Tip(icon: "⚠️", title: L("brainHealth.roomToImprove"), detail: L("brainHealth.roomToImproveDetail")))
-        }
-
-        if pickups > 200 {
-            tips.append(Tip(icon: "📱", title: L("brainHealth.tooManyPickups"), detail: String(format: L("brainHealth.tooManyPickupsDetail"), pickups)))
-        } else if pickups > 100 {
-            tips.append(Tip(icon: "🔔", title: L("brainHealth.watchPickups"), detail: String(format: L("brainHealth.watchPickupsDetail"), pickups)))
-        }
-
-        if let appName = topAppName, topAppDuration > 7200 {
-            let hours = Int(topAppDuration / 3600)
-            tips.append(Tip(icon: "⏰", title: String(format: L("brainHealth.biggestDrain"), appName), detail: String(format: L("brainHealth.biggestDrainDetail"), hours)))
         }
 
         return tips
