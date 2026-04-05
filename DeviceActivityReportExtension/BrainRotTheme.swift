@@ -91,7 +91,7 @@ enum BrainRotTheme {
     static func scoreColor(for score: Int) -> Color {
         switch score {
         case 0..<30: return neonGreen
-        case 30..<60: return neonBlue
+        case 30..<60: return neonOrange
         case 60..<85: return doomRed
         default: return neonPink
         }
@@ -118,7 +118,7 @@ enum BrainRotTheme {
     static func tierBadgeColor(for score: Int) -> Color {
         switch score {
         case 0..<30: return neonGreen
-        case 30..<60: return neonBlue
+        case 30..<60: return neonOrange
         case 60..<85: return doomRed
         default: return neonPink
         }
