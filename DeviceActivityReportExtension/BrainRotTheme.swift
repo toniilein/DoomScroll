@@ -95,7 +95,7 @@ enum BrainRotTheme {
     /// Stable color per category name — uses only blue/purple/pink tones
     static func categoryColor(for name: String) -> Color {
         let lower = name.lowercased()
-        if lower.contains("social") { return neonPink }
+        if lower.contains("social") { return Color(red: 0.78, green: 0.40, blue: 0.58) }  // rosy pink
         if lower.contains("entertainment") || lower.contains("video") { return neonPurple }
         if lower.contains("game") { return iconIndigo }
         if lower.contains("productivity") { return neonBlue }
