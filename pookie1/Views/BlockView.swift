@@ -228,38 +228,42 @@ struct BlockView: View {
 
         let tips = generateTips(score: score, pickups: pickups, topAppName: topAppName, topAppDuration: topAppDuration)
 
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundColor(BrainRotTheme.neonOrange)
-                Text(L("brainHealth.recommendations"))
-                    .font(.headline)
-                    .foregroundColor(BrainRotTheme.textPrimary)
-            }
+        return Group {
+            if !tips.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lightbulb.fill")
+                            .foregroundColor(BrainRotTheme.neonOrange)
+                        Text(L("brainHealth.recommendations"))
+                            .font(.headline)
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                    }
 
-            ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(tip.title)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                    Text(tip.detail)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(tip.title)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Text(tip.detail)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(BrainRotTheme.neonPurple.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(BrainRotTheme.neonPurple.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(16)
+                .background(BrainRotTheme.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
+                )
             }
         }
-        .padding(16)
-        .background(BrainRotTheme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
-        )
     }
 
     private func generateTips(score: Int, pickups: Int, topAppName: String?, topAppDuration: TimeInterval) -> [Tip] {
@@ -269,24 +273,8 @@ struct BlockView: View {
         let appName = topAppName ?? ""
         let dailyAvgMinutes = topAppDuration > 0 ? Int(topAppDuration / 60.0 / 7.0) : 0
 
-        // Tip 1: Usage limits
-        if hasLimits {
-            if !appName.isEmpty && dailyAvgMinutes > 0 {
-                tips.append(Tip(
-                    icon: "",
-                    title: "\(appName) averages \(dailyAvgMinutes)min/day",
-                    detail: "You have limits set. If \(appName) still feels like too much, try lowering its limit or adding it to an existing one.",
-                    isAction: true
-                ))
-            } else {
-                tips.append(Tip(
-                    icon: "",
-                    title: "Your limits are active",
-                    detail: "Keep an eye on which apps hit the limit most often — those might need tighter controls.",
-                    isAction: true
-                ))
-            }
-        } else {
+        // Only show tips for things not yet set up
+        if !hasLimits {
             if !appName.isEmpty && dailyAvgMinutes > 0 {
                 let suggestedLimit = max(15, (dailyAvgMinutes / 15) * 15)
                 tips.append(Tip(
@@ -305,14 +293,7 @@ struct BlockView: View {
             }
         }
 
-        // Tip 2: Block routines
-        if hasRoutines {
-            tips.append(Tip(
-                icon: "",
-                title: "Block routines are running",
-                detail: "Add more apps to your routines or extend the blocked time windows for stronger protection."
-            ))
-        } else {
+        if !hasRoutines {
             tips.append(Tip(
                 icon: "",
                 title: "Block apps on a schedule",
