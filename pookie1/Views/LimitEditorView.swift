@@ -68,7 +68,6 @@ struct LimitEditorView: View {
                             validationWarning(L("validation.timeRequired"))
                         }
                         WeekdayPickerView(activeDays: $activeDays)
-                        todayUsageSection
 
                         if isEditing {
                             deleteButton.padding(.top, 12)
