@@ -84,27 +84,33 @@ enum BrainRotTheme {
     static let silverColor = Color(red: 0.60, green: 0.58, blue: 0.55)          // Warm silver
     static let bronzeColor = Color(red: 0.72, green: 0.49, blue: 0.30)          // Warm bronze
 
-    // MARK: - Category Color Mapping
+    // MARK: - Category Icon Colors (no red/yellow/green — those are tier colors)
 
-    /// Stable color per category name — all apps in the same category share the same icon color
+    // Extra palette for icon variety (blue/purple/pink family only)
+    static let iconIndigo = Color(red: 0.42, green: 0.38, blue: 0.78)              // #6B61C7 indigo
+    static let iconTeal = Color(red: 0.33, green: 0.55, blue: 0.65)                // #548CA6 teal-blue
+    static let iconSlate = Color(red: 0.45, green: 0.48, blue: 0.58)               // #737A94 slate blue
+    static let iconMauve = Color(red: 0.65, green: 0.42, blue: 0.58)               // #A66B94 mauve
+
+    /// Stable color per category name — uses only blue/purple/pink tones
     static func categoryColor(for name: String) -> Color {
         let lower = name.lowercased()
         if lower.contains("social") { return neonPink }
         if lower.contains("entertainment") || lower.contains("video") { return neonPurple }
-        if lower.contains("game") { return neonGreen }
+        if lower.contains("game") { return iconIndigo }
         if lower.contains("productivity") { return neonBlue }
-        if lower.contains("education") { return neonYellow }
-        if lower.contains("health") || lower.contains("fitness") { return neonGreen }
-        if lower.contains("shopping") { return neonOrange }
-        if lower.contains("news") || lower.contains("reading") { return neonBlue }
-        if lower.contains("photo") || lower.contains("creative") { return neonPurple }
+        if lower.contains("education") { return iconTeal }
+        if lower.contains("health") || lower.contains("fitness") { return iconMauve }
+        if lower.contains("shopping") { return neonPurple }
+        if lower.contains("news") || lower.contains("reading") { return iconSlate }
+        if lower.contains("photo") || lower.contains("creative") { return iconIndigo }
         if lower.contains("music") { return neonPink }
-        if lower.contains("travel") || lower.contains("navigation") { return neonBlue }
-        if lower.contains("finance") || lower.contains("business") { return neonGreen }
-        if lower.contains("utility") || lower.contains("utilities") { return neonOrange }
-        if lower.contains("communication") || lower.contains("message") { return neonBlue }
+        if lower.contains("travel") || lower.contains("navigation") { return iconTeal }
+        if lower.contains("finance") || lower.contains("business") { return neonBlue }
+        if lower.contains("utility") || lower.contains("utilities") { return iconSlate }
+        if lower.contains("communication") || lower.contains("message") { return iconMauve }
         // Fallback: hash the name to pick a stable color
-        let colors = [neonPink, neonGreen, neonPurple, neonBlue, neonOrange, neonYellow]
+        let colors = [neonPink, neonPurple, neonBlue, iconIndigo, iconTeal, iconSlate, iconMauve]
         let hash = abs(name.hashValue)
         return colors[hash % colors.count]
     }
