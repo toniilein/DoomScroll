@@ -193,3 +193,9 @@
 "common.done" = "Fertig";
 "common.apps" = "Apps";
 "common.notAvailableSimulator" = "Nicht verfügbar im Simulator";
+
+/* 7-Day Analysis */
+"analysis.7dayApp" = "7-Tage App-Nutzung";
+"analysis.7dayCat" = "7-Tage Kat.-Nutzung";
+"analysis.dailyAvg" = "Tages-Ø";
+"analysis.total" = "gesamt";
