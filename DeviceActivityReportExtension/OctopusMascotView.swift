@@ -157,115 +157,187 @@ struct TentaclesShape: Shape {
     }
 }
 
-// MARK: - Mini Octopus (static, for cards)
+// MARK: - Mini Octopus (static, matches big OctopusMascotView style)
 
 struct MiniOctopusView: View {
     let mood: OctopusMood
 
     var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let bodyH = h * 0.6
-            let tentH = h * 0.4
+            let s = min(geo.size.width, geo.size.height)
 
             ZStack {
-                // Tentacles (simple static curves)
+                // Tentacles
                 MiniTentacles(mood: mood)
-                    .frame(width: w * 0.8, height: tentH)
-                    .offset(y: bodyH * 0.35)
+                    .frame(width: s * 0.55, height: s * 0.3)
+                    .offset(y: s * 0.25)
 
-                // Body dome
-                Ellipse()
+                // Round body (matches big octopus Circle + RadialGradient)
+                Circle()
                     .fill(
-                        LinearGradient(
+                        RadialGradient(
                             colors: [mood.bodyColor, mood.bodyColorDark],
-                            startPoint: .top, endPoint: .bottom
+                            center: .init(x: 0.4, y: 0.35),
+                            startRadius: s * 0.05,
+                            endRadius: s * 0.4
                         )
                     )
-                    .frame(width: w * 0.75, height: bodyH)
-                    .offset(y: -tentH * 0.2)
+                    .frame(width: s * 0.7, height: s * 0.7)
+                    .shadow(color: mood.bodyColor.opacity(0.3), radius: 4, y: 2)
+                    .offset(y: -s * 0.08)
+
+                // Shine highlight
+                Ellipse()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.white.opacity(0.45), Color.clear],
+                            center: .init(x: 0.4, y: 0.3),
+                            startRadius: 0,
+                            endRadius: s * 0.2
+                        )
+                    )
+                    .frame(width: s * 0.4, height: s * 0.3)
+                    .offset(x: -s * 0.05, y: -s * 0.2)
 
                 // Spots
                 Circle()
-                    .fill(mood.spotColor.opacity(0.5))
-                    .frame(width: w * 0.1, height: w * 0.1)
-                    .offset(x: -w * 0.15, y: -tentH * 0.25)
+                    .fill(mood.spotColor.opacity(0.4))
+                    .frame(width: s * 0.06, height: s * 0.06)
+                    .offset(x: -s * 0.17, y: -s * 0.15)
+                Circle()
+                    .fill(mood.spotColor.opacity(0.3))
+                    .frame(width: s * 0.045, height: s * 0.045)
+                    .offset(x: s * 0.19, y: -s * 0.2)
                 Circle()
                     .fill(mood.spotColor.opacity(0.35))
-                    .frame(width: w * 0.07, height: w * 0.07)
-                    .offset(x: w * 0.18, y: -tentH * 0.1)
+                    .frame(width: s * 0.05, height: s * 0.05)
+                    .offset(x: s * 0.2, y: -s * 0.04)
 
-                // Eyes
-                HStack(spacing: w * 0.12) {
-                    MiniEye(w: w)
-                    MiniEye(w: w)
-                }
-                .offset(y: -tentH * 0.22)
-
-                // Mouth
-                miniMouth(w: w)
-                    .offset(y: -tentH * 0.22 + w * 0.14)
+                // Eyes (matching big octopus eye styles)
+                miniEyes(s: s)
+                    .offset(y: -s * 0.06)
 
                 // Cheeks
                 if mood.showCheeks {
-                    HStack(spacing: w * 0.28) {
-                        Circle().fill(Color.pink.opacity(mood.cheekOpacity))
-                            .frame(width: w * 0.08, height: w * 0.08)
-                        Circle().fill(Color.pink.opacity(mood.cheekOpacity))
-                            .frame(width: w * 0.08, height: w * 0.08)
+                    HStack(spacing: s * 0.22) {
+                        Ellipse()
+                            .fill(Color.pink.opacity(mood.cheekOpacity))
+                            .frame(width: s * 0.09, height: s * 0.055)
+                        Ellipse()
+                            .fill(Color.pink.opacity(mood.cheekOpacity))
+                            .frame(width: s * 0.09, height: s * 0.055)
                     }
-                    .offset(y: -tentH * 0.22 + w * 0.08)
+                    .offset(y: s * 0.02)
                 }
+
+                // Mouth
+                miniMouth(s: s)
+                    .offset(y: s * 0.07)
             }
-            .frame(width: w, height: h)
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 
-    private struct MiniEye: View {
-        let w: CGFloat
-        var body: some View {
+    @ViewBuilder
+    private func miniEyes(s: CGFloat) -> some View {
+        HStack(spacing: s * 0.1) {
+            miniEye(s: s, isLeft: true)
+            miniEye(s: s, isLeft: false)
+        }
+    }
+
+    @ViewBuilder
+    private func miniEye(s: CGFloat, isLeft: Bool) -> some View {
+        switch mood {
+        case .ecstatic:
+            // Star eyes
             ZStack {
-                Ellipse()
-                    .fill(.white)
-                    .frame(width: w * 0.16, height: w * 0.18)
+                Circle().fill(Color.white)
+                    .frame(width: s * 0.17, height: s * 0.17)
+                Text("\u{2605}")
+                    .font(.system(size: s * 0.12, weight: .bold))
+                    .foregroundColor(mood.bodyColorDark)
+            }
+        case .happy:
+            // Curved happy eyes (^_^)
+            Path { p in
+                p.move(to: CGPoint(x: 0, y: s * 0.06))
+                p.addQuadCurve(
+                    to: CGPoint(x: s * 0.12, y: s * 0.06),
+                    control: CGPoint(x: s * 0.06, y: 0)
+                )
+            }
+            .stroke(mood.bodyColorDark, style: StrokeStyle(lineWidth: s * 0.03, lineCap: .round))
+            .frame(width: s * 0.12, height: s * 0.08)
+        case .sad:
+            // Big worried eyes
+            ZStack {
+                Ellipse().fill(Color.white)
+                    .frame(width: s * 0.17, height: s * 0.16)
                 Circle()
-                    .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
-                    .frame(width: w * 0.08, height: w * 0.08)
+                    .fill(Color(red: 0.25, green: 0.22, blue: 0.30))
+                    .frame(width: s * 0.08, height: s * 0.08)
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: s * 0.03, height: s * 0.03)
+                    .offset(x: s * 0.015, y: -s * 0.015)
+            }
+        case .zombie:
+            // X eyes
+            ZStack {
+                Ellipse().fill(Color.white)
+                    .frame(width: s * 0.17, height: s * 0.16)
+                ZStack {
+                    Rectangle()
+                        .fill(Color(red: 0.25, green: 0.22, blue: 0.30))
+                        .frame(width: s * 0.1, height: s * 0.02)
+                        .rotationEffect(.degrees(45))
+                    Rectangle()
+                        .fill(Color(red: 0.25, green: 0.22, blue: 0.30))
+                        .frame(width: s * 0.1, height: s * 0.02)
+                        .rotationEffect(.degrees(-45))
+                }
             }
         }
     }
 
     @ViewBuilder
-    private func miniMouth(w: CGFloat) -> some View {
+    private func miniMouth(s: CGFloat) -> some View {
         switch mood {
         case .ecstatic:
-            // Big smile
+            // Wide open smile
             Capsule()
                 .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
-                .frame(width: w * 0.14, height: w * 0.06)
+                .frame(width: s * 0.14, height: s * 0.07)
         case .happy:
-            // Slight smile
-            Capsule()
-                .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
-                .frame(width: w * 0.10, height: w * 0.04)
+            // Gentle smile
+            Path { p in
+                p.move(to: CGPoint(x: 0, y: 0))
+                p.addQuadCurve(
+                    to: CGPoint(x: s * 0.12, y: 0),
+                    control: CGPoint(x: s * 0.06, y: s * 0.06)
+                )
+            }
+            .stroke(Color(red: 0.15, green: 0.15, blue: 0.2), style: StrokeStyle(lineWidth: s * 0.025, lineCap: .round))
+            .frame(width: s * 0.12, height: s * 0.06)
         case .sad:
-            // Frown arc
-            Circle()
-                .trim(from: 0.55, to: 0.95)
-                .stroke(Color(red: 0.15, green: 0.15, blue: 0.2), lineWidth: w * 0.03)
-                .frame(width: w * 0.10, height: w * 0.10)
+            // Wobbly frown
+            Path { p in
+                p.move(to: CGPoint(x: 0, y: s * 0.04))
+                p.addQuadCurve(
+                    to: CGPoint(x: s * 0.1, y: s * 0.04),
+                    control: CGPoint(x: s * 0.05, y: 0)
+                )
+            }
+            .stroke(Color(red: 0.15, green: 0.15, blue: 0.2), style: StrokeStyle(lineWidth: s * 0.025, lineCap: .round))
+            .frame(width: s * 0.1, height: s * 0.05)
         case .zombie:
-            // X mouth
+            // Wavy dizzy mouth
             ZStack {
                 Rectangle()
                     .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
-                    .frame(width: w * 0.12, height: w * 0.025)
-                    .rotationEffect(.degrees(30))
-                Rectangle()
-                    .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
-                    .frame(width: w * 0.12, height: w * 0.025)
-                    .rotationEffect(.degrees(-30))
+                    .frame(width: s * 0.12, height: s * 0.02)
+                    .rotationEffect(.degrees(15))
             }
         }
     }
@@ -279,7 +351,7 @@ private struct MiniTentacles: View {
             let w = geo.size.width
             let h = geo.size.height
             Path { path in
-                let count = 4
+                let count = 5
                 let spacing = w / CGFloat(count + 1)
                 for i in 0..<count {
                     let x = spacing * CGFloat(i + 1)
@@ -291,7 +363,7 @@ private struct MiniTentacles: View {
                     )
                 }
             }
-            .stroke(mood.bodyColorDark, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+            .stroke(mood.bodyColorDark, style: StrokeStyle(lineWidth: 2, lineCap: .round))
         }
     }
 }
