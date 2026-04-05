@@ -73,12 +73,6 @@ struct RoutineEditorView: View {
                             validationWarning(L("validation.nameRequired"))
                         }
 
-                        // Time
-                        timeSection
-
-                        // Weekdays
-                        WeekdayPickerView(activeDays: $activeDays)
-
                         // Apps
                         appsSection
                         #if !targetEnvironment(simulator)
@@ -86,6 +80,12 @@ struct RoutineEditorView: View {
                             validationWarning(L("validation.appsRequired"))
                         }
                         #endif
+
+                        // Time
+                        timeSection
+
+                        // Weekdays
+                        WeekdayPickerView(activeDays: $activeDays)
 
                         // Delete
                         if isEditing {
