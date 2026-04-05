@@ -302,7 +302,7 @@ struct BrainHealthReportView: View {
             HStack(spacing: 6) {
                 Image(systemName: "chart.bar.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("7-Day App Usage")
+                Text(L("analysis.7dayApp"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
@@ -347,7 +347,7 @@ struct BrainHealthReportView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(BrainRotTheme.textPrimary)
                             .lineLimit(1)
-                        Text(app.formattedTotal + " total")
+                        Text(app.formattedTotal + " " + L("analysis.total"))
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(BrainRotTheme.textSecondary)
                     }
@@ -395,7 +395,7 @@ struct BrainHealthReportView: View {
         return VStack(spacing: 12) {
             // Daily avg
             HStack {
-                Text("Daily Avg")
+                Text(L("analysis.dailyAvg"))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
                 Spacer()
@@ -443,7 +443,7 @@ struct BrainHealthReportView: View {
             HStack(spacing: 6) {
                 Image(systemName: "square.grid.2x2.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("7-Day Cat. Usage")
+                Text(L("analysis.7dayCat"))
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
@@ -498,7 +498,7 @@ struct BrainHealthReportView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(BrainRotTheme.textPrimary)
                             .lineLimit(1)
-                        Text(cat.formattedTotal + " total \u{00B7} \(cat.appCount) \(L("breakdown.apps"))")
+                        Text(cat.formattedTotal + " " + L("analysis.total") + " \u{00B7} \(cat.appCount) \(L("breakdown.apps"))")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(BrainRotTheme.textSecondary)
                     }
@@ -530,7 +530,7 @@ struct BrainHealthReportView: View {
 
         return VStack(spacing: 12) {
             HStack {
-                Text("Daily Avg")
+                Text(L("analysis.dailyAvg"))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(BrainRotTheme.textSecondary)
                 Spacer()

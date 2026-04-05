@@ -6,8 +6,6 @@ import DeviceActivity
 
 struct DashboardView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
-    @State private var showShareSheet = false
-    @State private var shareImage: UIImage?
 
     var body: some View {
         NavigationStack {
@@ -45,37 +43,6 @@ struct DashboardView: View {
                 shared?.set(0, forKey: "selectedDayOffset")
                 shared?.synchronize()
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        generateAndShare()
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(BrainRotTheme.neonPink)
-                    }
-                }
-            }
-            .sheet(isPresented: $showShareSheet) {
-                if let image = shareImage {
-                    ShareSheet(items: [image])
-                }
-            }
-        }
-    }
-
-    // MARK: - Share
-
-    @MainActor
-    private func generateAndShare() {
-        let score = SharedSettings.lastScore
-        let streak = SharedSettings.streakDays
-        let card = KrakenShareCardView(score: score, streakDays: streak)
-        let renderer = ImageRenderer(content: card)
-        renderer.scale = UIScreen.main.scale
-        if let image = renderer.uiImage {
-            shareImage = image
-            showShareSheet = true
         }
     }
 
@@ -121,16 +88,4 @@ struct DashboardView: View {
         }
         .padding(.vertical, 40)
     }
-}
-
-// MARK: - UIKit Share Sheet Wrapper
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
