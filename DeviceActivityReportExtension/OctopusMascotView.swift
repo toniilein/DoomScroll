@@ -32,7 +32,7 @@ enum OctopusMood {
     var bodyColor: Color {
         switch self {
         case .ecstatic: return Color(red: 0.55, green: 0.88, blue: 0.70)  // soft mint
-        case .happy:    return Color(red: 0.52, green: 0.82, blue: 0.78)  // seafoam
+        case .happy:    return Color(red: 0.95, green: 0.75, blue: 0.35)  // warm yellow-orange
         case .sad:      return Color(red: 0.90, green: 0.35, blue: 0.35)  // warm red
         case .zombie:   return Color(red: 0.68, green: 0.65, blue: 0.63)  // warm gray
         }
@@ -41,7 +41,7 @@ enum OctopusMood {
     var bodyColorDark: Color {
         switch self {
         case .ecstatic: return Color(red: 0.40, green: 0.75, blue: 0.55)
-        case .happy:    return Color(red: 0.38, green: 0.70, blue: 0.65)
+        case .happy:    return Color(red: 0.85, green: 0.60, blue: 0.22)
         case .sad:      return Color(red: 0.75, green: 0.22, blue: 0.22)
         case .zombie:   return Color(red: 0.52, green: 0.50, blue: 0.48)
         }
@@ -50,7 +50,7 @@ enum OctopusMood {
     var spotColor: Color {
         switch self {
         case .ecstatic: return Color(red: 0.45, green: 0.78, blue: 0.58)
-        case .happy:    return Color(red: 0.42, green: 0.72, blue: 0.68)
+        case .happy:    return Color(red: 0.90, green: 0.65, blue: 0.28)
         case .sad:      return Color(red: 0.80, green: 0.28, blue: 0.28)
         case .zombie:   return Color(red: 0.58, green: 0.55, blue: 0.53)
         }
