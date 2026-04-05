@@ -157,6 +157,145 @@ struct TentaclesShape: Shape {
     }
 }
 
+// MARK: - Mini Octopus (static, for cards)
+
+struct MiniOctopusView: View {
+    let mood: OctopusMood
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let bodyH = h * 0.6
+            let tentH = h * 0.4
+
+            ZStack {
+                // Tentacles (simple static curves)
+                MiniTentacles(mood: mood)
+                    .frame(width: w * 0.8, height: tentH)
+                    .offset(y: bodyH * 0.35)
+
+                // Body dome
+                Ellipse()
+                    .fill(
+                        LinearGradient(
+                            colors: [mood.bodyColor, mood.bodyColorDark],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .frame(width: w * 0.75, height: bodyH)
+                    .offset(y: -tentH * 0.2)
+
+                // Spots
+                Circle()
+                    .fill(mood.spotColor.opacity(0.5))
+                    .frame(width: w * 0.1, height: w * 0.1)
+                    .offset(x: -w * 0.15, y: -tentH * 0.25)
+                Circle()
+                    .fill(mood.spotColor.opacity(0.35))
+                    .frame(width: w * 0.07, height: w * 0.07)
+                    .offset(x: w * 0.18, y: -tentH * 0.1)
+
+                // Eyes
+                HStack(spacing: w * 0.12) {
+                    MiniEye(w: w)
+                    MiniEye(w: w)
+                }
+                .offset(y: -tentH * 0.22)
+
+                // Mouth
+                miniMouth(w: w)
+                    .offset(y: -tentH * 0.22 + w * 0.14)
+
+                // Cheeks
+                if mood.showCheeks {
+                    HStack(spacing: w * 0.28) {
+                        Circle().fill(Color.pink.opacity(mood.cheekOpacity))
+                            .frame(width: w * 0.08, height: w * 0.08)
+                        Circle().fill(Color.pink.opacity(mood.cheekOpacity))
+                            .frame(width: w * 0.08, height: w * 0.08)
+                    }
+                    .offset(y: -tentH * 0.22 + w * 0.08)
+                }
+            }
+            .frame(width: w, height: h)
+        }
+    }
+
+    private struct MiniEye: View {
+        let w: CGFloat
+        var body: some View {
+            ZStack {
+                Ellipse()
+                    .fill(.white)
+                    .frame(width: w * 0.16, height: w * 0.18)
+                Circle()
+                    .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
+                    .frame(width: w * 0.08, height: w * 0.08)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func miniMouth(w: CGFloat) -> some View {
+        switch mood {
+        case .ecstatic:
+            // Big smile
+            Capsule()
+                .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
+                .frame(width: w * 0.14, height: w * 0.06)
+        case .happy:
+            // Slight smile
+            Capsule()
+                .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
+                .frame(width: w * 0.10, height: w * 0.04)
+        case .sad:
+            // Frown arc
+            Circle()
+                .trim(from: 0.55, to: 0.95)
+                .stroke(Color(red: 0.15, green: 0.15, blue: 0.2), lineWidth: w * 0.03)
+                .frame(width: w * 0.10, height: w * 0.10)
+        case .zombie:
+            // X mouth
+            ZStack {
+                Rectangle()
+                    .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
+                    .frame(width: w * 0.12, height: w * 0.025)
+                    .rotationEffect(.degrees(30))
+                Rectangle()
+                    .fill(Color(red: 0.15, green: 0.15, blue: 0.2))
+                    .frame(width: w * 0.12, height: w * 0.025)
+                    .rotationEffect(.degrees(-30))
+            }
+        }
+    }
+}
+
+private struct MiniTentacles: View {
+    let mood: OctopusMood
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            Path { path in
+                let count = 4
+                let spacing = w / CGFloat(count + 1)
+                for i in 0..<count {
+                    let x = spacing * CGFloat(i + 1)
+                    path.move(to: CGPoint(x: x, y: 0))
+                    let wave = CGFloat(i % 2 == 0 ? 1 : -1) * 3
+                    path.addQuadCurve(
+                        to: CGPoint(x: x + wave, y: h),
+                        control: CGPoint(x: x - wave * 1.5, y: h * 0.5)
+                    )
+                }
+            }
+            .stroke(mood.bodyColorDark, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+        }
+    }
+}
+
 // MARK: - Main View
 
 struct OctopusMascotView: View {
