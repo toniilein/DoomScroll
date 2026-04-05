@@ -113,10 +113,10 @@ struct SettingsView: View {
                 .foregroundColor(BrainRotTheme.textSecondary)
 
             VStack(spacing: 8) {
-                tierRow(name: L("tier.digitalMonk"), range: "0 - 2h", color: Color(red: 0.55, green: 0.88, blue: 0.70))
-                tierRow(name: L("tier.grassToucher"), range: "2h - 4h", color: Color(red: 0.52, green: 0.82, blue: 0.78))
-                tierRow(name: L("tier.doomscroller"), range: "4h - 6h", color: Color(red: 0.75, green: 0.62, blue: 0.88))
-                tierRow(name: L("tier.brainrot"), range: "6h+", color: Color(red: 0.68, green: 0.65, blue: 0.63))
+                tierRow(name: L("tier.zenMaster"), range: "0 - 4h", color: Color(red: 0.55, green: 0.88, blue: 0.70))
+                tierRow(name: L("tier.casualScroller"), range: "4h - 6h", color: Color(red: 0.52, green: 0.82, blue: 0.78))
+                tierRow(name: L("tier.doomscroller"), range: "6h - 8h", color: Color(red: 0.75, green: 0.62, blue: 0.88))
+                tierRow(name: L("tier.brainrot"), range: "8h+", color: Color(red: 0.68, green: 0.65, blue: 0.63))
             }
         }
         .padding(16)
