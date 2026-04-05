@@ -16,9 +16,9 @@ struct BrainHealthReportView: View {
                 recommendationsCard
                     .padding(.horizontal)
 
-                // 3. Category Breakdown
-                if !healthData.categories.isEmpty {
-                    categoryBreakdownSection
+                // 3. 7-Day App Analysis
+                if !healthData.appDailyUsages.isEmpty {
+                    weeklyAppAnalysisSection
                         .padding(.horizontal)
                 }
 
@@ -179,6 +179,157 @@ struct BrainHealthReportView: View {
         }
 
         return tips
+    }
+
+    // MARK: - Weekly App Analysis
+
+    private var weeklyAppAnalysisSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Image(systemName: "chart.bar.fill")
+                    .foregroundColor(BrainRotTheme.neonPurple)
+                Text("7-Day App Usage")
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+                Text("\(healthData.appDailyUsages.count) \(L("breakdown.apps"))")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
+
+            ForEach(Array(healthData.appDailyUsages.enumerated()), id: \.element.id) { index, app in
+                weeklyAppRow(app: app, rank: index + 1)
+
+                if index < healthData.appDailyUsages.count - 1 {
+                    Divider().padding(.leading, 16)
+                }
+            }
+
+            Spacer().frame(height: 6)
+        }
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func weeklyAppRow(app: AppDailyUsage, rank: Int) -> some View {
+        let isExpanded = expandedAppID == app.id
+        let color = iconColor(for: rank)
+        let maxDuration = app.dailyDurations.max() ?? 1
+
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    expandedAppID = isExpanded ? nil : app.id
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    appIcon(name: app.displayName, rank: rank)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(app.displayName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                            .lineLimit(1)
+                        Text(app.formattedTotal + " total")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                    }
+
+                    Spacer()
+
+                    // Mini sparkline
+                    miniSparkline(durations: app.dailyDurations, color: color)
+                        .frame(width: 50, height: 20)
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                weeklyAppDetail(app: app, color: color, maxDuration: maxDuration)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private func miniSparkline(durations: [TimeInterval], color: Color) -> some View {
+        let maxVal = durations.max() ?? 1
+        return GeometryReader { geo in
+            HStack(alignment: .bottom, spacing: 2) {
+                ForEach(0..<durations.count, id: \.self) { i in
+                    let h = maxVal > 0 ? CGFloat(durations[i] / maxVal) * geo.size.height : 0
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(durations[i] > 0 ? color : BrainRotTheme.cardBorder)
+                        .frame(width: 4, height: max(2, h))
+                }
+            }
+        }
+    }
+
+    private func weeklyAppDetail(app: AppDailyUsage, color: Color, maxDuration: TimeInterval) -> some View {
+        let dailyAvg = app.totalDuration / 7.0
+
+        return VStack(spacing: 12) {
+            // Daily avg
+            HStack {
+                Text("Daily Avg")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+                Spacer()
+                Text(BrainRotCalculator.formatDuration(dailyAvg))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(color)
+            }
+
+            // Bar chart
+            HStack(alignment: .bottom, spacing: 6) {
+                ForEach(0..<app.dailyDurations.count, id: \.self) { i in
+                    VStack(spacing: 4) {
+                        let dur = app.dailyDurations[i]
+                        let barHeight = maxDuration > 0 ? CGFloat(dur / maxDuration) * 60 : 0
+
+                        if dur > 0 {
+                            Text(formatShort(dur))
+                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                .foregroundColor(color)
+                        }
+
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(dur > 0 ? color : BrainRotTheme.cardBorder)
+                            .frame(height: max(4, barHeight))
+
+                        Text(app.dayLabels[i])
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 90)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 14)
+        .padding(.top, 4)
+        .background(color.opacity(0.04))
+    }
+
+    private func formatShort(_ seconds: TimeInterval) -> String {
+        let minutes = Int(seconds / 60)
+        if minutes >= 60 {
+            let h = minutes / 60
+            let m = minutes % 60
+            return m > 0 ? "\(h)h\(m)m" : "\(h)h"
+        }
+        return "\(minutes)m"
     }
 
     // MARK: - App Breakdown Section
