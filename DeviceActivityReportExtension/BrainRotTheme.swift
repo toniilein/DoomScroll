@@ -97,8 +97,8 @@ enum BrainRotTheme {
 
     static func scoreLabel(for score: Int) -> String {
         switch score {
-        case 0..<30: return "DIGITAL MONK"
-        case 30..<60: return "GRASS TOUCHER"
+        case 0..<30: return "ZEN MASTER"
+        case 30..<60: return "CASUAL SCROLLER"
         case 60..<85: return "DOOMSCROLLER"
         default: return "BRAINROT"
         }
@@ -106,8 +106,8 @@ enum BrainRotTheme {
 
     static func scoreEmoji(for score: Int) -> String {
         switch score {
-        case 0..<30: return "\u{2728}"
-        case 30..<60: return "\u{1F33F}"
+        case 0..<30: return "\u{1F9D8}"
+        case 30..<60: return "\u{1F4F1}"
         case 60..<85: return "\u{1F4F1}"
         default: return "\u{1F480}"
         }

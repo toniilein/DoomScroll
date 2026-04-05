@@ -139,7 +139,7 @@ enum BrainRotCalculator {
         totalMinutes: Double
     ) -> ScrollType {
         if totalMinutes < 30 && totalPickups < 10 {
-            return .digitalMonk
+            return .zenMaster
         }
         if avgSessionMin > 15 && totalPickups < 20 {
             return .bingeWatcher
@@ -159,7 +159,7 @@ enum BrainRotCalculator {
         var achievements: [DoomAchievement] = []
 
         if brainRotScore < 20 {
-            achievements.append(.grassToucher)
+            achievements.append(.casualScroller)
         }
         if brainRotScore > 90 {
             achievements.append(.terminalBrainrot)

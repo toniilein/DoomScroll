@@ -95,8 +95,8 @@
 "octopus.zombie.noTime" = "%@... I can't even talk anymore";
 
 /* Tiers */
-"tier.digitalMonk" = "Digital Monk";
-"tier.grassToucher" = "Grass Toucher";
+"tier.zenMaster" = "Zen Master";
+"tier.casualScroller" = "Casual Scroller";
 "tier.doomscroller" = "Doomscroller";
 "tier.brainrot" = "Brainrot";
 "tier.current" = "CURRENT";

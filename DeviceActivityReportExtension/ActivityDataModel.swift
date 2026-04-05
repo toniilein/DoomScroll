@@ -99,14 +99,14 @@ enum ScrollType {
     case bingeWatcher
     case compulsiveChecker
     case balancedDoom
-    case digitalMonk
+    case zenMaster
 
     var title: String {
         switch self {
         case .bingeWatcher: return "Binge Watcher"
         case .compulsiveChecker: return "Compulsive Checker"
         case .balancedDoom: return "Balanced Doom"
-        case .digitalMonk: return "Digital Monk"
+        case .zenMaster: return "Zen Master"
         }
     }
 
@@ -115,7 +115,7 @@ enum ScrollType {
         case .bingeWatcher: return "\u{1F37F}"
         case .compulsiveChecker: return "\u{1F440}"
         case .balancedDoom: return "\u{2696}\u{FE0F}"
-        case .digitalMonk: return "\u{1F9D8}"
+        case .zenMaster: return "\u{1F9D8}"
         }
     }
 
@@ -127,7 +127,7 @@ enum ScrollType {
             return "Tons of pickups, short sessions. You can't stop checking your phone."
         case .balancedDoom:
             return "Moderate sessions and pickups. Not great, not terrible."
-        case .digitalMonk:
+        case .zenMaster:
             return "Minimal screen time and pickups. Are you even real?"
         }
     }
@@ -137,13 +137,13 @@ enum ScrollType {
         case .bingeWatcher: return BrainRotTheme.neonPurple
         case .compulsiveChecker: return BrainRotTheme.neonPink
         case .balancedDoom: return BrainRotTheme.neonBlue
-        case .digitalMonk: return BrainRotTheme.neonGreen
+        case .zenMaster: return BrainRotTheme.neonGreen
         }
     }
 }
 
 enum DoomAchievement: Identifiable {
-    case grassToucher
+    case casualScroller
     case terminalBrainrot
     case phoneAddict
     case marathonScroller
@@ -154,7 +154,7 @@ enum DoomAchievement: Identifiable {
 
     var title: String {
         switch self {
-        case .grassToucher: return "GRASS TOUCHER"
+        case .casualScroller: return "CASUAL SCROLLER"
         case .terminalBrainrot: return "TERMINAL BRAINROT"
         case .phoneAddict: return "PHONE ADDICT"
         case .marathonScroller: return "MARATHON SCROLLER"
@@ -165,7 +165,7 @@ enum DoomAchievement: Identifiable {
 
     var emoji: String {
         switch self {
-        case .grassToucher: return "\u{1F33F}"
+        case .casualScroller: return "\u{1F33F}"
         case .terminalBrainrot: return "\u{1F9E0}\u{1F480}"
         case .phoneAddict: return "\u{1F4F1}"
         case .marathonScroller: return "\u{23F1}\u{FE0F}"
@@ -176,7 +176,7 @@ enum DoomAchievement: Identifiable {
 
     var color: Color {
         switch self {
-        case .grassToucher: return BrainRotTheme.neonGreen
+        case .casualScroller: return BrainRotTheme.neonGreen
         case .terminalBrainrot: return BrainRotTheme.neonPink
         case .phoneAddict: return BrainRotTheme.neonPurple
         case .marathonScroller: return BrainRotTheme.neonPink
@@ -187,7 +187,7 @@ enum DoomAchievement: Identifiable {
 
     var isPositive: Bool {
         switch self {
-        case .grassToucher, .zenMaster: return true
+        case .casualScroller, .zenMaster: return true
         default: return false
         }
     }
