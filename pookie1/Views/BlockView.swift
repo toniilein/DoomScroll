@@ -557,8 +557,6 @@ struct BlockView: View {
 
                 Spacer()
 
-                Spacer()
-
                 Toggle("", isOn: Binding(
                     get: { routine.isEnabled },
                     set: { _ in blockingManager.toggleRoutine(routine) }
