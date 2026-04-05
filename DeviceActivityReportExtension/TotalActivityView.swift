@@ -5,6 +5,7 @@ struct TotalActivityView: View {
 
     @State private var selectedIndex: Int = 6
     @State private var expandedAppID: UUID? = nil
+    @State private var showCategories: Bool = false
 
     private var currentDay: DayBreakdown {
         activityData.days[selectedIndex]
@@ -33,10 +34,18 @@ struct TotalActivityView: View {
                 )
                 .padding(.horizontal)
 
-                // 4. App Breakdown
-                if !currentDay.apps.isEmpty {
-                    appBreakdownSection
+                // 4. Breakdown toggle + section
+                if !currentDay.apps.isEmpty || !currentDay.categories.isEmpty {
+                    breakdownToggle
                         .padding(.horizontal)
+
+                    if showCategories {
+                        categoryBreakdownSection
+                            .padding(.horizontal)
+                    } else {
+                        appBreakdownSection
+                            .padding(.horizontal)
+                    }
                 }
 
                 Spacer().frame(height: 40)
@@ -167,6 +176,16 @@ struct TotalActivityView: View {
                 Text("x").font(.system(size: 6, weight: .black)).foregroundColor(.white.opacity(0.8))
             }.offset(y: -1)
         }
+    }
+
+    // MARK: - Breakdown Toggle
+
+    private var breakdownToggle: some View {
+        Picker("", selection: $showCategories) {
+            Text(L("breakdown.appBreakdown")).tag(false)
+            Text(L("breakdown.categoryBreakdown")).tag(true)
+        }
+        .pickerStyle(.segmented)
     }
 
     // MARK: - Category Breakdown
