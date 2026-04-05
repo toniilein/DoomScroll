@@ -51,10 +51,12 @@ struct BrainHealthReportView: View {
         let trend = healthData.weeklyTrend.trend
         let streak = healthData.weeklyTrend.streakDays
 
+        let mood = OctopusMood.from(score: score)
+
         return VStack(spacing: 12) {
             HStack(spacing: 12) {
-                Text(emoji)
-                    .font(.system(size: 38))
+                MiniOctopusView(mood: mood)
+                    .frame(width: 48, height: 48)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(label)
