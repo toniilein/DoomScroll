@@ -664,11 +664,11 @@ struct OctopusMascotView: View {
                     RadialGradient(
                         colors: [mood.bodyColor, mood.bodyColorDark],
                         center: .init(x: 0.4, y: 0.35),
-                        startRadius: 10,
-                        endRadius: 80
+                        startRadius: 12,
+                        endRadius: 90
                     )
                 )
-                .frame(width: 140, height: 140)
+                .frame(width: 160, height: 160)
                 .shadow(color: mood.bodyColor.opacity(0.35), radius: 12, y: 6)
 
             Group {
@@ -695,14 +695,14 @@ struct OctopusMascotView: View {
                         endRadius: 45
                     )
                 )
-                .frame(width: 100, height: 80)
-                .offset(x: -12, y: -22)
+                .frame(width: 110, height: 88)
+                .offset(x: -14, y: -26)
 
             Ellipse()
                 .fill(Color.white.opacity(0.25))
-                .frame(width: 16, height: 10)
+                .frame(width: 18, height: 11)
                 .rotationEffect(.degrees(-25))
-                .offset(x: -32, y: -38)
+                .offset(x: -38, y: -44)
 
             VStack(spacing: 2) {
                 HStack(spacing: 12) {
