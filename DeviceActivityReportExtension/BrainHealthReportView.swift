@@ -13,7 +13,11 @@ struct BrainHealthReportView: View {
                 WeeklyTrendView(trendData: healthData.weeklyTrend)
                     .padding(.horizontal)
 
-                // 2. Breakdown toggle + content
+                // 2. This Week summary
+                thisWeekCard
+                    .padding(.horizontal)
+
+                // 3. Breakdown toggle + content
                 breakdownToggle
                     .padding(.horizontal)
 
@@ -35,6 +39,103 @@ struct BrainHealthReportView: View {
         }
         .background(BrainRotTheme.background)
         .preferredColorScheme(SharedTheme.colorScheme)
+    }
+
+    // MARK: - This Week Card
+
+    private var thisWeekCard: some View {
+        let score = healthData.brainRotScore
+        let emoji = BrainRotTheme.scoreEmoji(for: score)
+        let label = BrainRotTheme.scoreLabel(for: score)
+        let color = BrainRotTheme.scoreColor(for: score)
+        let trend = healthData.weeklyTrend.trend
+        let streak = healthData.weeklyTrend.streakDays
+
+        return VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Text(emoji)
+                    .font(.system(size: 38))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(label)
+                        .font(.system(size: 18, weight: .heavy, design: .rounded))
+                        .foregroundColor(color)
+
+                    Text(weekSummaryMessage(score: score, trend: trend, streak: streak))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+            }
+
+            // Stats row
+            HStack(spacing: 0) {
+                weekStatPill(
+                    icon: "clock.fill",
+                    value: healthData.formattedDuration,
+                    label: "Total"
+                )
+                weekStatPill(
+                    icon: "hand.tap.fill",
+                    value: "\(healthData.totalPickups)",
+                    label: "Pickups"
+                )
+                weekStatPill(
+                    icon: trend.icon,
+                    value: trend.label,
+                    label: "Trend",
+                    color: trend.color
+                )
+            }
+        }
+        .padding(16)
+        .background(color.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(color.opacity(0.15), lineWidth: 1)
+        )
+    }
+
+    private func weekSummaryMessage(score: Int, trend: TrendDirection, streak: Int) -> String {
+        switch score {
+        case 0..<30:
+            if streak >= 3 {
+                return "Amazing week! \(streak)-day streak of healthy screen time. Keep it up! 🔥"
+            }
+            return "Great job this week! Your screen time is well under control. 🎉"
+        case 30..<60:
+            if trend == .improving {
+                return "You're heading in the right direction! A few less minutes each day adds up. 💪"
+            }
+            return "Not bad, but there's room to improve. Try setting a limit on your top app."
+        case 60..<85:
+            if trend == .worsening {
+                return "Screen time is creeping up. Consider blocking your biggest time sinks."
+            }
+            return "Heavy usage this week. A quick block session could help reset your habits."
+        default:
+            return "Your brain needs a break! Try the Panic Button on the Shield tab. 🧠"
+        }
+    }
+
+    private func weekStatPill(icon: String, value: String, label: String, color: Color? = nil) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundColor(color ?? BrainRotTheme.textSecondary)
+            Text(value)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundColor(BrainRotTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(BrainRotTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Breakdown Toggle
