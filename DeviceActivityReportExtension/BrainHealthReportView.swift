@@ -102,23 +102,39 @@ struct BrainHealthReportView: View {
     }
 
     private func weekSummaryMessage(score: Int, trend: TrendDirection, streak: Int) -> String {
+        let topApps = healthData.topApps.prefix(3)
+        let topNames = topApps.map { $0.displayName }
+        let appList = topNames.joined(separator: ", ")
+
         switch score {
         case 0..<30:
             if streak >= 3 {
                 return "Amazing week! \(streak)-day streak of healthy screen time. Keep it up! 🔥"
             }
+            if let first = topNames.first {
+                return "Great week! Even \(first) stayed under control. Keep the momentum going! 🎉"
+            }
             return "Great job this week! Your screen time is well under control. 🎉"
         case 30..<60:
-            if trend == .improving {
-                return "You're heading in the right direction! A few less minutes each day adds up. 💪"
+            if topNames.count >= 2 {
+                return "\(topNames[0]) and \(topNames[1]) are your biggest time drains. Try setting limits on them to level up."
+            } else if let first = topNames.first {
+                return "\(first) is eating most of your screen time. A daily limit could make a big difference."
             }
-            return "Not bad, but there's room to improve. Try setting a limit on your top app."
+            return "Not bad, but there's room to cut back. Try setting limits on your top apps."
         case 60..<85:
-            if trend == .worsening {
-                return "Screen time is creeping up. Consider blocking your biggest time sinks."
+            if topNames.count >= 2 {
+                return "\(topNames[0]) and \(topNames[1]) are driving your doomscroll score up. Consider blocking them during focus hours."
+            } else if let first = topNames.first {
+                return "\(first) is your biggest doomscroll culprit. Try blocking it with the Panic Button."
             }
-            return "Heavy usage this week. A quick block session could help reset your habits."
+            return "Heavy usage this week. Your top apps are dragging your score down."
         default:
+            if topNames.count >= 3 {
+                return "\(appList) are melting your brain. Time to hit the Panic Button and take a break! 🧠"
+            } else if let first = topNames.first {
+                return "\(first) is destroying your screen time. Seriously — hit the Panic Button! 🧠"
+            }
             return "Your brain needs a break! Try the Panic Button on the Shield tab. 🧠"
         }
     }
