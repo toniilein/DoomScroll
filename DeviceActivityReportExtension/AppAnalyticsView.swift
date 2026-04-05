@@ -152,7 +152,7 @@ struct AppAnalyticsView: View {
     // MARK: - App Icon Circle
 
     private func appIconCircle(name: String, rank: Int) -> some View {
-        let letter = String(name.prefix(1)).uppercased()
+        let letter = String(name.first(where: { $0.isLetter }) ?? "?").uppercased()
         let color = iconColor(for: rank)
 
         return ZStack {

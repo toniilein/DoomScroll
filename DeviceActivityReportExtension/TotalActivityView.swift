@@ -462,7 +462,7 @@ struct TotalActivityView: View {
                                 startPoint: .topLeading, endPoint: .bottomTrailing
                             ))
                             .frame(width: 36, height: 36)
-                        Text(String(app.displayName.prefix(1)).uppercased())
+                        Text(String(app.displayName.first(where: { $0.isLetter }) ?? "?").uppercased())
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                     }

@@ -646,7 +646,7 @@ struct BrainHealthReportView: View {
     // MARK: - Helpers
 
     private func appIcon(name: String, categoryName: String) -> some View {
-        let letter = String(name.prefix(1)).uppercased()
+        let letter = String(name.first(where: { $0.isLetter }) ?? "?").uppercased()
         let color = BrainRotTheme.categoryColor(for: categoryName)
         return ZStack {
             Circle()
