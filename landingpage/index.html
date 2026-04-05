@@ -442,64 +442,24 @@
             50% { transform: translateY(-12px) scale(1.1); opacity: 1; }
         }
 
-        /* Tentacles — thick rounded tubes hanging down */
+        /* Tentacles — stroked wavy lines matching the app */
         .tentacles-svg {
             position: absolute;
-            top: 280px;
+            top: 275px;
             left: 50%;
             transform: translateX(-50%);
-            width: 220px;
-            height: 90px;
+            width: 180px;
+            height: 75px;
             pointer-events: none;
             overflow: visible;
         }
 
-        .tentacles-svg rect {
-            transition: fill 0.4s ease;
-            rx: 10;
-            ry: 10;
-        }
-
-        .tent-1 { animation: tentSway1 3.0s ease-in-out infinite; transform-origin: top center; }
-        .tent-2 { animation: tentSway2 2.7s ease-in-out infinite; transform-origin: top center; }
-        .tent-3 { animation: tentSway3 3.3s ease-in-out infinite; transform-origin: top center; }
-        .tent-4 { animation: tentSway4 2.5s ease-in-out infinite; transform-origin: top center; }
-        .tent-5 { animation: tentSway5 3.1s ease-in-out infinite; transform-origin: top center; }
-        .tent-6 { animation: tentSway6 2.8s ease-in-out infinite; transform-origin: top center; }
-        .tent-7 { animation: tentSway7 3.4s ease-in-out infinite; transform-origin: top center; }
-        .tent-8 { animation: tentSway8 2.9s ease-in-out infinite; transform-origin: top center; }
-
-        @keyframes tentSway1 {
-            0%, 100% { transform: rotate(-2deg); }
-            50% { transform: rotate(2deg); }
-        }
-        @keyframes tentSway2 {
-            0%, 100% { transform: rotate(1.5deg); }
-            50% { transform: rotate(-1.5deg); }
-        }
-        @keyframes tentSway3 {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(2deg); }
-        }
-        @keyframes tentSway4 {
-            0%, 100% { transform: rotate(2deg); }
-            50% { transform: rotate(-1deg); }
-        }
-        @keyframes tentSway5 {
-            0%, 100% { transform: rotate(-1.5deg); }
-            50% { transform: rotate(1.5deg); }
-        }
-        @keyframes tentSway6 {
-            0%, 100% { transform: rotate(1deg); }
-            50% { transform: rotate(-2deg); }
-        }
-        @keyframes tentSway7 {
-            0%, 100% { transform: rotate(-2deg); }
-            50% { transform: rotate(1deg); }
-        }
-        @keyframes tentSway8 {
-            0%, 100% { transform: rotate(1.5deg); }
-            50% { transform: rotate(-2deg); }
+        .tentacles-svg path {
+            fill: none;
+            stroke-width: 9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.4s ease;
         }
 
         /* Tier label under octopus */
@@ -873,9 +833,9 @@
             }
 
             .tentacles-svg {
-                top: 220px;
-                width: 170px;
-                height: 70px;
+                top: 215px;
+                width: 140px;
+                height: 60px;
             }
         }
     </style>
@@ -919,16 +879,14 @@
                     <span class="particle" data-ecstatic="💖" data-happy="🌸" data-sad="😢" data-zombie="☠️">💖</span>
                     <span class="particle" data-ecstatic="✨" data-happy="♪" data-sad="💧" data-zombie="💀">✨</span>
                 </div>
-                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 220 90">
-                    <!-- 8 thick rounded tubes hanging straight down, slightly varied lengths -->
-                    <rect class="tent-1" fill="#66bf8c" x="8"   y="0" width="20" height="62" rx="10" ry="10"/>
-                    <rect class="tent-2" fill="#66bf8c" x="34"  y="0" width="20" height="70" rx="10" ry="10"/>
-                    <rect class="tent-3" fill="#66bf8c" x="60"  y="0" width="20" height="65" rx="10" ry="10"/>
-                    <rect class="tent-4" fill="#66bf8c" x="86"  y="0" width="20" height="72" rx="10" ry="10"/>
-                    <rect class="tent-5" fill="#66bf8c" x="112" y="0" width="20" height="68" rx="10" ry="10"/>
-                    <rect class="tent-6" fill="#66bf8c" x="138" y="0" width="20" height="74" rx="10" ry="10"/>
-                    <rect class="tent-7" fill="#66bf8c" x="164" y="0" width="20" height="64" rx="10" ry="10"/>
-                    <rect class="tent-8" fill="#66bf8c" x="190" y="0" width="20" height="60" rx="10" ry="10"/>
+                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 180 75">
+                    <!-- 6 wavy stroked lines, matching the app's TentaclesShape -->
+                    <path id="t0" stroke="#66bf8c" d="M26,0 Q26,18 26,37 Q26,56 26,70"/>
+                    <path id="t1" stroke="#66bf8c" d="M52,0 Q52,18 52,37 Q52,56 52,70"/>
+                    <path id="t2" stroke="#66bf8c" d="M78,0 Q78,18 78,37 Q78,56 78,70"/>
+                    <path id="t3" stroke="#66bf8c" d="M104,0 Q104,18 104,37 Q104,56 104,70"/>
+                    <path id="t4" stroke="#66bf8c" d="M130,0 Q130,18 130,37 Q130,56 130,70"/>
+                    <path id="t5" stroke="#66bf8c" d="M156,0 Q156,18 156,37 Q156,56 156,70"/>
                 </svg>
                 <div class="octopus-body" id="octoBody">
                     <div class="octopus-shine"></div>
@@ -1146,14 +1104,14 @@
         glow.style.background = `radial-gradient(circle, ${glowColors[idx]} 0%, transparent 70%)`;
 
         // Tentacles
-        const tentFillColors = {
+        const tentColors = {
             ecstatic: '#66bf8c',
             happy: '#e0b361',
             sad: '#cc736b',
             zombie: '#85807a'
         };
-        document.querySelectorAll('.tentacles-svg rect').forEach(r => {
-            r.setAttribute('fill', tentFillColors[mood]);
+        document.querySelectorAll('.tentacles-svg path').forEach(p => {
+            p.setAttribute('stroke', tentColors[mood]);
         });
 
         // Particles
@@ -1184,6 +1142,38 @@
     }, { threshold: 0.1 });
 
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // ── Tentacle wave animation (matches app's TentaclesShape) ──
+    const tentCount = 6;
+    const tentSpacing = 180 / (tentCount + 1); // matches viewBox width
+    const tentHeight = 70;
+    const amplitude = 10; // wave amplitude
+    let phase = 0;
+
+    function updateTentacles() {
+        for (let i = 0; i < tentCount; i++) {
+            const el = document.getElementById('t' + i);
+            if (!el) continue;
+            const startX = tentSpacing * (i + 1);
+            const offset = i * Math.PI / 3;
+            const segments = 4;
+            let d = `M${startX},0`;
+            for (let s = 1; s <= segments; s++) {
+                const t1 = s / segments;
+                const tMid = (s - 0.5) / segments;
+                const wave = (t) => Math.sin(t * Math.PI * 2 + phase + offset) * amplitude * t;
+                const cpX = startX + wave(tMid);
+                const cpY = tMid * tentHeight;
+                const endX = startX + wave(t1);
+                const endY = t1 * tentHeight;
+                d += ` Q${cpX.toFixed(1)},${cpY.toFixed(1)} ${endX.toFixed(1)},${endY.toFixed(1)}`;
+            }
+            el.setAttribute('d', d);
+        }
+        phase += 0.03;
+        requestAnimationFrame(updateTentacles);
+    }
+    updateTentacles();
 </script>
 
 </body>
