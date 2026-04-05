@@ -206,7 +206,7 @@
         .octopus-container {
             position: relative;
             width: 340px;
-            height: 400px;
+            height: 420px;
         }
 
         .octopus-glow {
@@ -442,64 +442,52 @@
             50% { transform: translateY(-12px) scale(1.1); opacity: 1; }
         }
 
-        /* Tentacles — thick rounded tubes hanging down */
+        /* Tentacles — thick, curly, wrapping around body */
         .tentacles-svg {
             position: absolute;
-            top: 280px;
+            top: 180px;
             left: 50%;
             transform: translateX(-50%);
-            width: 220px;
-            height: 90px;
+            width: 320px;
+            height: 200px;
             pointer-events: none;
             overflow: visible;
         }
 
-        .tentacles-svg rect {
+        .tentacles-svg path {
             transition: fill 0.4s ease;
-            rx: 10;
-            ry: 10;
         }
 
-        .tent-1 { animation: tentSway1 3.0s ease-in-out infinite; transform-origin: top center; }
-        .tent-2 { animation: tentSway2 2.7s ease-in-out infinite; transform-origin: top center; }
-        .tent-3 { animation: tentSway3 3.3s ease-in-out infinite; transform-origin: top center; }
-        .tent-4 { animation: tentSway4 2.5s ease-in-out infinite; transform-origin: top center; }
-        .tent-5 { animation: tentSway5 3.1s ease-in-out infinite; transform-origin: top center; }
-        .tent-6 { animation: tentSway6 2.8s ease-in-out infinite; transform-origin: top center; }
-        .tent-7 { animation: tentSway7 3.4s ease-in-out infinite; transform-origin: top center; }
-        .tent-8 { animation: tentSway8 2.9s ease-in-out infinite; transform-origin: top center; }
+        .tent-1 { animation: tentFloat1 3.5s ease-in-out infinite; }
+        .tent-2 { animation: tentFloat2 3.0s ease-in-out infinite; }
+        .tent-3 { animation: tentFloat3 4.0s ease-in-out infinite; }
+        .tent-4 { animation: tentFloat4 3.2s ease-in-out infinite; }
+        .tent-5 { animation: tentFloat5 3.8s ease-in-out infinite; }
+        .tent-6 { animation: tentFloat6 3.3s ease-in-out infinite; }
 
-        @keyframes tentSway1 {
-            0%, 100% { transform: rotate(-2deg); }
-            50% { transform: rotate(2deg); }
+        @keyframes tentFloat1 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(-3deg) translate(-2px, 2px); }
         }
-        @keyframes tentSway2 {
-            0%, 100% { transform: rotate(1.5deg); }
-            50% { transform: rotate(-1.5deg); }
+        @keyframes tentFloat2 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(2deg) translate(2px, 1px); }
         }
-        @keyframes tentSway3 {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(2deg); }
+        @keyframes tentFloat3 {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-2deg) translate(-1px, 2px); }
         }
-        @keyframes tentSway4 {
-            0%, 100% { transform: rotate(2deg); }
-            50% { transform: rotate(-1deg); }
+        @keyframes tentFloat4 {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(2deg) translate(1px, 2px); }
         }
-        @keyframes tentSway5 {
-            0%, 100% { transform: rotate(-1.5deg); }
-            50% { transform: rotate(1.5deg); }
+        @keyframes tentFloat5 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(-2deg) translate(-2px, 1px); }
         }
-        @keyframes tentSway6 {
-            0%, 100% { transform: rotate(1deg); }
-            50% { transform: rotate(-2deg); }
-        }
-        @keyframes tentSway7 {
-            0%, 100% { transform: rotate(-2deg); }
-            50% { transform: rotate(1deg); }
-        }
-        @keyframes tentSway8 {
-            0%, 100% { transform: rotate(1.5deg); }
-            50% { transform: rotate(-2deg); }
+        @keyframes tentFloat6 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(3deg) translate(2px, 2px); }
         }
 
         /* Tier label under octopus */
@@ -873,9 +861,9 @@
             }
 
             .tentacles-svg {
-                top: 220px;
-                width: 170px;
-                height: 70px;
+                top: 140px;
+                width: 250px;
+                height: 160px;
             }
         }
     </style>
@@ -919,16 +907,19 @@
                     <span class="particle" data-ecstatic="💖" data-happy="🌸" data-sad="😢" data-zombie="☠️">💖</span>
                     <span class="particle" data-ecstatic="✨" data-happy="♪" data-sad="💧" data-zombie="💀">✨</span>
                 </div>
-                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 220 90">
-                    <!-- 8 thick rounded tubes hanging straight down, slightly varied lengths -->
-                    <rect class="tent-1" fill="#66bf8c" x="8"   y="0" width="20" height="62" rx="10" ry="10"/>
-                    <rect class="tent-2" fill="#66bf8c" x="34"  y="0" width="20" height="70" rx="10" ry="10"/>
-                    <rect class="tent-3" fill="#66bf8c" x="60"  y="0" width="20" height="65" rx="10" ry="10"/>
-                    <rect class="tent-4" fill="#66bf8c" x="86"  y="0" width="20" height="72" rx="10" ry="10"/>
-                    <rect class="tent-5" fill="#66bf8c" x="112" y="0" width="20" height="68" rx="10" ry="10"/>
-                    <rect class="tent-6" fill="#66bf8c" x="138" y="0" width="20" height="74" rx="10" ry="10"/>
-                    <rect class="tent-7" fill="#66bf8c" x="164" y="0" width="20" height="64" rx="10" ry="10"/>
-                    <rect class="tent-8" fill="#66bf8c" x="190" y="0" width="20" height="60" rx="10" ry="10"/>
+                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 320 200" preserveAspectRatio="xMidYMin meet">
+                    <!-- Left wrap-around tentacle - curls left and under -->
+                    <path class="tent-1" fill="#66bf8c" d="M110,10 C90,15 50,35 25,65 C10,85 0,110 5,130 C8,142 18,148 28,140 C38,132 35,115 40,95 C48,70 75,40 110,25 Z" style="transform-origin: 80px 60px;"/>
+                    <!-- Left-center tentacle - curls down-left -->
+                    <path class="tent-2" fill="#66bf8c" d="M130,15 C118,25 90,55 75,90 C65,115 60,140 65,158 C68,168 78,172 85,164 C92,156 88,138 90,118 C94,90 112,55 135,30 Z" style="transform-origin: 105px 80px;"/>
+                    <!-- Center-left tentacle - hangs down -->
+                    <path class="tent-3" fill="#66bf8c" d="M140,20 C135,35 122,70 118,105 C115,130 114,155 118,172 C120,182 130,185 135,177 C140,168 138,148 138,125 C138,92 142,55 148,30 Z" style="transform-origin: 135px 90px;"/>
+                    <!-- Center-right tentacle - hangs down -->
+                    <path class="tent-4" fill="#66bf8c" d="M172,30 C178,55 182,92 182,125 C182,148 180,168 185,177 C190,185 200,182 202,172 C206,155 205,130 202,105 C198,70 185,35 180,20 Z" style="transform-origin: 185px 90px;"/>
+                    <!-- Right-center tentacle - curls down-right -->
+                    <path class="tent-5" fill="#66bf8c" d="M185,30 C208,55 226,90 230,118 C232,138 228,156 235,164 C242,172 252,168 255,158 C260,140 255,115 245,90 C230,55 202,25 190,15 Z" style="transform-origin: 215px 80px;"/>
+                    <!-- Right wrap-around tentacle - curls right and under -->
+                    <path class="tent-6" fill="#66bf8c" d="M210,25 C245,40 272,70 280,95 C285,115 282,132 292,140 C302,148 312,142 315,130 C320,110 310,85 295,65 C270,35 230,15 210,10 Z" style="transform-origin: 240px 60px;"/>
                 </svg>
                 <div class="octopus-body" id="octoBody">
                     <div class="octopus-shine"></div>
@@ -1152,8 +1143,8 @@
             sad: '#cc736b',
             zombie: '#85807a'
         };
-        document.querySelectorAll('.tentacles-svg rect').forEach(r => {
-            r.setAttribute('fill', tentFillColors[mood]);
+        document.querySelectorAll('.tentacles-svg path').forEach(p => {
+            p.setAttribute('fill', tentFillColors[mood]);
         });
 
         // Particles
