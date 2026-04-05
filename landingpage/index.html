@@ -206,7 +206,7 @@
         .octopus-container {
             position: relative;
             width: 340px;
-            height: 400px;
+            height: 420px;
         }
 
         .octopus-glow {
@@ -235,7 +235,7 @@
             box-shadow:
                 0 20px 60px rgba(91, 169, 123, 0.3),
                 inset 0 -8px 20px rgba(0,0,0,0.05);
-            transition: background 1.5s ease, box-shadow 1.5s ease;
+            transition: background 0.4s ease, box-shadow 0.4s ease;
         }
 
         .octopus-body.happy {
@@ -288,24 +288,24 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -55%);
-            width: 120px;
-            height: 60px;
+            width: 140px;
+            height: 70px;
         }
 
         .eye {
             position: absolute;
             top: 0;
-            width: 28px;
-            height: 28px;
+            width: 40px;
+            height: 40px;
         }
 
-        .eye-left { left: 18px; }
-        .eye-right { right: 18px; }
+        .eye-left { left: 12px; }
+        .eye-right { right: 12px; }
 
         /* Star eyes (ecstatic) */
         .star-eye {
-            font-size: 24px;
-            line-height: 28px;
+            font-size: 34px;
+            line-height: 40px;
             text-align: center;
             animation: starTwinkle 2s ease-in-out infinite;
         }
@@ -317,17 +317,17 @@
 
         /* Happy curved eyes */
         .happy-eye {
-            width: 28px;
-            height: 14px;
-            border-bottom: 4px solid var(--text-primary);
+            width: 36px;
+            height: 18px;
+            border-bottom: 5px solid var(--text-primary);
             border-radius: 0 0 50% 50%;
             opacity: 0;
         }
 
         /* Sad worried eyes */
         .sad-eye {
-            width: 22px;
-            height: 22px;
+            width: 32px;
+            height: 32px;
             background: var(--text-primary);
             border-radius: 50%;
             opacity: 0;
@@ -337,28 +337,28 @@
         .sad-eye::after {
             content: '';
             position: absolute;
-            top: 4px;
-            left: 6px;
-            width: 8px;
-            height: 8px;
+            top: 5px;
+            left: 8px;
+            width: 12px;
+            height: 12px;
             background: white;
             border-radius: 50%;
         }
 
         /* X eyes (zombie) */
         .x-eye {
-            font-size: 22px;
+            font-size: 30px;
             font-weight: 900;
             color: var(--text-primary);
             opacity: 0;
             text-align: center;
-            line-height: 28px;
+            line-height: 40px;
         }
 
         /* Mouth */
         .mouth {
             position: absolute;
-            bottom: 0;
+            bottom: -4px;
             left: 50%;
             transform: translateX(-50%);
         }
@@ -442,57 +442,52 @@
             50% { transform: translateY(-12px) scale(1.1); opacity: 1; }
         }
 
-        /* Tentacles — filled, tapered, curly like the reference image */
+        /* Tentacles — thick, curly, wrapping around body */
         .tentacles-svg {
             position: absolute;
-            top: 275px;
+            top: 180px;
             left: 50%;
             transform: translateX(-50%);
-            width: 260px;
-            height: 100px;
+            width: 320px;
+            height: 200px;
             pointer-events: none;
             overflow: visible;
         }
 
         .tentacles-svg path {
-            transition: fill 1.5s ease;
+            transition: fill 0.4s ease;
         }
 
-        .tent-1 { animation: tentCurl1 3.0s ease-in-out infinite; }
-        .tent-2 { animation: tentCurl2 2.6s ease-in-out infinite; }
-        .tent-3 { animation: tentCurl3 2.8s ease-in-out infinite; }
-        .tent-4 { animation: tentCurl4 3.2s ease-in-out infinite; }
-        .tent-5 { animation: tentCurl5 2.4s ease-in-out infinite; }
-        .tent-6 { animation: tentCurl6 2.9s ease-in-out infinite; }
-        .tent-7 { animation: tentCurl7 3.1s ease-in-out infinite; }
+        .tent-1 { animation: tentFloat1 3.5s ease-in-out infinite; }
+        .tent-2 { animation: tentFloat2 3.0s ease-in-out infinite; }
+        .tent-3 { animation: tentFloat3 4.0s ease-in-out infinite; }
+        .tent-4 { animation: tentFloat4 3.2s ease-in-out infinite; }
+        .tent-5 { animation: tentFloat5 3.8s ease-in-out infinite; }
+        .tent-6 { animation: tentFloat6 3.3s ease-in-out infinite; }
 
-        @keyframes tentCurl1 {
-            0%, 100% { transform: rotate(-2deg) scaleY(1); }
-            50% { transform: rotate(2deg) scaleY(1.03); }
+        @keyframes tentFloat1 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(-3deg) translate(-2px, 2px); }
         }
-        @keyframes tentCurl2 {
-            0%, 100% { transform: rotate(1deg); }
-            50% { transform: rotate(-2deg); }
+        @keyframes tentFloat2 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(2deg) translate(2px, 1px); }
         }
-        @keyframes tentCurl3 {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(1.5deg); }
-        }
-        @keyframes tentCurl4 {
+        @keyframes tentFloat3 {
             0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(-1deg) scaleY(1.02); }
+            50% { transform: rotate(-2deg) translate(-1px, 2px); }
         }
-        @keyframes tentCurl5 {
-            0%, 100% { transform: rotate(1.5deg); }
-            50% { transform: rotate(-1.5deg); }
+        @keyframes tentFloat4 {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(2deg) translate(1px, 2px); }
         }
-        @keyframes tentCurl6 {
-            0%, 100% { transform: rotate(-1deg); }
-            50% { transform: rotate(2deg); }
+        @keyframes tentFloat5 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(-2deg) translate(-2px, 1px); }
         }
-        @keyframes tentCurl7 {
-            0%, 100% { transform: rotate(2deg) scaleY(1); }
-            50% { transform: rotate(-1deg) scaleY(1.03); }
+        @keyframes tentFloat6 {
+            0%, 100% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(3deg) translate(2px, 2px); }
         }
 
         /* Tier label under octopus */
@@ -504,7 +499,7 @@
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--green);
-            transition: color 1.5s ease;
+            transition: color 0.4s ease;
         }
 
         /* ── FEATURES SECTION ── */
@@ -866,9 +861,9 @@
             }
 
             .tentacles-svg {
-                top: 215px;
-                width: 210px;
-                height: 80px;
+                top: 140px;
+                width: 250px;
+                height: 160px;
             }
         }
     </style>
@@ -912,21 +907,19 @@
                     <span class="particle" data-ecstatic="💖" data-happy="🌸" data-sad="😢" data-zombie="☠️">💖</span>
                     <span class="particle" data-ecstatic="✨" data-happy="♪" data-sad="💧" data-zombie="💀">✨</span>
                 </div>
-                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 260 100" preserveAspectRatio="xMidYMin meet">
-                    <!-- Far left -->
-                    <path class="tent-1" fill="#66bf8c" d="M75,0 C68,8 36,30 14,55 C4,68 -4,82 2,87 C8,92 16,80 26,65 C42,40 78,14 90,0 Z" style="transform-origin: 75px 0;"/>
-                    <!-- Left -->
-                    <path class="tent-2" fill="#66bf8c" d="M88,0 C83,10 60,35 46,58 C38,72 34,88 40,91 C46,94 50,80 56,66 C66,42 92,14 102,0 Z" style="transform-origin: 92px 0;"/>
-                    <!-- Inner left -->
-                    <path class="tent-3" fill="#66bf8c" d="M100,0 C97,12 88,40 84,62 C82,76 80,92 86,94 C92,96 92,78 92,66 C94,42 104,14 110,0 Z" style="transform-origin: 104px 0;"/>
-                    <!-- Center -->
-                    <path class="tent-4" fill="#66bf8c" d="M120,0 C118,14 116,44 117,66 C118,80 118,94 124,94 C130,94 130,80 131,66 C132,44 130,14 128,0 Z" style="transform-origin: 124px 0;"/>
-                    <!-- Inner right -->
-                    <path class="tent-5" fill="#66bf8c" d="M138,0 C142,14 150,42 154,66 C156,78 158,94 164,94 C170,92 168,76 166,62 C162,40 148,12 144,0 Z" style="transform-origin: 142px 0;"/>
-                    <!-- Right -->
-                    <path class="tent-6" fill="#66bf8c" d="M150,0 C158,14 180,42 194,66 C200,78 204,92 210,89 C216,86 208,72 198,58 C182,35 162,10 156,0 Z" style="transform-origin: 154px 0;"/>
-                    <!-- Far right -->
-                    <path class="tent-7" fill="#66bf8c" d="M162,0 C172,14 204,40 222,60 C234,74 244,86 248,82 C252,78 242,66 230,52 C210,30 176,10 168,0 Z" style="transform-origin: 166px 0;"/>
+                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 320 200" preserveAspectRatio="xMidYMin meet">
+                    <!-- Left wrap-around tentacle - curls left and under -->
+                    <path class="tent-1" fill="#66bf8c" d="M110,10 C90,15 50,35 25,65 C10,85 0,110 5,130 C8,142 18,148 28,140 C38,132 35,115 40,95 C48,70 75,40 110,25 Z" style="transform-origin: 80px 60px;"/>
+                    <!-- Left-center tentacle - curls down-left -->
+                    <path class="tent-2" fill="#66bf8c" d="M130,15 C118,25 90,55 75,90 C65,115 60,140 65,158 C68,168 78,172 85,164 C92,156 88,138 90,118 C94,90 112,55 135,30 Z" style="transform-origin: 105px 80px;"/>
+                    <!-- Center-left tentacle - hangs down -->
+                    <path class="tent-3" fill="#66bf8c" d="M140,20 C135,35 122,70 118,105 C115,130 114,155 118,172 C120,182 130,185 135,177 C140,168 138,148 138,125 C138,92 142,55 148,30 Z" style="transform-origin: 135px 90px;"/>
+                    <!-- Center-right tentacle - hangs down -->
+                    <path class="tent-4" fill="#66bf8c" d="M172,30 C178,55 182,92 182,125 C182,148 180,168 185,177 C190,185 200,182 202,172 C206,155 205,130 202,105 C198,70 185,35 180,20 Z" style="transform-origin: 185px 90px;"/>
+                    <!-- Right-center tentacle - curls down-right -->
+                    <path class="tent-5" fill="#66bf8c" d="M185,30 C208,55 226,90 230,118 C232,138 228,156 235,164 C242,172 252,168 255,158 C260,140 255,115 245,90 C230,55 202,25 190,15 Z" style="transform-origin: 215px 80px;"/>
+                    <!-- Right wrap-around tentacle - curls right and under -->
+                    <path class="tent-6" fill="#66bf8c" d="M210,25 C245,40 272,70 280,95 C285,115 282,132 292,140 C302,148 312,142 315,130 C320,110 310,85 295,65 C270,35 230,15 210,10 Z" style="transform-origin: 240px 60px;"/>
                 </svg>
                 <div class="octopus-body" id="octoBody">
                     <div class="octopus-shine"></div>
