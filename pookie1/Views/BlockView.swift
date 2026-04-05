@@ -238,31 +238,19 @@ struct BlockView: View {
             }
 
             ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
-                if tip.isAction {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(tip.title)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                        Text(tip.detail)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(12)
-                    .background(BrainRotTheme.neonPurple.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                } else {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(tip.title)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(BrainRotTheme.textPrimary)
-                        Text(tip.detail)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(BrainRotTheme.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.vertical, 2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(tip.title)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(BrainRotTheme.textPrimary)
+                    Text(tip.detail)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(BrainRotTheme.neonPurple.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
         .padding(16)
