@@ -4,6 +4,7 @@ struct BrainHealthReportView: View {
     let healthData: BrainHealthData
 
     @State private var expandedAppID: UUID? = nil
+    @State private var showCategories: Bool = false
 
     var body: some View {
         ScrollView {
@@ -16,10 +17,20 @@ struct BrainHealthReportView: View {
                 recommendationsCard
                     .padding(.horizontal)
 
-                // 3. 7-Day App Analysis
-                if !healthData.appDailyUsages.isEmpty {
-                    weeklyAppAnalysisSection
-                        .padding(.horizontal)
+                // 3. Breakdown toggle + content
+                breakdownToggle
+                    .padding(.horizontal)
+
+                if showCategories {
+                    if !healthData.categories.isEmpty {
+                        categoryBreakdownSection
+                            .padding(.horizontal)
+                    }
+                } else {
+                    if !healthData.appDailyUsages.isEmpty {
+                        weeklyAppAnalysisSection
+                            .padding(.horizontal)
+                    }
                 }
 
                 Spacer().frame(height: 40)
@@ -28,6 +39,16 @@ struct BrainHealthReportView: View {
         }
         .background(BrainRotTheme.background)
         .preferredColorScheme(SharedTheme.colorScheme)
+    }
+
+    // MARK: - Breakdown Toggle
+
+    private var breakdownToggle: some View {
+        Picker("", selection: $showCategories) {
+            Text(L("breakdown.appBreakdown")).tag(false)
+            Text(L("breakdown.categoryBreakdown")).tag(true)
+        }
+        .pickerStyle(.segmented)
     }
 
     // MARK: - Recommendations
@@ -216,7 +237,7 @@ struct BrainHealthReportView: View {
 
     private func weeklyAppRow(app: AppDailyUsage, rank: Int) -> some View {
         let isExpanded = expandedAppID == app.id
-        let color = iconColor(for: rank)
+        let color = BrainRotTheme.categoryColor(for: app.categoryName)
         let maxDuration = app.dailyDurations.max() ?? 1
 
         return VStack(spacing: 0) {
@@ -226,7 +247,7 @@ struct BrainHealthReportView: View {
                 }
             } label: {
                 HStack(spacing: 12) {
-                    appIcon(name: app.displayName, rank: rank)
+                    appIcon(name: app.displayName, categoryName: app.categoryName)
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(app.displayName)
@@ -381,7 +402,7 @@ struct BrainHealthReportView: View {
             } label: {
                 HStack(spacing: 12) {
                     // Colored icon circle
-                    appIcon(name: app.displayName, rank: rank)
+                    appIcon(name: app.displayName, categoryName: app.categoryName)
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(app.displayName)
@@ -490,9 +511,9 @@ struct BrainHealthReportView: View {
 
     // MARK: - Helpers
 
-    private func appIcon(name: String, rank: Int) -> some View {
+    private func appIcon(name: String, categoryName: String) -> some View {
         let letter = String(name.prefix(1)).uppercased()
-        let color = iconColor(for: rank)
+        let color = BrainRotTheme.categoryColor(for: categoryName)
         return ZStack {
             Circle()
                 .fill(LinearGradient(
@@ -508,18 +529,7 @@ struct BrainHealthReportView: View {
     }
 
     private func appColor(for app: AppUsageData) -> Color {
-        BrainRotTheme.scoreColor(for: BrainRotCalculator.score(totalMinutes: app.duration / 60.0))
-    }
-
-    private func iconColor(for rank: Int) -> Color {
-        switch rank {
-        case 1:  return BrainRotTheme.neonPink
-        case 2:  return BrainRotTheme.neonPurple
-        case 3:  return BrainRotTheme.neonOrange
-        case 4:  return BrainRotTheme.neonBlue
-        case 5:  return BrainRotTheme.neonGreen
-        default: return BrainRotTheme.textSecondary
-        }
+        BrainRotTheme.categoryColor(for: app.categoryName)
     }
 
     // MARK: - Category Breakdown
@@ -557,7 +567,7 @@ struct BrainHealthReportView: View {
 
     private func categoryRow(category: CategoryUsageData, rank: Int) -> some View {
         let isExpanded = expandedAppID == category.id
-        let color = iconColor(for: rank)
+        let color = BrainRotTheme.categoryColor(for: category.categoryName)
 
         return VStack(spacing: 0) {
             Button {
@@ -620,7 +630,7 @@ struct BrainHealthReportView: View {
             ? (category.duration / healthData.totalDuration) * 100 : 0
         let avgSession = category.pickups > 0
             ? category.duration / Double(category.pickups) : category.duration
-        let color = iconColor(for: rank)
+        let color = BrainRotTheme.categoryColor(for: category.categoryName)
 
         return VStack(spacing: 10) {
             HStack(spacing: 0) {

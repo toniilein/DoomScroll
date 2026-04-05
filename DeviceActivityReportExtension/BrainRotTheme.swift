@@ -84,6 +84,31 @@ enum BrainRotTheme {
     static let silverColor = Color(red: 0.60, green: 0.58, blue: 0.55)          // Warm silver
     static let bronzeColor = Color(red: 0.72, green: 0.49, blue: 0.30)          // Warm bronze
 
+    // MARK: - Category Color Mapping
+
+    /// Stable color per category name — all apps in the same category share the same icon color
+    static func categoryColor(for name: String) -> Color {
+        let lower = name.lowercased()
+        if lower.contains("social") { return neonPink }
+        if lower.contains("entertainment") || lower.contains("video") { return neonPurple }
+        if lower.contains("game") { return neonGreen }
+        if lower.contains("productivity") { return neonBlue }
+        if lower.contains("education") { return neonYellow }
+        if lower.contains("health") || lower.contains("fitness") { return neonGreen }
+        if lower.contains("shopping") { return neonOrange }
+        if lower.contains("news") || lower.contains("reading") { return neonBlue }
+        if lower.contains("photo") || lower.contains("creative") { return neonPurple }
+        if lower.contains("music") { return neonPink }
+        if lower.contains("travel") || lower.contains("navigation") { return neonBlue }
+        if lower.contains("finance") || lower.contains("business") { return neonGreen }
+        if lower.contains("utility") || lower.contains("utilities") { return neonOrange }
+        if lower.contains("communication") || lower.contains("message") { return neonBlue }
+        // Fallback: hash the name to pick a stable color
+        let colors = [neonPink, neonGreen, neonPurple, neonBlue, neonOrange, neonYellow]
+        let hash = abs(name.hashValue)
+        return colors[hash % colors.count]
+    }
+
     // MARK: - Score Helpers
 
     static let doomRed = Color(red: 0.85, green: 0.25, blue: 0.25)

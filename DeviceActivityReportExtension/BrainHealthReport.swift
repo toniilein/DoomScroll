@@ -35,6 +35,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
         // Accumulate per-app data across all days (weekly aggregation)
         var appDurations: [String: TimeInterval] = [:]
         var appPickups: [String: Int] = [:]
+        var appCategories: [String: String] = [:]  // appName -> categoryName
 
         // Accumulate per-category data
         var catDurations: [String: TimeInterval] = [:]
@@ -80,6 +81,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
                         if appDuration > 0 {
                             appDurations[appName, default: 0] += appDuration
                             appPickups[appName, default: 0] += pickups
+                            appCategories[appName] = catName
                             catDurations[catName, default: 0] += appDuration
                             catPickups[catName, default: 0] += pickups
                             catApps[catName, default: [:]][appName, default: 0] += appDuration
@@ -96,7 +98,8 @@ struct BrainHealthReport: DeviceActivityReportScene {
                 displayName: name,
                 duration: duration,
                 formattedDuration: BrainRotCalculator.formatDuration(duration),
-                numberOfPickups: appPickups[name] ?? 0
+                numberOfPickups: appPickups[name] ?? 0,
+                categoryName: appCategories[name] ?? ""
             )
         }
         weeklyAppUsages.sort { $0.duration > $1.duration }
@@ -235,7 +238,8 @@ struct BrainHealthReport: DeviceActivityReportScene {
                 dailyDurations: dailyDurs,
                 totalDuration: totalDur,
                 formattedTotal: BrainRotCalculator.formatDuration(totalDur),
-                dayLabels: trendDayLabels
+                dayLabels: trendDayLabels,
+                categoryName: appCategories[name] ?? ""
             )
         }
         appDailyUsages.sort { $0.totalDuration > $1.totalDuration }

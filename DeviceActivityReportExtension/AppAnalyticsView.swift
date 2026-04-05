@@ -283,19 +283,12 @@ struct AppAnalyticsView: View {
     // MARK: - Helpers
 
     private func appColor(for app: AppUsageData) -> Color {
-        BrainRotTheme.scoreColor(
-            for: BrainRotCalculator.score(totalMinutes: app.duration / 60.0)
-        )
+        BrainRotTheme.categoryColor(for: app.categoryName)
     }
 
     private func iconColor(for rank: Int) -> Color {
-        switch rank {
-        case 1:  return BrainRotTheme.neonPink
-        case 2:  return BrainRotTheme.neonPurple
-        case 3:  return BrainRotTheme.neonOrange
-        case 4:  return BrainRotTheme.neonBlue
-        case 5:  return BrainRotTheme.neonGreen
-        default: return BrainRotTheme.textSecondary
-        }
+        // Fallback for rank-based — not used when categoryName is available
+        let colors: [Color] = [BrainRotTheme.neonPink, BrainRotTheme.neonPurple, BrainRotTheme.neonOrange, BrainRotTheme.neonBlue, BrainRotTheme.neonGreen]
+        return rank <= colors.count ? colors[rank - 1] : BrainRotTheme.textSecondary
     }
 }
