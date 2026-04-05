@@ -206,7 +206,7 @@
         .octopus-container {
             position: relative;
             width: 340px;
-            height: 420px;
+            height: 400px;
         }
 
         .octopus-glow {
@@ -442,26 +442,64 @@
             50% { transform: translateY(-12px) scale(1.1); opacity: 1; }
         }
 
-        /* Tentacles — scalloped lobes under the body */
+        /* Tentacles — thick rounded tubes hanging down */
         .tentacles-svg {
             position: absolute;
-            top: 265px;
+            top: 280px;
             left: 50%;
             transform: translateX(-50%);
-            width: 240px;
-            height: 80px;
+            width: 220px;
+            height: 90px;
             pointer-events: none;
             overflow: visible;
-            animation: tentSway 3s ease-in-out infinite;
         }
 
-        .tentacles-svg path {
+        .tentacles-svg rect {
             transition: fill 0.4s ease;
+            rx: 10;
+            ry: 10;
         }
 
-        @keyframes tentSway {
-            0%, 100% { transform: translateX(-50%) rotate(-0.5deg); }
-            50% { transform: translateX(-50%) rotate(0.5deg); }
+        .tent-1 { animation: tentSway1 3.0s ease-in-out infinite; transform-origin: top center; }
+        .tent-2 { animation: tentSway2 2.7s ease-in-out infinite; transform-origin: top center; }
+        .tent-3 { animation: tentSway3 3.3s ease-in-out infinite; transform-origin: top center; }
+        .tent-4 { animation: tentSway4 2.5s ease-in-out infinite; transform-origin: top center; }
+        .tent-5 { animation: tentSway5 3.1s ease-in-out infinite; transform-origin: top center; }
+        .tent-6 { animation: tentSway6 2.8s ease-in-out infinite; transform-origin: top center; }
+        .tent-7 { animation: tentSway7 3.4s ease-in-out infinite; transform-origin: top center; }
+        .tent-8 { animation: tentSway8 2.9s ease-in-out infinite; transform-origin: top center; }
+
+        @keyframes tentSway1 {
+            0%, 100% { transform: rotate(-2deg); }
+            50% { transform: rotate(2deg); }
+        }
+        @keyframes tentSway2 {
+            0%, 100% { transform: rotate(1.5deg); }
+            50% { transform: rotate(-1.5deg); }
+        }
+        @keyframes tentSway3 {
+            0%, 100% { transform: rotate(-1deg); }
+            50% { transform: rotate(2deg); }
+        }
+        @keyframes tentSway4 {
+            0%, 100% { transform: rotate(2deg); }
+            50% { transform: rotate(-1deg); }
+        }
+        @keyframes tentSway5 {
+            0%, 100% { transform: rotate(-1.5deg); }
+            50% { transform: rotate(1.5deg); }
+        }
+        @keyframes tentSway6 {
+            0%, 100% { transform: rotate(1deg); }
+            50% { transform: rotate(-2deg); }
+        }
+        @keyframes tentSway7 {
+            0%, 100% { transform: rotate(-2deg); }
+            50% { transform: rotate(1deg); }
+        }
+        @keyframes tentSway8 {
+            0%, 100% { transform: rotate(1.5deg); }
+            50% { transform: rotate(-2deg); }
         }
 
         /* Tier label under octopus */
@@ -835,9 +873,9 @@
             }
 
             .tentacles-svg {
-                top: 210px;
-                width: 190px;
-                height: 65px;
+                top: 220px;
+                width: 170px;
+                height: 70px;
             }
         }
     </style>
@@ -881,19 +919,16 @@
                     <span class="particle" data-ecstatic="💖" data-happy="🌸" data-sad="😢" data-zombie="☠️">💖</span>
                     <span class="particle" data-ecstatic="✨" data-happy="♪" data-sad="💧" data-zombie="💀">✨</span>
                 </div>
-                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 240 80">
-                    <!-- Scalloped lobes: connected rounded bumps like the reference -->
-                    <path id="tentPath" fill="#66bf8c" d="
-                        M10,0
-                        L10,20 C10,45 20,55 30,55 C40,55 45,45 45,25
-                        L45,20 C45,45 55,58 65,58 C75,58 80,45 80,25
-                        L80,18 C80,48 90,62 100,62 C110,62 118,48 118,18
-                        L118,18 C118,48 128,62 140,62 C152,62 160,48 160,18
-                        L160,20 C160,45 165,58 175,58 C185,58 195,45 195,20
-                        L195,20 C195,45 200,55 210,55 C220,55 230,45 230,20
-                        L230,0
-                        Z
-                    "/>
+                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 220 90">
+                    <!-- 8 thick rounded tubes hanging straight down, slightly varied lengths -->
+                    <rect class="tent-1" fill="#66bf8c" x="8"   y="0" width="20" height="62" rx="10" ry="10"/>
+                    <rect class="tent-2" fill="#66bf8c" x="34"  y="0" width="20" height="70" rx="10" ry="10"/>
+                    <rect class="tent-3" fill="#66bf8c" x="60"  y="0" width="20" height="65" rx="10" ry="10"/>
+                    <rect class="tent-4" fill="#66bf8c" x="86"  y="0" width="20" height="72" rx="10" ry="10"/>
+                    <rect class="tent-5" fill="#66bf8c" x="112" y="0" width="20" height="68" rx="10" ry="10"/>
+                    <rect class="tent-6" fill="#66bf8c" x="138" y="0" width="20" height="74" rx="10" ry="10"/>
+                    <rect class="tent-7" fill="#66bf8c" x="164" y="0" width="20" height="64" rx="10" ry="10"/>
+                    <rect class="tent-8" fill="#66bf8c" x="190" y="0" width="20" height="60" rx="10" ry="10"/>
                 </svg>
                 <div class="octopus-body" id="octoBody">
                     <div class="octopus-shine"></div>
@@ -1117,8 +1152,9 @@
             sad: '#cc736b',
             zombie: '#85807a'
         };
-        const tentPath = document.getElementById('tentPath');
-        if (tentPath) tentPath.setAttribute('fill', tentFillColors[mood]);
+        document.querySelectorAll('.tentacles-svg rect').forEach(r => {
+            r.setAttribute('fill', tentFillColors[mood]);
+        });
 
         // Particles
         particles.forEach(p => {
