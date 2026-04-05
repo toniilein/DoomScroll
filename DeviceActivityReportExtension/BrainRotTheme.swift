@@ -86,11 +86,13 @@ enum BrainRotTheme {
 
     // MARK: - Score Helpers
 
+    static let doomRed = Color(red: 0.85, green: 0.25, blue: 0.25)
+
     static func scoreColor(for score: Int) -> Color {
         switch score {
         case 0..<30: return neonGreen
         case 30..<60: return neonBlue
-        case 60..<85: return neonPurple
+        case 60..<85: return doomRed
         default: return neonPink
         }
     }
@@ -117,7 +119,7 @@ enum BrainRotTheme {
         switch score {
         case 0..<30: return neonGreen
         case 30..<60: return neonBlue
-        case 60..<85: return neonPurple
+        case 60..<85: return doomRed
         default: return neonPink
         }
     }
