@@ -22,8 +22,8 @@ struct BrainHealthReportView: View {
                     .padding(.horizontal)
 
                 if showCategories {
-                    if !healthData.categories.isEmpty {
-                        categoryBreakdownSection
+                    if !healthData.categoryDailyUsages.isEmpty {
+                        weeklyCategoryAnalysisSection
                             .padding(.horizontal)
                     }
                 } else {
@@ -329,6 +329,140 @@ struct BrainHealthReportView: View {
                             .frame(height: max(4, barHeight))
 
                         Text(app.dayLabels[i])
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 90)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 14)
+        .padding(.top, 4)
+        .background(color.opacity(0.04))
+    }
+
+    // MARK: - Weekly Category Analysis (7-day style)
+
+    private var weeklyCategoryAnalysisSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Image(systemName: "square.grid.2x2.fill")
+                    .foregroundColor(BrainRotTheme.neonPurple)
+                Text("7-Day Category Usage")
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+                Spacer()
+                Text("\(healthData.categoryDailyUsages.count) \(L("breakdown.groups"))")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
+
+            ForEach(Array(healthData.categoryDailyUsages.enumerated()), id: \.element.id) { index, cat in
+                weeklyCategoryRow(cat: cat)
+
+                if index < healthData.categoryDailyUsages.count - 1 {
+                    Divider().padding(.leading, 16)
+                }
+            }
+
+            Spacer().frame(height: 6)
+        }
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func weeklyCategoryRow(cat: CategoryDailyUsage) -> some View {
+        let isExpanded = expandedAppID == cat.id
+        let color = BrainRotTheme.categoryColor(for: cat.categoryName)
+        let maxDuration = cat.dailyDurations.max() ?? 1
+
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    expandedAppID = isExpanded ? nil : cat.id
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                colors: [color, color.opacity(0.7)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 36, height: 36)
+                        Image(systemName: categorySystemIcon(cat.categoryName))
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(cat.categoryName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                            .lineLimit(1)
+                        Text(cat.formattedTotal + " total \u{00B7} \(cat.appCount) \(L("breakdown.apps"))")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                    }
+
+                    Spacer()
+
+                    miniSparkline(durations: cat.dailyDurations, color: color)
+                        .frame(width: 50, height: 20)
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(BrainRotTheme.textSecondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                weeklyCategoryDetail(cat: cat, color: color, maxDuration: maxDuration)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private func weeklyCategoryDetail(cat: CategoryDailyUsage, color: Color, maxDuration: TimeInterval) -> some View {
+        let dailyAvg = cat.totalDuration / 7.0
+
+        return VStack(spacing: 12) {
+            HStack {
+                Text("Daily Avg")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+                Spacer()
+                Text(BrainRotCalculator.formatDuration(dailyAvg))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(color)
+            }
+
+            HStack(alignment: .bottom, spacing: 6) {
+                ForEach(0..<cat.dailyDurations.count, id: \.self) { i in
+                    VStack(spacing: 4) {
+                        let dur = cat.dailyDurations[i]
+                        let barHeight = maxDuration > 0 ? CGFloat(dur / maxDuration) * 60 : 0
+
+                        if dur > 0 {
+                            Text(formatShort(dur))
+                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                .foregroundColor(color)
+                        }
+
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(dur > 0 ? color : BrainRotTheme.cardBorder)
+                            .frame(height: max(4, barHeight))
+
+                        Text(cat.dayLabels[i])
                             .font(.system(size: 9, weight: .semibold, design: .rounded))
                             .foregroundColor(BrainRotTheme.textSecondary)
                     }

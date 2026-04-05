@@ -56,6 +56,16 @@ struct AppDailyUsage: Identifiable {
     var categoryName: String = ""
 }
 
+struct CategoryDailyUsage: Identifiable {
+    let id = UUID()
+    let categoryName: String
+    let dailyDurations: [TimeInterval]  // 7 entries, one per day
+    let totalDuration: TimeInterval
+    let formattedTotal: String
+    let dayLabels: [String]
+    let appCount: Int
+}
+
 struct WeeklyTrendData {
     let dailyScores: [DailyScore]
     let averageScore: Int
