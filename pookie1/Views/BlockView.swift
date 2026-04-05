@@ -10,8 +10,9 @@ struct BlockView: View {
     @EnvironmentObject var screenTimeManager: ScreenTimeManager
     @StateObject private var blockingManager = BlockingManager.shared
     @Environment(\.scrollToTopTrigger) private var scrollToTopTrigger
-    @State private var showEditor = false
     @State private var editingRoutine: BlockRoutine?
+    /// Sentinel value used to present the "new routine" sheet via .sheet(item:)
+    @State private var showNewRoutine = false
     @State private var editingLimit: UsageLimit?
     @State private var showQuickBlockPicker = false
     @State private var showUnblockConfirm = false
@@ -100,19 +101,27 @@ struct BlockView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showEditor) {
+            .sheet(item: $editingRoutine) { routine in
                 RoutineEditorView(
-                    routine: editingRoutine,
-                    onSave: { routine in
-                        blockingManager.saveRoutine(routine)
-                        showEditor = false
+                    routine: routine,
+                    onSave: { saved in
+                        blockingManager.saveRoutine(saved)
                         editingRoutine = nil
                     },
-                    onDelete: { routine in
-                        blockingManager.deleteRoutine(routine)
-                        showEditor = false
+                    onDelete: { toDelete in
+                        blockingManager.deleteRoutine(toDelete)
                         editingRoutine = nil
                     }
+                )
+            }
+            .sheet(isPresented: $showNewRoutine) {
+                RoutineEditorView(
+                    routine: nil,
+                    onSave: { saved in
+                        blockingManager.saveRoutine(saved)
+                        showNewRoutine = false
+                    },
+                    onDelete: nil
                 )
             }
             #if !targetEnvironment(simulator)
@@ -243,19 +252,14 @@ struct BlockView: View {
                     .background(BrainRotTheme.neonPurple.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
-                    HStack(alignment: .top, spacing: 10) {
-                        Text(tip.icon)
-                            .font(.system(size: 22))
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(tip.title)
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                            Text(tip.detail)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(tip.title)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                        Text(tip.detail)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.vertical, 2)
                 }
@@ -274,65 +278,58 @@ struct BlockView: View {
         var tips: [Tip] = []
         let hasLimits = !blockingManager.usageLimits.isEmpty
         let hasRoutines = !blockingManager.routines.isEmpty
+        let appName = topAppName ?? ""
+        let dailyAvgMinutes = topAppDuration > 0 ? Int(topAppDuration / 60.0 / 7.0) : 0
 
-        // Usage limit tip — adapts based on whether limits already exist
+        // Tip 1: Usage limits
         if hasLimits {
-            if let appName = topAppName, topAppDuration > 0 {
-                let dailyAvgMinutes = Int(topAppDuration / 60.0 / 7.0)
+            if !appName.isEmpty && dailyAvgMinutes > 0 {
                 tips.append(Tip(
                     icon: "",
-                    title: "Limits active — review \(appName)",
-                    detail: "You have limits set up. \(appName) still averages ~\(dailyAvgMinutes)min/day — consider tightening its limit.",
+                    title: "\(appName) averages \(dailyAvgMinutes)min/day",
+                    detail: "You have limits set. If \(appName) still feels like too much, try lowering its limit or adding it to an existing one.",
                     isAction: true
                 ))
             } else {
                 tips.append(Tip(
                     icon: "",
-                    title: "Limits active",
-                    detail: "Your usage limits are running. Check if they need adjusting for your top apps.",
+                    title: "Your limits are active",
+                    detail: "Keep an eye on which apps hit the limit most often — those might need tighter controls.",
                     isAction: true
                 ))
             }
         } else {
-            if let appName = topAppName, topAppDuration > 0 {
-                let dailyAvgMinutes = Int(topAppDuration / 60.0 / 7.0)
+            if !appName.isEmpty && dailyAvgMinutes > 0 {
                 let suggestedLimit = max(15, (dailyAvgMinutes / 15) * 15)
                 tips.append(Tip(
                     icon: "",
-                    title: "Add a usage limit for \(appName)",
-                    detail: "You use \(appName) ~\(dailyAvgMinutes)min/day. Set a \(suggestedLimit)min daily limit to keep it in check.",
+                    title: "Limit \(appName) to \(suggestedLimit)min/day",
+                    detail: "You currently spend ~\(dailyAvgMinutes)min/day on \(appName). Add a usage limit above to cap it.",
                     isAction: true
                 ))
             } else {
                 tips.append(Tip(
                     icon: "",
-                    title: "Add a usage limit",
-                    detail: "Set daily limits on your most-used apps or categories to control screen time.",
+                    title: "Set a daily usage limit",
+                    detail: "Pick your most-used apps or categories and set a daily time cap to stay in control.",
                     isAction: true
                 ))
             }
         }
 
-        // Routine tip — adapts based on whether routines already exist
+        // Tip 2: Block routines
         if hasRoutines {
             tips.append(Tip(
-                icon: "🔁",
-                title: "Routines active",
-                detail: "Your block routines are running. Adjust times or add more apps to block during focus hours."
+                icon: "",
+                title: "Block routines are running",
+                detail: "Add more apps to your routines or extend the blocked time windows for stronger protection."
             ))
         } else {
             tips.append(Tip(
-                icon: "🔁",
-                title: "Set up a block routine",
-                detail: "Schedule automatic blocks during work, sleep, or study hours to stay focused."
+                icon: "",
+                title: "Block apps on a schedule",
+                detail: "Set up a routine to automatically block distracting apps during sleep, work, or study time."
             ))
-        }
-
-        // Score-based tips
-        if score >= 80 {
-            tips.append(Tip(icon: "🚨", title: L("brainHealth.screenTimeHigh"), detail: L("brainHealth.screenTimeHighDetail")))
-        } else if score >= 50 {
-            tips.append(Tip(icon: "⚠️", title: L("brainHealth.roomToImprove"), detail: L("brainHealth.roomToImproveDetail")))
         }
 
         return tips
@@ -418,8 +415,7 @@ struct BlockView: View {
 
     private var emptyRoutineCard: some View {
         Button {
-            editingRoutine = nil
-            showEditor = true
+            showNewRoutine = true
         } label: {
             HStack(spacing: 14) {
                 ZStack {
@@ -512,8 +508,7 @@ struct BlockView: View {
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()
                 Button {
-                    editingRoutine = nil
-                    showEditor = true
+                    showNewRoutine = true
                 } label: {
                     Text(L("routines.schedule"))
                         .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -557,7 +552,6 @@ struct BlockView: View {
     private func routineCard(_ routine: BlockRoutine) -> some View {
         Button {
             editingRoutine = routine
-            showEditor = true
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
