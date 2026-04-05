@@ -704,20 +704,20 @@ struct OctopusMascotView: View {
                 .rotationEffect(.degrees(-25))
                 .offset(x: -32, y: -38)
 
-            VStack(spacing: 4) {
-                HStack(spacing: 20) {
+            VStack(spacing: 2) {
+                HStack(spacing: 12) {
                     babyEyeView(isLeft: true)
                     babyEyeView(isLeft: false)
                 }
 
                 if mood.showCheeks {
-                    HStack(spacing: 50) {
+                    HStack(spacing: 44) {
                         Ellipse()
                             .fill(Color.pink.opacity(mood.cheekOpacity))
-                            .frame(width: 20, height: 12)
+                            .frame(width: 22, height: 13)
                         Ellipse()
                             .fill(Color.pink.opacity(mood.cheekOpacity))
-                            .frame(width: 20, height: 12)
+                            .frame(width: 22, height: 13)
                     }
                     .offset(y: -2)
                 }
@@ -737,40 +737,40 @@ struct OctopusMascotView: View {
             ZStack {
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 48, height: 48)
                     .shadow(color: Color.black.opacity(0.08), radius: 2, y: 1)
                 Text("\u{2605}")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundColor(mood.bodyColorDark)
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 8, height: 8)
-                    .offset(x: 6, y: -6)
+                    .frame(width: 10, height: 10)
+                    .offset(x: 8, y: -8)
             }
 
         case .happy:
             ZStack {
                 Path { p in
-                    p.move(to: CGPoint(x: 0, y: 18))
+                    p.move(to: CGPoint(x: 0, y: 24))
                     p.addQuadCurve(
-                        to: CGPoint(x: 26, y: 18),
-                        control: CGPoint(x: 13, y: 2)
+                        to: CGPoint(x: 34, y: 24),
+                        control: CGPoint(x: 17, y: 3)
                     )
                 }
-                .stroke(mood.bodyColorDark, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
-                .frame(width: 26, height: 22)
+                .stroke(mood.bodyColorDark, style: StrokeStyle(lineWidth: 4.5, lineCap: .round))
+                .frame(width: 34, height: 28)
 
                 Circle()
                     .fill(Color.white.opacity(0.7))
-                    .frame(width: 5, height: 5)
-                    .offset(x: isLeft ? -6 : 6, y: 6)
+                    .frame(width: 6, height: 6)
+                    .offset(x: isLeft ? -8 : 8, y: 8)
             }
 
         case .sad:
             ZStack {
                 Ellipse()
                     .fill(Color.white)
-                    .frame(width: 36, height: 34)
+                    .frame(width: 48, height: 46)
                     .shadow(color: Color.black.opacity(0.08), radius: 2, y: 1)
 
                 Circle()
@@ -780,26 +780,26 @@ struct OctopusMascotView: View {
                                 Color(red: 0.35, green: 0.32, blue: 0.42),
                                 Color(red: 0.20, green: 0.18, blue: 0.25)
                             ],
-                            center: .center, startRadius: 0, endRadius: 10
+                            center: .center, startRadius: 0, endRadius: 14
                         )
                     )
-                    .frame(width: 20, height: 20)
-                    .offset(y: 3)
+                    .frame(width: 26, height: 26)
+                    .offset(y: 4)
 
                 Ellipse()
                     .fill(mood.bodyColor)
-                    .frame(width: 40, height: 16)
-                    .offset(y: -14)
+                    .frame(width: 52, height: 20)
+                    .offset(y: -18)
 
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 10, height: 10)
-                    .offset(x: 4, y: -2)
+                    .frame(width: 12, height: 12)
+                    .offset(x: 5, y: -2)
 
                 Circle()
                     .fill(Color.white.opacity(0.6))
-                    .frame(width: 5, height: 5)
-                    .offset(x: -4, y: 5)
+                    .frame(width: 6, height: 6)
+                    .offset(x: -5, y: 6)
 
                 if isLeft {
                     Ellipse()
@@ -812,8 +812,8 @@ struct OctopusMascotView: View {
                                 startPoint: .top, endPoint: .bottom
                             )
                         )
-                        .frame(width: 7, height: 10)
-                        .offset(x: -12, y: 14)
+                        .frame(width: 9, height: 13)
+                        .offset(x: -16, y: 18)
                 }
             }
 
@@ -821,18 +821,18 @@ struct OctopusMascotView: View {
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.7))
-                    .frame(width: 34, height: 34)
+                    .frame(width: 46, height: 46)
                 Path { p in
                     p.move(to: CGPoint(x: 3, y: 3))
-                    p.addLine(to: CGPoint(x: 19, y: 19))
-                    p.move(to: CGPoint(x: 19, y: 3))
-                    p.addLine(to: CGPoint(x: 3, y: 19))
+                    p.addLine(to: CGPoint(x: 25, y: 25))
+                    p.move(to: CGPoint(x: 25, y: 3))
+                    p.addLine(to: CGPoint(x: 3, y: 25))
                 }
                 .stroke(
                     Color(red: 0.35, green: 0.33, blue: 0.30),
-                    style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 4.5, lineCap: .round)
                 )
-                .frame(width: 22, height: 22)
+                .frame(width: 28, height: 28)
             }
         }
     }
