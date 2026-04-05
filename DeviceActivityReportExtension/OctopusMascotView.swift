@@ -399,7 +399,7 @@ struct OctopusMascotView: View {
 
                 floatingParticles
 
-                VStack(spacing: -10) {
+                VStack(spacing: -25) {
                     octopusBody
                     tentacles
                 }
