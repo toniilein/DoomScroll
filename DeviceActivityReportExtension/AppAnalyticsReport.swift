@@ -27,6 +27,7 @@ struct AppAnalyticsReport: DeviceActivityReportScene {
                 totalDuration += segment.totalActivityDuration
 
                 for await categoryActivity in segment.categories {
+                    let catName = categoryActivity.category.localizedDisplayName ?? "Other"
                     for await appActivity in categoryActivity.applications {
                         let appName = appActivity.application.localizedDisplayName ?? "Unknown"
                         let appDuration = appActivity.totalActivityDuration
@@ -38,7 +39,8 @@ struct AppAnalyticsReport: DeviceActivityReportScene {
                                 displayName: appName,
                                 duration: appDuration,
                                 formattedDuration: BrainRotCalculator.formatDuration(appDuration),
-                                numberOfPickups: pickups
+                                numberOfPickups: pickups,
+                                categoryName: catName
                             ))
                         }
                     }

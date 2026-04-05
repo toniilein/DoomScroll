@@ -25,6 +25,7 @@ struct AppUsageData: Identifiable {
     let duration: TimeInterval
     let formattedDuration: String
     let numberOfPickups: Int
+    var categoryName: String = ""
 }
 
 struct CategoryUsageData: Identifiable {
@@ -52,6 +53,7 @@ struct AppDailyUsage: Identifiable {
     let totalDuration: TimeInterval
     let formattedTotal: String
     let dayLabels: [String]
+    var categoryName: String = ""
 }
 
 struct WeeklyTrendData {

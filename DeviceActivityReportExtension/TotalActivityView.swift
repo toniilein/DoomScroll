@@ -252,7 +252,7 @@ struct TotalActivityView: View {
 
                     Text(category.formattedDuration)
                         .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(categoryColor(rank: rank))
+                        .foregroundColor(BrainRotTheme.categoryColor(for: category.categoryName))
 
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 11, weight: .semibold))
@@ -278,7 +278,7 @@ struct TotalActivityView: View {
         let avgSession = category.pickups > 0
             ? category.duration / Double(category.pickups)
             : category.duration
-        let color = categoryColor(rank: rank)
+        let color = BrainRotTheme.categoryColor(for: category.categoryName)
 
         return VStack(spacing: 10) {
             // Stats row
@@ -367,7 +367,7 @@ struct TotalActivityView: View {
 
     private func categoryIcon(name: String, rank: Int) -> some View {
         let icon = categorySystemIcon(name)
-        let color = categoryColor(rank: rank)
+        let color = BrainRotTheme.categoryColor(for: name)
 
         return ZStack {
             Circle()
@@ -407,6 +407,10 @@ struct TotalActivityView: View {
         return rank <= colors.count ? colors[rank - 1] : BrainRotTheme.textSecondary
     }
 
+    private func appCategoryColor(for app: AppUsageData) -> Color {
+        BrainRotTheme.categoryColor(for: app.categoryName)
+    }
+
     // MARK: - App Breakdown
 
     private var appBreakdownSection: some View {
@@ -442,7 +446,7 @@ struct TotalActivityView: View {
 
     private func overviewAppRow(app: AppUsageData, rank: Int) -> some View {
         let isExpanded = expandedAppID == app.id
-        let color = categoryColor(rank: rank)
+        let color = appCategoryColor(for: app)
 
         return VStack(spacing: 0) {
             Button {
@@ -505,7 +509,7 @@ struct TotalActivityView: View {
             ? (app.duration / currentDay.duration) * 100 : 0
         let avgSession = app.numberOfPickups > 0
             ? app.duration / Double(app.numberOfPickups) : app.duration
-        let color = categoryColor(rank: rank)
+        let color = appCategoryColor(for: app)
 
         return VStack(spacing: 10) {
             HStack(spacing: 0) {

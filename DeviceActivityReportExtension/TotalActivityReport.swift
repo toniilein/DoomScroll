@@ -75,7 +75,8 @@ struct TotalActivityReport: DeviceActivityReportScene {
                                 displayName: appName,
                                 duration: appDuration,
                                 formattedDuration: BrainRotCalculator.formatDuration(appDuration),
-                                numberOfPickups: pickups
+                                numberOfPickups: pickups,
+                                categoryName: catName
                             )
 
                             var apps = dayApps[segDate] ?? []
