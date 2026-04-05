@@ -230,19 +230,14 @@ struct BlockView: View {
 
             ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
                 if tip.isAction {
-                    HStack(alignment: .top, spacing: 10) {
-                        Text(tip.icon)
-                            .font(.system(size: 22))
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(tip.title)
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(BrainRotTheme.textPrimary)
-                            Text(tip.detail)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(BrainRotTheme.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(tip.title)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(BrainRotTheme.textPrimary)
+                        Text(tip.detail)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(BrainRotTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(12)
                     .background(BrainRotTheme.neonPurple.opacity(0.08))
@@ -300,8 +295,6 @@ struct BlockView: View {
             tips.append(Tip(icon: "🚨", title: L("brainHealth.screenTimeHigh"), detail: L("brainHealth.screenTimeHighDetail")))
         } else if score >= 50 {
             tips.append(Tip(icon: "⚠️", title: L("brainHealth.roomToImprove"), detail: L("brainHealth.roomToImproveDetail")))
-        } else {
-            tips.append(Tip(icon: "✅", title: L("brainHealth.greatJob"), detail: L("brainHealth.greatJobDetail")))
         }
 
         if pickups > 200 {
