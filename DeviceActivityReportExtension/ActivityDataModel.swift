@@ -45,6 +45,15 @@ struct DailyScore: Identifiable {
     let isToday: Bool
 }
 
+struct AppDailyUsage: Identifiable {
+    let id = UUID()
+    let displayName: String
+    let dailyDurations: [TimeInterval]  // 7 entries, one per day (Mon→Sun or last 7 days)
+    let totalDuration: TimeInterval
+    let formattedTotal: String
+    let dayLabels: [String]
+}
+
 struct WeeklyTrendData {
     let dailyScores: [DailyScore]
     let averageScore: Int

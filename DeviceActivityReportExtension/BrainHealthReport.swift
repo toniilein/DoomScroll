@@ -12,6 +12,7 @@ struct BrainHealthData {
     let topApps: [AppUsageData]
     let allApps: [AppUsageData]
     let categories: [CategoryUsageData]
+    let appDailyUsages: [AppDailyUsage]
     let smartKPIs: SmartKPIs
     let weeklyTrend: WeeklyTrendData
 }
@@ -42,6 +43,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
 
         // For weekly trend
         var dayDurations: [Date: TimeInterval] = [:]
+        var appDayDurations: [String: [Date: TimeInterval]] = [:]  // appName -> (date -> duration)
         let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
         // Pre-fill last 7 days with 0
@@ -81,6 +83,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
                             catDurations[catName, default: 0] += appDuration
                             catPickups[catName, default: 0] += pickups
                             catApps[catName, default: [:]][appName, default: 0] += appDuration
+                            appDayDurations[appName, default: [:]][segmentDate, default: 0] += appDuration
                         }
                     }
                 }
@@ -212,6 +215,32 @@ struct BrainHealthReport: DeviceActivityReportScene {
         }
         weeklyCategories.sort { $0.duration > $1.duration }
 
+        // Build per-app daily usage for 7-day chart
+        let sortedDates = (0..<7).compactMap { i in
+            calendar.date(byAdding: .day, value: -6 + i, to: todayStart)
+        }.map { calendar.startOfDay(for: $0) }
+
+        let trendDayLabels = sortedDates.map { date in
+            let weekday = calendar.component(.weekday, from: date)
+            let idx = weekday == 1 ? 6 : weekday - 2
+            return dayLabels[idx]
+        }
+
+        var appDailyUsages: [AppDailyUsage] = appDurations.map { name, totalDur in
+            let dailyDurs = sortedDates.map { date in
+                appDayDurations[name]?[date] ?? 0
+            }
+            return AppDailyUsage(
+                displayName: name,
+                dailyDurations: dailyDurs,
+                totalDuration: totalDur,
+                formattedTotal: BrainRotCalculator.formatDuration(totalDur),
+                dayLabels: trendDayLabels
+            )
+        }
+        appDailyUsages.sort { $0.totalDuration > $1.totalDuration }
+        appDailyUsages = Array(appDailyUsages.prefix(10))
+
         return BrainHealthData(
             totalDuration: weeklyDuration,
             brainRotScore: score,
@@ -221,6 +250,7 @@ struct BrainHealthReport: DeviceActivityReportScene {
             topApps: topApps,
             allApps: weeklyAppUsages,
             categories: weeklyCategories,
+            appDailyUsages: appDailyUsages,
             smartKPIs: smartKPIs,
             weeklyTrend: weeklyTrend
         )
