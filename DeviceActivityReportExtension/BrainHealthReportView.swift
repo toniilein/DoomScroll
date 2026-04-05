@@ -13,11 +13,7 @@ struct BrainHealthReportView: View {
                 WeeklyTrendView(trendData: healthData.weeklyTrend)
                     .padding(.horizontal)
 
-                // 2. Recommendations
-                recommendationsCard
-                    .padding(.horizontal)
-
-                // 3. Breakdown toggle + content
+                // 2. Breakdown toggle + content
                 breakdownToggle
                     .padding(.horizontal)
 

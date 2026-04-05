@@ -28,6 +28,7 @@ struct BlockView: View {
                     VStack(alignment: .leading, spacing: 28) {
                         Color.clear.frame(height: 0).id("top")
                         quickBlockHero
+                        recommendationsCard
                         usageLimitsSection
                         routinesSection
 
@@ -198,6 +199,123 @@ struct BlockView: View {
             RoundedRectangle(cornerRadius: 24)
                 .stroke(BrainRotTheme.neonPink.opacity(0.12), lineWidth: 1)
         )
+    }
+
+    // MARK: - Recommendations
+
+    private struct Tip {
+        let icon: String
+        let title: String
+        let detail: String
+        var isAction: Bool = false
+    }
+
+    private var recommendationsCard: some View {
+        let shared = UserDefaults(suiteName: "group.pookie1.shared")
+        let score = shared?.integer(forKey: "lastBrainRotScore") ?? 0
+        let pickups = shared?.integer(forKey: "lastPickups") ?? 0
+        let topAppName = shared?.string(forKey: "topAppName")
+        let topAppDuration = shared?.double(forKey: "topAppDuration") ?? 0
+
+        let tips = generateTips(score: score, pickups: pickups, topAppName: topAppName, topAppDuration: topAppDuration)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .foregroundColor(BrainRotTheme.neonOrange)
+                Text(L("brainHealth.recommendations"))
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
+            }
+
+            ForEach(Array(tips.enumerated()), id: \.offset) { _, tip in
+                if tip.isAction {
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(tip.icon)
+                            .font(.system(size: 22))
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(tip.title)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Text(tip.detail)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(12)
+                    .background(BrainRotTheme.neonPurple.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(tip.icon)
+                            .font(.system(size: 22))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(tip.title)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(BrainRotTheme.textPrimary)
+                            Text(tip.detail)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(BrainRotTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+        .padding(16)
+        .background(BrainRotTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(BrainRotTheme.cardBorder, lineWidth: 1)
+        )
+    }
+
+    private func generateTips(score: Int, pickups: Int, topAppName: String?, topAppDuration: TimeInterval) -> [Tip] {
+        var tips: [Tip] = []
+
+        if let appName = topAppName, topAppDuration > 0 {
+            let dailyAvgMinutes = Int(topAppDuration / 60.0 / 7.0)
+            let suggestedLimit = max(15, (dailyAvgMinutes / 15) * 15)
+            tips.append(Tip(
+                icon: "🛡️",
+                title: String(format: L("brainHealth.setLimit"), appName),
+                detail: String(format: L("brainHealth.setLimitDetail"), dailyAvgMinutes, appName, suggestedLimit),
+                isAction: true
+            ))
+        } else {
+            tips.append(Tip(
+                icon: "🛡️",
+                title: L("brainHealth.addLimit"),
+                detail: L("brainHealth.addLimitDetail"),
+                isAction: true
+            ))
+        }
+
+        if score >= 80 {
+            tips.append(Tip(icon: "🚨", title: L("brainHealth.screenTimeHigh"), detail: L("brainHealth.screenTimeHighDetail")))
+        } else if score >= 50 {
+            tips.append(Tip(icon: "⚠️", title: L("brainHealth.roomToImprove"), detail: L("brainHealth.roomToImproveDetail")))
+        } else {
+            tips.append(Tip(icon: "✅", title: L("brainHealth.greatJob"), detail: L("brainHealth.greatJobDetail")))
+        }
+
+        if pickups > 200 {
+            tips.append(Tip(icon: "📱", title: L("brainHealth.tooManyPickups"), detail: String(format: L("brainHealth.tooManyPickupsDetail"), pickups)))
+        } else if pickups > 100 {
+            tips.append(Tip(icon: "🔔", title: L("brainHealth.watchPickups"), detail: String(format: L("brainHealth.watchPickupsDetail"), pickups)))
+        }
+
+        if let appName = topAppName, topAppDuration > 7200 {
+            let hours = Int(topAppDuration / 3600)
+            tips.append(Tip(icon: "⏰", title: String(format: L("brainHealth.biggestDrain"), appName), detail: String(format: L("brainHealth.biggestDrainDetail"), hours)))
+        }
+
+        return tips
     }
 
     // MARK: - Usage Limits

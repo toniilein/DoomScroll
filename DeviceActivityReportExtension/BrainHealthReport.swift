@@ -197,6 +197,10 @@ struct BrainHealthReport: DeviceActivityReportScene {
         shared?.set(totalMinutes, forKey: "lastScreenTimeMinutes")
         shared?.set(streakDays, forKey: "streakDays")
         shared?.set(Date(), forKey: "lastChallengeDataUpdate")
+        if let topApp = topApps.first {
+            shared?.set(topApp.displayName, forKey: "topAppName")
+            shared?.set(topApp.duration, forKey: "topAppDuration")
+        }
 
         // Record daily score for mini octopus in day selector (simple key per day)
         let dateFormatter = DateFormatter()
