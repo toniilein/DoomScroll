@@ -206,7 +206,7 @@
         .octopus-container {
             position: relative;
             width: 340px;
-            height: 340px;
+            height: 400px;
         }
 
         .octopus-glow {
@@ -445,11 +445,11 @@
         /* Tentacles — filled, tapered, curly like the reference image */
         .tentacles-svg {
             position: absolute;
-            bottom: 10px;
+            top: 275px;
             left: 50%;
             transform: translateX(-50%);
-            width: 240px;
-            height: 90px;
+            width: 200px;
+            height: 100px;
             pointer-events: none;
             overflow: visible;
         }
@@ -857,12 +857,18 @@
 
             .octopus-container {
                 width: 260px;
-                height: 260px;
+                height: 320px;
             }
 
             .octopus-body {
                 width: 170px;
                 height: 170px;
+            }
+
+            .tentacles-svg {
+                top: 215px;
+                width: 160px;
+                height: 80px;
             }
         }
     </style>
@@ -938,22 +944,25 @@
                         </div>
                     </div>
                 </div>
-                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 240 90" preserveAspectRatio="xMidYMin meet">
-                    <!-- 7 filled tapered tentacles, curling outward like an octopus -->
-                    <!-- Far left - curls left -->
-                    <path class="tent-1" fill="#66bf8c" d="M28,0 Q18,20 10,45 Q4,60 2,72 Q0,80 6,78 Q10,76 14,65 Q20,45 30,20 Q34,10 38,0 Z" style="transform-origin: 30px 0px;"/>
+                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 200 100" preserveAspectRatio="xMidYMin meet">
+                    <!--
+                        7 tentacles fanning out from a narrow base (under the body).
+                        All start near the center top and curve outward, tapering to curly tips.
+                    -->
+                    <!-- Far left -->
+                    <path class="tent-1" fill="#66bf8c" d="M70,0 C65,8 40,30 22,55 C14,68 8,82 12,85 C16,88 20,78 28,65 C40,42 72,14 80,0 Z" style="transform-origin: 70px 0;"/>
                     <!-- Left -->
-                    <path class="tent-2" fill="#66bf8c" d="M58,0 Q50,22 44,48 Q40,62 38,74 Q37,80 42,78 Q46,76 48,64 Q52,46 60,22 Q63,12 68,0 Z" style="transform-origin: 60px 0px;"/>
+                    <path class="tent-2" fill="#66bf8c" d="M78,0 C75,10 58,35 48,58 C42,72 40,86 44,88 C48,90 50,78 54,66 C62,42 82,14 88,0 Z" style="transform-origin: 82px 0;"/>
                     <!-- Inner left -->
-                    <path class="tent-3" fill="#66bf8c" d="M85,0 Q80,24 76,50 Q74,64 73,76 Q72,82 77,80 Q80,78 80,66 Q82,48 88,24 Q90,14 93,0 Z" style="transform-origin: 87px 0px;"/>
+                    <path class="tent-3" fill="#66bf8c" d="M86,0 C84,12 78,40 76,62 C74,76 74,90 78,91 C82,92 82,78 82,66 C84,42 90,14 94,0 Z" style="transform-origin: 90px 0;"/>
                     <!-- Center -->
-                    <path class="tent-4" fill="#66bf8c" d="M113,0 Q112,26 112,52 Q112,66 112,78 Q112,84 117,82 Q120,80 118,66 Q118,48 120,24 Q121,12 123,0 Z" style="transform-origin: 117px 0px;"/>
+                    <path class="tent-4" fill="#66bf8c" d="M95,0 C94,14 94,44 95,66 C96,80 96,94 100,94 C104,94 104,80 105,66 C106,44 106,14 105,0 Z" style="transform-origin: 100px 0;"/>
                     <!-- Inner right -->
-                    <path class="tent-5" fill="#66bf8c" d="M147,0 Q150,24 154,48 Q156,64 158,76 Q159,82 163,79 Q166,76 164,64 Q160,46 155,24 Q153,14 152,0 Z" style="transform-origin: 153px 0px;"/>
+                    <path class="tent-5" fill="#66bf8c" d="M106,0 C108,14 116,42 118,66 C118,78 118,92 122,91 C126,90 126,76 124,62 C122,40 116,12 114,0 Z" style="transform-origin: 110px 0;"/>
                     <!-- Right -->
-                    <path class="tent-6" fill="#66bf8c" d="M172,0 Q177,22 184,46 Q188,60 192,72 Q194,78 198,76 Q202,74 198,62 Q192,44 182,22 Q178,12 176,0 Z" style="transform-origin: 175px 0px;"/>
-                    <!-- Far right - curls right -->
-                    <path class="tent-7" fill="#66bf8c" d="M202,0 Q208,18 218,40 Q226,56 232,68 Q236,76 240,73 Q242,70 236,60 Q226,42 216,22 Q212,12 210,0 Z" style="transform-origin: 206px 0px;"/>
+                    <path class="tent-6" fill="#66bf8c" d="M112,0 C118,14 138,42 146,66 C150,78 152,90 156,88 C160,86 158,72 152,58 C142,35 125,10 122,0 Z" style="transform-origin: 118px 0;"/>
+                    <!-- Far right -->
+                    <path class="tent-7" fill="#66bf8c" d="M120,0 C128,14 160,42 172,65 C180,78 184,88 188,85 C192,82 186,68 178,55 C160,30 135,8 130,0 Z" style="transform-origin: 130px 0;"/>
                 </svg>
                 <div class="tier-label" id="tierLabel">Zen Master</div>
             </div>
