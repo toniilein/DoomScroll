@@ -53,44 +53,22 @@ struct BrainHealthReportView: View {
 
         let mood = OctopusMood.from(score: score)
 
-        return VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                MiniOctopusView(mood: mood)
-                    .frame(width: 48, height: 48)
+        return HStack(spacing: 12) {
+            MiniOctopusView(mood: mood)
+                .frame(width: 48, height: 48)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(label)
-                        .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundColor(color)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label)
+                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                    .foregroundColor(color)
 
-                    Text(weekSummaryMessage(score: score, trend: trend, streak: streak))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(BrainRotTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer()
+                Text(weekSummaryMessage(score: score, trend: trend, streak: streak))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(BrainRotTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            // Stats row
-            HStack(spacing: 0) {
-                weekStatPill(
-                    icon: "clock.fill",
-                    value: healthData.formattedDuration,
-                    label: "Total"
-                )
-                weekStatPill(
-                    icon: "hand.tap.fill",
-                    value: "\(healthData.totalPickups)",
-                    label: "Pickups"
-                )
-                weekStatPill(
-                    icon: trend.icon,
-                    value: trend.label,
-                    label: "Trend",
-                    color: trend.color
-                )
-            }
+            Spacer()
         }
         .padding(16)
         .background(color.opacity(0.06))
@@ -465,7 +443,7 @@ struct BrainHealthReportView: View {
             HStack(spacing: 6) {
                 Image(systemName: "square.grid.2x2.fill")
                     .foregroundColor(BrainRotTheme.neonPurple)
-                Text("7-Day Category Usage")
+                Text("7-Day Cat. Usage")
                     .font(.headline)
                     .foregroundColor(BrainRotTheme.textPrimary)
                 Spacer()

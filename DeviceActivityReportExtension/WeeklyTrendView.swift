@@ -6,13 +6,9 @@ struct WeeklyTrendView: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "chart.bar.fill")
-                        .foregroundColor(BrainRotTheme.neonPurple)
-                    Text(L("trend.thisWeek"))
-                        .font(.headline)
-                        .foregroundColor(BrainRotTheme.textPrimary)
-                }
+                Text(L("trend.thisWeek"))
+                    .font(.headline)
+                    .foregroundColor(BrainRotTheme.textPrimary)
 
                 Spacer()
 
