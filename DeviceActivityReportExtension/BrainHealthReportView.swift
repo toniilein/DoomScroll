@@ -109,11 +109,11 @@ struct BrainHealthReportView: View {
             return "Heavy usage this week. Your top apps are dragging your score down."
         default:
             if topNames.count >= 3 {
-                return "\(appList) are melting your brain. Time to hit the Panic Button and take a break! 🧠"
+                return "\(appList) are melting your brain. Time to hit the Panic Button and take a break!"
             } else if let first = topNames.first {
-                return "\(first) is destroying your screen time. Seriously — hit the Panic Button! 🧠"
+                return "\(first) is destroying your screen time. Seriously — hit the Panic Button!"
             }
-            return "Your brain needs a break! Try the Panic Button on the Shield tab. 🧠"
+            return "Your brain needs a break! Try the Panic Button on the Shield tab."
         }
     }
 
