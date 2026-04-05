@@ -442,54 +442,49 @@
             50% { transform: translateY(-12px) scale(1.1); opacity: 1; }
         }
 
-        /* Tentacles */
-        .tentacles {
+        /* Tentacles — SVG wavy style */
+        .tentacles-svg {
             position: absolute;
-            bottom: 35px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            display: flex;
-            gap: 6px;
+            width: 200px;
+            height: 70px;
+            pointer-events: none;
         }
 
-        .tentacle {
-            width: 18px;
-            height: 55px;
-            border-radius: 0 0 50% 50%;
-            background: linear-gradient(to bottom, var(--mint), #66bf8c);
-            animation: wiggle 2s ease-in-out infinite;
-            transform-origin: top center;
+        .tentacles-svg path {
+            fill: none;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke 1.5s ease;
         }
 
-        .tentacle:nth-child(1) { animation-delay: 0s; height: 50px; }
-        .tentacle:nth-child(2) { animation-delay: 0.2s; height: 58px; }
-        .tentacle:nth-child(3) { animation-delay: 0.4s; height: 52px; }
-        .tentacle:nth-child(4) { animation-delay: 0.6s; height: 56px; }
-        .tentacle:nth-child(5) { animation-delay: 0.8s; height: 48px; }
+        .tent-1 { animation: tentWave1 2.5s ease-in-out infinite; }
+        .tent-2 { animation: tentWave2 2.8s ease-in-out infinite; }
+        .tent-3 { animation: tentWave3 2.2s ease-in-out infinite; }
+        .tent-4 { animation: tentWave4 2.6s ease-in-out infinite; }
+        .tent-5 { animation: tentWave5 3.0s ease-in-out infinite; }
 
-        @keyframes wiggle {
-            0%, 100% { transform: rotate(-5deg); }
-            50% { transform: rotate(5deg); }
+        @keyframes tentWave1 {
+            0%, 100% { d: path("M40,0 Q30,25 38,50 Q44,65 36,70"); }
+            50% { d: path("M40,0 Q50,25 42,50 Q36,65 44,70"); }
         }
-
-        .tentacle.sad {
-            background: linear-gradient(to bottom, var(--coral), #cc736b);
-            animation: wiggleSlow 4s ease-in-out infinite;
+        @keyframes tentWave2 {
+            0%, 100% { d: path("M70,0 Q62,22 68,48 Q74,62 64,68"); }
+            50% { d: path("M70,0 Q78,22 72,48 Q66,62 76,68"); }
         }
-
-        .tentacle.zombie {
-            background: linear-gradient(to bottom, var(--gray), #85807a);
-            animation: wiggleDead 8s ease-in-out infinite;
+        @keyframes tentWave3 {
+            0%, 100% { d: path("M100,0 Q92,20 100,45 Q108,60 96,68"); }
+            50% { d: path("M100,0 Q108,20 100,45 Q92,60 104,68"); }
         }
-
-        @keyframes wiggleSlow {
-            0%, 100% { transform: rotate(-2deg) translateY(8px); }
-            50% { transform: rotate(2deg) translateY(10px); }
+        @keyframes tentWave4 {
+            0%, 100% { d: path("M130,0 Q122,22 128,48 Q134,62 124,68"); }
+            50% { d: path("M130,0 Q138,22 132,48 Q126,62 136,68"); }
         }
-
-        @keyframes wiggleDead {
-            0%, 100% { transform: rotate(-0.5deg) translateY(18px); }
-            50% { transform: rotate(0.5deg) translateY(20px); }
+        @keyframes tentWave5 {
+            0%, 100% { d: path("M160,0 Q150,25 158,50 Q164,65 154,70"); }
+            50% { d: path("M160,0 Q170,25 162,50 Q156,65 166,70"); }
         }
 
         /* Tier label under octopus */
@@ -935,13 +930,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="tentacles" id="tentacles">
-                    <div class="tentacle"></div>
-                    <div class="tentacle"></div>
-                    <div class="tentacle"></div>
-                    <div class="tentacle"></div>
-                    <div class="tentacle"></div>
-                </div>
+                <svg class="tentacles-svg" id="tentacles" viewBox="0 0 200 70" preserveAspectRatio="none">
+                    <path class="tent-1" stroke="#66bf8c" d="M40,0 Q30,25 38,50 Q44,65 36,70"/>
+                    <path class="tent-2" stroke="#66bf8c" d="M70,0 Q62,22 68,48 Q74,62 64,68"/>
+                    <path class="tent-3" stroke="#66bf8c" d="M100,0 Q92,20 100,45 Q108,60 96,68"/>
+                    <path class="tent-4" stroke="#66bf8c" d="M130,0 Q122,22 128,48 Q134,62 124,68"/>
+                    <path class="tent-5" stroke="#66bf8c" d="M160,0 Q150,25 158,50 Q164,65 154,70"/>
+                </svg>
                 <div class="tier-label" id="tierLabel">Zen Master</div>
             </div>
         </div>
@@ -1085,7 +1080,6 @@
         const glow = document.querySelector('.octopus-glow');
         const cheeks = document.getElementById('octoCheeks');
         const label = document.getElementById('tierLabel');
-        const tentacles = document.querySelectorAll('.tentacle');
         const particles = document.querySelectorAll('.particle');
 
         // Reset all
@@ -1127,17 +1121,14 @@
         glow.style.background = `radial-gradient(circle, ${glowColors[idx]} 0%, transparent 70%)`;
 
         // Tentacles
-        const tentacleGrads = {
-            ecstatic: ['#8CE0B3', '#66bf8c'],
-            happy: ['#F5D48C', '#e0b361'],
-            sad: ['#EB948C', '#cc736b'],
-            zombie: ['#ADA6A1', '#85807a']
+        const tentStrokeColors = {
+            ecstatic: '#66bf8c',
+            happy: '#e0b361',
+            sad: '#cc736b',
+            zombie: '#85807a'
         };
-        tentacles.forEach(t => {
-            t.className = 'tentacle';
-            if (mood === 'sad') t.classList.add('sad');
-            if (mood === 'zombie') t.classList.add('zombie');
-            t.style.background = `linear-gradient(to bottom, ${tentacleGrads[mood][0]}, ${tentacleGrads[mood][1]})`;
+        document.querySelectorAll('.tentacles-svg path').forEach(p => {
+            p.setAttribute('stroke', tentStrokeColors[mood]);
         });
 
         // Particles
